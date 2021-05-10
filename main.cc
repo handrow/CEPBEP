@@ -1,6 +1,8 @@
-#include <iostream>
+#include "logger/logger.h"
 
 int main(int, char**) {
-    std::cout << "Hello, world1!\n";
-    std::cout << "Hello, world1!\n";
+    ft::Logger SAYONARA("/dev/stdout");
+    
+    log(&SAYONARA, ft::Logger::INFO, "HELLO %s", "sssS");
+    info(&SAYONARA, "MURAVEY");
 }

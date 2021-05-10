@@ -6,6 +6,13 @@ set(CMAKE_CXX_FLAGS 				"-Wall -Wextra -Werror")
 set(CMAKE_CXX_STANDARD 				"98")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY 	"${CMAKE_SOURCE_DIR}/bin")
 
+# logger target
+add_library(logger
+	"sources/logger/logger.cc"
+	"sources/logger/logger.h"
+)
+
 # Main executable
 add_executable(CEPBEP main.cc)
+target_link_libraries(CEPBEP logger)
 target_include_directories(CEPBEP PUBLIC "sources/")
