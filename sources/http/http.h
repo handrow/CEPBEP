@@ -5,11 +5,21 @@
 #include <map>
 #include <string>
 
-namespace ft::Http {
+namespace ft {
 
 enum ParseError {
     ERR_OK,
     ERR_UNKNOWN,
+};
+
+enum HeaderDelStatus {
+    HEADER_DEL_FAIL,
+    HEADER_DEL_OK
+};
+
+enum ParamsDelStatus {
+    PARAM_DEL_FAIL,
+    PARAM_DEL_OK
 };
 
 enum Method {
@@ -45,16 +55,17 @@ class Request {
 
  public:
     explicit
-    Request(Method metdhod = UNKNOWN_METHOD);
+    Request(Method method = UNKNOWN_METHOD);
 
-    explicit
-    Request(const std::string& str_request);
+    // explicit
+    // Request(const std::string& str_request);
 
     ParseError          ParseFromString(const std::string& str_request);
     std::string         ParseToString() const;
 
     void                SetHeader(const std::string& h_name, const std::string& h_val);
     std::string         GetHeader(const std::string& h_name) const;
+    HeaderDelStatus     DeleteHeader(const std::string& h_name);
 
     void                SetMethod(Method method);
     Method              GetMethod() const;
@@ -71,6 +82,7 @@ class Request {
 
     void                SetQueryParam(const std::string& p_name, const std::string& p_val);
     std::string         GetQueryParam(const std::string& p_name) const;
+    ParamsDelStatus     DeleteQueryParam(const std::string& p_name);
 };
 
 class Response {
@@ -83,12 +95,14 @@ class Response {
  public:
     explicit
     Response(const std::string& str_response);
+    Response(int code, const std::string& body);
 
     ParseError          ParseFromString(const std::string& str_response);
     std::string         ParseToString() const;
 
     void                SetHeader(const std::string& h_name, const std::string& h_val);
     std::string         GetHeader(const std::string& h_name) const;
+    HeaderDelStatus     DeleteHeader(const std::string& h_name);
 
     void                SetVersion(ProtocolVersion version);
     ProtocolVersion     GetVersion() const;
@@ -96,10 +110,10 @@ class Response {
     void                SetBody(const std::string& body);
     std::string         GetBody() const;
 
-    void                SetCode(int c);
+    void                SetCode(int code);
     int                 GetCode() const;
 };
 
-}  // namespace ft::Http
+}  // namespace ft
 
 #endif  // HTTP_HTTP_H_

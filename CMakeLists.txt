@@ -7,7 +7,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY 	${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_CXX_FLAGS 				"-Wall -Wextra -Werror")
 set(CMAKE_CXX_STANDARD 				98)
 
-set(OUR_LIBRARIES					logger)
+set(OUR_LIBRARIES					logger http_parser)
 set(OUR_INCLUDES					sources/)
 
 
@@ -17,6 +17,11 @@ add_library(logger
 	"sources/logger/logger.h"
 )
 
+add_library(http_parser
+	"sources/http/http_request.cc"
+	"sources/http/http_response.cc"
+	"sources/http/http.h"
+)
 
 # Main executable
 add_executable(CEPBEP main.cc)
