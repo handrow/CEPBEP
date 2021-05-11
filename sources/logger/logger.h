@@ -14,7 +14,7 @@
 namespace ft {
 
 # define log(self, log_level, message, ...) \
-        (self)->send((log_level), "%s:%d | " message , __FILE__, __LINE__, ##__VA_ARGS__ )
+        (self)->Send((log_level), "%s:%d | " message , __FILE__, __LINE__, ##__VA_ARGS__ )
 
 # define debug(self, message, ...) \
         log(self, ft::Logger::DEBUG, message, ##__VA_ARGS__ )
@@ -33,7 +33,7 @@ namespace ft {
 
 class Logger {
  public:
-    enum message_type{
+    enum LogLvl{
         DEBUG,
         INFO,
         WARNING,
@@ -43,22 +43,19 @@ class Logger {
 
     static const char* level_to_str[];
 
-    explicit Logger(const char* path, message_type lvl);
+    explicit Logger(LogLvl lvl, const char* logfile_path = "/dev/stdout");
     ~Logger();
-    void send(message_type type, const char* str, ...);
+    void Send(LogLvl lvl, const char* str, ...);
 
  protected:
-    void out();
-    void longest();
-    void error_out(const char* msg);
-    std::string format(const char* str, int i);
-    std::string add_time();
-    std::string itos(int msec);
+    void PutError(const char* msg);
+    const std::string FormatMessage(const char* str, LogLvl lvl);
+    const std::string GetCurrentTime();
+    const std::string MSToString(int msec);
 
-    message_type lvl_to_out_;
-    pthread_mutex_t logger_lock_;
+    LogLvl min_log_level_;
+    pthread_mutex_t output_mtx_;
     FILE* fout_;
-    size_t formated_len_;
 };
 
 }  // namespace ft

@@ -1,7 +1,6 @@
 #include "logger/logger.h"
-
 int main(int, char**) {
-    ft::Logger SAYONARA(NULL, ft::Logger::INFO);
+    ft::Logger SAYONARA(ft::Logger::INFO);
     
     log(&SAYONARA, ft::Logger::INFO, "HELLO %s", "sssS");
     info(&SAYONARA, "MURAVEY");

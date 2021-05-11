@@ -3,7 +3,7 @@
 namespace ft {
 
 const char* Logger::level_to_str[] = {
-    "DEBUG"
+    "DEBUG",
     "INFO",
     "WARNING",
     "ERROR",
@@ -11,38 +11,28 @@ const char* Logger::level_to_str[] = {
     NULL
 };
 
-Logger::Logger(const char* path, Logger::message_type lvl) : lvl_to_out_(lvl) {
-    longest();
-    if (!path)
-        fout_ = fopen("/dev/stdout", "wr");
-    else
-        fout_ = fopen(path, "wr");
+Logger::Logger(Logger::LogLvl lvl, const char* logfile_path) : min_log_level_(lvl) {
+    fout_ = fopen(logfile_path, "wr");
     if (!fout_)
-        error_out("fopen() faild: ");
-    if (pthread_mutex_init(&logger_lock_, NULL))
-        error_out("Can not create mutex: ");
+        PutError("fopen() faild: ");
+    if (pthread_mutex_init(&output_mtx_, NULL))
+        PutError("Can not create mutex: ");
 }
 
 Logger::~Logger() {
-    if (pthread_mutex_destroy(&logger_lock_))
-        error_out("Can not destroy mutex: ");
+    if (pthread_mutex_destroy(&output_mtx_))
+        PutError("Can not destroy mutex: ");
     if (fclose(fout_))
-        error_out("Can not close file for outstream: ");
+        PutError("Can not close file for outstream: ");
 }
 
-void Logger::longest() {
-    formated_len_ = 0;
-    for (int i = 0; level_to_str[i]; ++i )
-        formated_len_ = std::max(formated_len_, strlen(level_to_str[i]));
-}
-
-void Logger::error_out(const char* msg) {
-    std::cerr << add_time() << " logger: ";
+void Logger::PutError(const char* msg) {
+    std::cerr << GetCurrentTime() << " logger: ";
     perror(msg);
     std::cerr << std::endl;
 }
 
-std::string Logger::itos(int msec) {
+const std::string Logger::MSToString(int msec) {
     std::string str;
 
     str.reserve(8);
@@ -54,47 +44,44 @@ std::string Logger::itos(int msec) {
     return str;
 }
 
-std::string Logger::add_time() {
-    struct timeval* tv = new struct timeval;
-    struct tm* timeinfo = new struct tm;
-    char buffer[80];
+const std::string Logger::GetCurrentTime() {
+    struct timeval tv;
+    struct tm timeinfo;
+    char buffer[21];
     std::string str_time;
 
     str_time.reserve(60);
-    if (gettimeofday(tv, NULL))
-        error_out("Can not get time: ");
-    timeinfo = localtime_r(&tv->tv_sec, timeinfo);
-    strftime(buffer, 80, "%F %T ", timeinfo);
+    if (gettimeofday(&tv, NULL))
+        PutError("Can not get time: ");
+    localtime_r(&(tv.tv_sec), &timeinfo);
+    strftime(buffer, 21, "%F %T ", &timeinfo);
     str_time.append(buffer);
-    str_time.append(itos(tv->tv_usec));
-    delete tv;
-    delete timeinfo;
+    str_time.append(MSToString(tv.tv_usec));
     return str_time;
 }
 
-std::string Logger::format(const char* str, int i) {
-    std::string formated_str = add_time();
-    int border = formated_len_ - strlen(level_to_str[i]);
-    formated_str.append(" || ");
-    formated_str.insert(formated_str.size() - 2, border, ' ');
-    formated_str.insert(formated_str.size() - (2 + border / 2), level_to_str[i]);
-    formated_str.append(str);
-    formated_str.append("\n");
-    return formated_str;
+const std::string Logger::FormatMessage(const char* message, Logger::LogLvl lvl){
+    const size_t log_level_len = strlen(level_to_str[lvl]);
+    const size_t log_level_padding = 8 - log_level_len;
+
+    std::string fmt_string = GetCurrentTime()
+                       + std::string(" | ") + level_to_str[lvl] + std::string(log_level_padding, ' ')
+                       + std::string(" | ") + message + "\n";
+    return fmt_string;
 }
 
-void Logger::send(Logger::message_type type, const char* str, ...) {
-    if (type < lvl_to_out_)
-        return;
-    va_list vl;
-    va_start(vl, str);
-    std::string formated_str = format(str, type);
-    pthread_mutex_lock(&logger_lock_);
-    vfprintf(fout_, formated_str.c_str(), vl);
-    if (fflush(fout_))
-        error_out("fflush faild: ");
-    pthread_mutex_unlock(&logger_lock_);
-    va_end(vl);
+void Logger::Send(Logger::LogLvl lvl, const char* message, ...) {
+    if (lvl >= min_log_level_) {
+        va_list vl;
+        va_start(vl, message);
+        std::string formated_str = FormatMessage(message, lvl);
+        pthread_mutex_lock(&output_mtx_);
+        vfprintf(fout_, formated_str.c_str(), vl);
+        if (fflush(fout_))
+            PutError("fflush faild: ");
+        pthread_mutex_unlock(&output_mtx_);
+        va_end(vl);
+    }
 }
 
 }  // namespace ft
