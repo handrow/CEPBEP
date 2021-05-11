@@ -16,27 +16,29 @@ Logger::Logger(const char* path, Logger::message_type lvl) : lvl_to_out_(lvl) {
         fout_ = fopen("/dev/stdout", "wr");
     else
         fout_ = fopen(path, "wr");
-    if (!fout_) {
-        std::cerr << add_time() << std::endl;
-        perror("logger: fopen() faild :");
-    }
+    if (!fout_)
+        error_out("fopen() faild: ");
     if (pthread_mutex_init(&logger_lock_, NULL))
-        fprintf(fout_, "%s logger: Can not create mutex\n", add_time().c_str());
+        error_out("Can not create mutex: ");
 }
 
 Logger::~Logger() {
     if (pthread_mutex_destroy(&logger_lock_))
-        fprintf(fout_, "%s logger: Can not destroy mutex\n", add_time().c_str());
+        error_out("Can not destroy mutex: ");
     if (fclose(fout_))
-        std::cerr << add_time() <<
-            " logger: Can not close output file" << std::endl;
+        error_out("Can not close file for outstream: ");
 }
 
 void Logger::longest() {
     formated_len_ = 0;
     for (int i = 0; level_to_str[i]; ++i )
         formated_len_ = std::max(formated_len_, strlen(level_to_str[i]));
-    //formated_len_ /= 2;
+}
+
+void Logger::error_out(const char* msg) {
+    std::cerr << add_time() << " logger: ";
+    perror(msg);
+    std::cerr << std::endl;
 }
 
 std::string Logger::itos(int msec) {
@@ -45,7 +47,7 @@ std::string Logger::itos(int msec) {
     str.reserve(8);
     str.push_back('+');
     for (int i = 0; i < 6; ++i) {
-        str.insert(1, 1, char(msec % 10 + '0'));
+        str.insert(1, 1, static_cast<char>(msec % 10 + '0'));
         msec /= 10;
     }
     return str;
@@ -59,7 +61,7 @@ std::string Logger::add_time() {
 
     str_time.reserve(60);
     if (gettimeofday(tv, NULL))
-        fprintf(fout_, " logger: Can not get time \n");
+        error_out("Can not get time: ");
     timeinfo = localtime_r(&tv->tv_sec, timeinfo);
     strftime(buffer, 80, "%F %T ", timeinfo);
     str_time.append(buffer);
@@ -88,10 +90,8 @@ void Logger::send(Logger::message_type type, const char* str, ...) {
     std::string formated_str = format(str, type);
     pthread_mutex_lock(&logger_lock_);
     vfprintf(fout_, formated_str.c_str(), vl);
-    if (fflush(fout_)) {
-        std::cout << add_time() << std::endl;
-        perror("logger: fflush faild :");
-    }
+    if (fflush(fout_))
+        error_out("fflush faild: ");
     pthread_mutex_unlock(&logger_lock_);
     va_end(vl);
 }

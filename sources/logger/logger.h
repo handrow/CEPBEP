@@ -46,6 +46,7 @@ class Logger {
  protected:
     void out();
     void longest();
+    void error_out(const char* msg);
     std::string format(const char* str, int i);
     std::string add_time();
     std::string itos(int msec);
