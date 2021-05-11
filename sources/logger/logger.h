@@ -16,6 +16,9 @@ namespace ft {
 # define log(self, log_level, message, ...) \
         (self)->send((log_level), "%s:%d | " message , __FILE__, __LINE__, ##__VA_ARGS__ )
 
+# define debug(self, message, ...) \
+        log(self, ft::Logger::DEBUG, message, ##__VA_ARGS__ )
+
 # define info(self, message, ...) \
         log(self, ft::Logger::INFO, message, ##__VA_ARGS__ )
 
@@ -31,6 +34,7 @@ namespace ft {
 class Logger {
  public:
     enum message_type{
+        DEBUG,
         INFO,
         WARNING,
         ERROR,

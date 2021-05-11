@@ -3,6 +3,7 @@
 namespace ft {
 
 const char* Logger::level_to_str[] = {
+    "DEBUG"
     "INFO",
     "WARNING",
     "ERROR",
