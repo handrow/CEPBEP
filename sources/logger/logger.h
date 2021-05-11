@@ -33,6 +33,7 @@ namespace ft {
 
 class Logger {
  public:
+    
     enum LogLvl{
         DEBUG,
         INFO,
@@ -41,21 +42,21 @@ class Logger {
         CRITICAL
     };
 
-    static const char* level_to_str[];
+    static const char* LVL_TO_STR[];
+    static const size_t SIZE_OF_DATE_STR;
 
     explicit Logger(LogLvl lvl, const char* logfile_path = "/dev/stdout");
     ~Logger();
     void Send(LogLvl lvl, const char* str, ...);
 
  protected:
-    void PutError(const char* msg);
-    const std::string FormatMessage(const char* str, LogLvl lvl);
-    const std::string GetCurrentTime();
-    const std::string MSToString(int msec);
+    static std::string FormatMessage(const char* str, LogLvl lvl);
+    static std::string GetCurrentTime();
+    static std::string USToString(int msec);
 
-    LogLvl min_log_level_;
-    pthread_mutex_t output_mtx_;
-    FILE* fout_;
+    LogLvl __min_log_lvl;
+    pthread_mutex_t __output_mtx;
+    FILE* __fout;
 };
 
 }  // namespace ft

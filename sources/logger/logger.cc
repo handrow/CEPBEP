@@ -2,7 +2,7 @@
 
 namespace ft {
 
-const char* Logger::level_to_str[] = {
+const char* Logger::LVL_TO_STR[] = {
     "DEBUG",
     "INFO",
     "WARNING",
@@ -11,75 +11,62 @@ const char* Logger::level_to_str[] = {
     NULL
 };
 
-Logger::Logger(Logger::LogLvl lvl, const char* logfile_path) : min_log_level_(lvl) {
-    fout_ = fopen(logfile_path, "wr");
-    if (!fout_)
-        PutError("fopen() faild: ");
-    if (pthread_mutex_init(&output_mtx_, NULL))
-        PutError("Can not create mutex: ");
+const size_t Logger::SIZE_OF_DATE_STR = 20;
+
+Logger::Logger(Logger::LogLvl lvl, const char* logfile_path) : __min_log_lvl(lvl) {
+    __fout = fopen(logfile_path, "wr");
+    if (!__fout)
+        throw std::runtime_error("fopen() failed");
+    if (pthread_mutex_init(&__output_mtx, NULL))
+        throw std::runtime_error("Can't create mutex");
 }
 
 Logger::~Logger() {
-    if (pthread_mutex_destroy(&output_mtx_))
-        PutError("Can not destroy mutex: ");
-    if (fclose(fout_))
-        PutError("Can not close file for outstream: ");
+    if (pthread_mutex_destroy(&__output_mtx))
+        throw std::runtime_error("Can't destroy mutex");
+    if (fclose(__fout))
+        throw std::runtime_error("Can't close file for outstream");
 }
 
-void Logger::PutError(const char* msg) {
-    std::cerr << GetCurrentTime() << " logger: ";
-    perror(msg);
-    std::cerr << std::endl;
+std::string Logger::USToString(int usec) {
+    std::string numstr = std::to_string(usec);
+    const size_t MAX_US_DIGITS = 6;
+
+    return std::string("+") + std::string(MAX_US_DIGITS - numstr.size(), '0') + numstr;
 }
 
-const std::string Logger::MSToString(int msec) {
-    std::string str;
-
-    str.reserve(8);
-    str.push_back('+');
-    for (int i = 0; i < 6; ++i) {
-        str.insert(1, 1, static_cast<char>(msec % 10 + '0'));
-        msec /= 10;
-    }
-    return str;
-}
-
-const std::string Logger::GetCurrentTime() {
+std::string Logger::GetCurrentTime() {
     struct timeval tv;
     struct tm timeinfo;
-    char buffer[21];
-    std::string str_time;
+    std::string str_time(SIZE_OF_DATE_STR, '\0');
 
-    str_time.reserve(60);
     if (gettimeofday(&tv, NULL))
-        PutError("Can not get time: ");
+        throw std::runtime_error("Can't get time");
     localtime_r(&(tv.tv_sec), &timeinfo);
-    strftime(buffer, 21, "%F %T ", &timeinfo);
-    str_time.append(buffer);
-    str_time.append(MSToString(tv.tv_usec));
-    return str_time;
+    strftime(const_cast<char*>(str_time.data()), SIZE_OF_DATE_STR, "%F %T ", &timeinfo);
+    return str_time + USToString(tv.tv_usec);
 }
 
-const std::string Logger::FormatMessage(const char* message, Logger::LogLvl lvl){
-    const size_t log_level_len = strlen(level_to_str[lvl]);
-    const size_t log_level_padding = 8 - log_level_len;
+std::string Logger::FormatMessage(const char* message, Logger::LogLvl lvl){
+    const size_t LOG_LVL_MAX_LEN = 8;
+    const size_t log_level_len = strlen(LVL_TO_STR[lvl]);
+    const size_t log_level_padding = LOG_LVL_MAX_LEN - log_level_len;
 
     std::string fmt_string = GetCurrentTime()
-                       + std::string(" | ") + level_to_str[lvl] + std::string(log_level_padding, ' ')
+                       + std::string(" | ") + LVL_TO_STR[lvl] + std::string(log_level_padding, ' ')
                        + std::string(" | ") + message + "\n";
     return fmt_string;
 }
 
 void Logger::Send(Logger::LogLvl lvl, const char* message, ...) {
-    if (lvl >= min_log_level_) {
+    if (lvl >= __min_log_lvl) {
         va_list vl;
         va_start(vl, message);
-        std::string formated_str = FormatMessage(message, lvl);
-        pthread_mutex_lock(&output_mtx_);
-        vfprintf(fout_, formated_str.c_str(), vl);
-        if (fflush(fout_))
-            PutError("fflush faild: ");
-        pthread_mutex_unlock(&output_mtx_);
+        pthread_mutex_lock(&__output_mtx);
+        vfprintf(__fout, FormatMessage(message, lvl).c_str(), vl);
+        if (fflush(__fout))
+            throw std::runtime_error("fflush failed");
+        pthread_mutex_unlock(&__output_mtx);
         va_end(vl);
     }
 }
