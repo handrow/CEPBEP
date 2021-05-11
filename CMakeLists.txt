@@ -12,7 +12,12 @@ add_library(logger
 	"sources/logger/logger.h"
 )
 
+add_library(config_parser
+	"sourses/config_parser/config_parser.cc"
+	"sourses/config_parser/config_parser.h"	
+)
+
 # Main executable
 add_executable(CEPBEP main.cc)
-target_link_libraries(CEPBEP logger)
+target_link_libraries(CEPBEP logger config_parser)
 target_include_directories(CEPBEP PUBLIC "sources/")
