@@ -1,11 +1,6 @@
 #ifndef LOGGER_LOGGER_H_
 # define LOGGER_LOGGER_H_
 
-# define LOG 1
-# define ERROR_L 2
-# define DELTA_TIME 50
-# define MMSG_TYPES 4
-
 # include <unistd.h>
 # include <sys/time.h>
 
@@ -24,30 +19,41 @@ namespace ft {
 # define info(self, message, ...) \
         log(self, ft::Logger::INFO, message, ##__VA_ARGS__ )
 
+# define warning(self, message, ...) \
+        log(self, ft::Logger::WARNING, message, ##__VA_ARGS__ )
+
+# define error(self, message, ...) \
+        log(self, ft::Logger::ERROR, message, ##__VA_ARGS__ )
+
+# define critical(self, message, ...) \
+        log(self, ft::Logger::CRITICAL, message, ##__VA_ARGS__ )
+
 class Logger {
  public:
     enum message_type{
         INFO,
-        ERROR,
         WARNING,
+        ERROR,
         CRITICAL
     };
 
     static const char* level_to_str[];
 
-    explicit Logger(const char* path);
+    explicit Logger(const char* path, message_type lvl);
     ~Logger();
-    void send(Logger::message_type type, const char* str, ...);
+    void send(message_type type, const char* str, ...);
 
  protected:
     void out();
-    char* format(const char* str, int i);
-    char* add_time();
-    char* itos(int msec);
+    void longest();
+    std::string format(const char* str, int i);
+    std::string add_time();
+    std::string itos(int msec);
 
+    message_type lvl_to_out_;
     pthread_mutex_t logger_lock_;
-    char* buf_[MMSG_TYPES];
     FILE* fout_;
+    size_t formated_len_;
 };
 
 }  // namespace ft
