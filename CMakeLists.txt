@@ -7,7 +7,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY  ${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_CXX_FLAGS                 "-Wall -Wextra -Werror")
 set(CMAKE_CXX_STANDARD              98)
 
-set(OUR_LIBRARIES                   logger http_parser netlib)
+set(OUR_LIBRARIES                   logger http_parser netlib config_parser)
 set(OUR_INCLUDES                    sources/)
 
 include_directories(PUBLIC ${OUR_INCLUDES})
@@ -49,6 +49,11 @@ add_library(netlib
     "sources/netlib/event/queue.h"
     "sources/netlib/event/loop.cc"
 )
+add_library(config_parser
+	"sourses/config_parser/config_parser.cc"
+	"sourses/config_parser/config_parser.h"	
+)
+
 
 # Main executable
 add_executable(CEPBEP main.cc)
