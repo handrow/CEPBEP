@@ -42,8 +42,6 @@ class Logger {
         CRITICAL
     };
 
-    static const char* LVL_TO_STR[];
-    static const size_t SIZE_OF_DATE_STR;
 
     explicit Logger(LogLvl lvl, const char* logfile_path = "/dev/stdout");
     ~Logger();
@@ -54,6 +52,9 @@ class Logger {
     static std::string GetCurrentTime();
     static std::string USToString(int msec);
 
+    static const char* LVL_TO_STR[];
+    static const size_t SIZE_OF_DATE_STR;
+    
     LogLvl __min_log_lvl;
     pthread_mutex_t __output_mtx;
     FILE* __fout;

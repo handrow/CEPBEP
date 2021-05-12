@@ -14,7 +14,7 @@ const char* Logger::LVL_TO_STR[] = {
 const size_t Logger::SIZE_OF_DATE_STR = 20;
 
 Logger::Logger(Logger::LogLvl lvl, const char* logfile_path) : __min_log_lvl(lvl) {
-    __fout = fopen(logfile_path, "wr");
+    __fout = fopen(logfile_path, "w");
     if (!__fout)
         throw std::runtime_error("fopen() failed");
     if (pthread_mutex_init(&__output_mtx, NULL))
