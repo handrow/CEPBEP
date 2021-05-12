@@ -1,11 +1,6 @@
 #ifndef LOGGER_LOGGER_H_
 # define LOGGER_LOGGER_H_
 
-# define LOG 1
-# define ERROR_L 2
-# define DELTA_TIME 50
-# define MMSG_TYPES 4
-
 # include <unistd.h>
 # include <sys/time.h>
 
@@ -19,35 +14,50 @@
 namespace ft {
 
 # define log(self, log_level, message, ...) \
-        (self)->send((log_level), "%s:%d | " message , __FILE__, __LINE__, ##__VA_ARGS__ )
+        (self)->Send((log_level), "%s:%d | " message , __FILE__, __LINE__, ##__VA_ARGS__ )
+
+# define debug(self, message, ...) \
+        log(self, ft::Logger::DEBUG, message, ##__VA_ARGS__ )
 
 # define info(self, message, ...) \
         log(self, ft::Logger::INFO, message, ##__VA_ARGS__ )
 
+# define warning(self, message, ...) \
+        log(self, ft::Logger::WARNING, message, ##__VA_ARGS__ )
+
+# define error(self, message, ...) \
+        log(self, ft::Logger::ERROR, message, ##__VA_ARGS__ )
+
+# define critical(self, message, ...) \
+        log(self, ft::Logger::CRITICAL, message, ##__VA_ARGS__ )
+
 class Logger {
  public:
-    enum message_type{
+    
+    enum LogLvl{
+        DEBUG,
         INFO,
-        ERROR,
         WARNING,
+        ERROR,
         CRITICAL
     };
 
-    static const char* level_to_str[];
 
-    explicit Logger(const char* path);
+    explicit Logger(LogLvl lvl, const char* logfile_path = "/dev/stdout");
     ~Logger();
-    void send(Logger::message_type type, const char* str, ...);
+    void Send(LogLvl lvl, const char* str, ...);
 
  protected:
-    void out();
-    char* format(const char* str, int i);
-    char* add_time();
-    char* itos(int msec);
+    static std::string FormatMessage(const char* str, LogLvl lvl);
+    static std::string GetCurrentTime();
+    static std::string USToString(int msec);
 
-    pthread_mutex_t logger_lock_;
-    char* buf_[MMSG_TYPES];
-    FILE* fout_;
+    static const char* LVL_TO_STR[];
+    static const size_t SIZE_OF_DATE_STR;
+    
+    LogLvl __min_log_lvl;
+    pthread_mutex_t __output_mtx;
+    FILE* __fout;
 };
 
 }  // namespace ft
