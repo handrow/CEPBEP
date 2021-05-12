@@ -9,7 +9,17 @@ namespace ft {
 
 enum ParseError {
     ERR_OK,
+    ERR_FAIL,
     ERR_UNKNOWN,
+};
+
+enum States {
+    STATE_START,
+    // STATE_METHOD,
+    STATE_URL,
+    STATE_VERSION,
+    // STATE_HEADER,
+    // STATE_BODY,
 };
 
 enum HeaderDelStatus {
@@ -44,6 +54,25 @@ enum ProtocolVersion {
 typedef std::map<std::string, std::string> Headers;
 typedef std::map<std::string, std::string> Query;
 
+const char* const METHOD_TO_STRING[] = {
+    "UNKNOWN_METHOD",
+    "GET",
+    "HEAD",
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE",
+    "CONNECT",
+    "TRACE",
+    "OPTIONS"
+};
+
+const char* const VERSION_TO_STRING[] = {
+    "UNKNOWN VERSION",
+    "HTTP/1.0",
+    "HTTP/1.1"
+};
+
 class Request {
  protected:
     ProtocolVersion __version;
@@ -52,6 +81,10 @@ class Request {
     Query           __params;
     std::string     __body;
     std::string     __url;
+ 
+ private:
+    void                HeaderToString(std::string& str) const;
+    void                QueryParamToString(std::string& str) const;
 
  public:
     explicit
@@ -91,10 +124,13 @@ class Response {
     Headers         __headers;
     std::string     __body;
     int             __code;
+ 
+ private:
+    void                HeaderToString(std::string& str) const;
 
  public:
-    explicit
-    Response(const std::string& str_response);
+    // explicit
+    // Response(const std::string& str_response);
     Response(int code, const std::string& body);
 
     ParseError          ParseFromString(const std::string& str_response);

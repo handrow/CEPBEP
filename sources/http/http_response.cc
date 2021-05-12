@@ -9,6 +9,25 @@ Response::Response(int code, const std::string& body)
 , __code(code) {
 }
 
+std::string         Response::ParseToString() const {
+    std::string str = "";
+    str.append(VERSION_TO_STRING[GetVersion()]);
+    str.append(std::to_string(__code));
+    str.append("\n");
+    HeaderToString(str);
+    str.append(__body);
+    return str;
+}
+
+void                Response::HeaderToString(std::string& str) const {
+    for (Headers::const_iterator it = __headers.begin(); it != __headers.end(); it++) {
+        str.append(it->first);
+        str.append(": ");
+        str.append(it->second);
+        str.append("\n");
+    }
+}
+
 void                Response::SetHeader(const std::string& h_name, const std::string& h_val) {
     __headers[h_name] = h_val;
 }
