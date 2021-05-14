@@ -20,11 +20,6 @@ target_include_directories(CEPBEP PUBLIC "sources/")
 
 # gtest
 
-add_library(sum_integers
-	"tests/sum_integers.cc"
-	"tests/sum_integers.h"
-)
-
 option(ENABLE_UNIT_TESTS "Enable unit tests" ON)
 message(STATUS "Enable testing: ${ENABLE_UNIT_TESTS}")
 
@@ -42,11 +37,11 @@ endif()
 
 macro(STOLEN_FROM_HGRANULE TNAME)
     add_executable(${TNAME} ${ARGN})
-    target_link_libraries(${TNAME} gtest gtest_main sum_integers)
+    target_link_libraries(${TNAME} gtest gtest_main logger)
     target_include_directories(${TNAME} PUBLIC ${GOOGLETEST_INCLUDE})
     add_test(NAME ${TNAME}
             COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TNAME} --gtest_print_time=0
             WORKING_DIRECTORY ${TEST_DIR})
 endmacro()
 
-STOLEN_FROM_HGRANULE(sum_int_test "tests/test.cc")
+STOLEN_FROM_HGRANULE(logger_test "tests/test.cc")
