@@ -42,7 +42,6 @@ class Logger {
         CRITICAL
     };
 
-
     explicit Logger(LogLvl lvl, const char* logfile_path = "/dev/stdout");
     ~Logger();
     void Send(LogLvl lvl, const char* str, ...);
