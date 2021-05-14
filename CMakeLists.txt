@@ -18,8 +18,9 @@ add_library(logger
 )
 
 add_library(http_parser
-	"sources/http/http_request.cc"
-	"sources/http/http_response.cc"
+	"sources/http/request.cc"
+	"sources/http/response.cc"
+	"sources/http/headers.cc"
 	"sources/http/http.h"
 )
 
