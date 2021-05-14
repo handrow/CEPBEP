@@ -1,10 +1,15 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.15)
 project(CEPBEP)
 
 # Configuration
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY 	${CMAKE_SOURCE_DIR}/bin)
+
 set(CMAKE_CXX_FLAGS 				"-Wall -Wextra -Werror")
-set(CMAKE_CXX_STANDARD 				"98")
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY 	"${CMAKE_SOURCE_DIR}/bin")
+set(CMAKE_CXX_STANDARD 				98)
+
+set(OUR_LIBRARIES					logger)
+set(OUR_INCLUDES					sources/)
+
 
 # logger target
 add_library(logger
@@ -15,15 +20,16 @@ add_library(logger
 
 # Main executable
 add_executable(CEPBEP main.cc)
-target_link_libraries(CEPBEP logger)
-target_include_directories(CEPBEP PUBLIC "sources/")
+target_link_libraries(CEPBEP ${OUR_LIBRARIES})
+target_include_directories(CEPBEP PUBLIC ${OUR_INCLUDES})
 
-# gtest
+# Google Test Framework
 
 option(ENABLE_UNIT_TESTS "Enable unit tests" ON)
 message(STATUS "Enable testing: ${ENABLE_UNIT_TESTS}")
 
 if (ENABLE_UNIT_TESTS)
+	enable_testing()
 	include(FetchContent)
 	FetchContent_Declare(
 	googletest
@@ -33,15 +39,18 @@ if (ENABLE_UNIT_TESTS)
 		
 	FetchContent_MakeAvailable(googletest)
 	FetchContent_GetProperties(googletest)
+
+
+	macro(ADD_UNIT_GTEST TNAME)
+		add_executable(${TNAME} ${ARGN})
+		target_link_libraries(${TNAME} gtest gtest_main ${OUR_LIBRARIES})
+		target_include_directories(${TNAME} PUBLIC ${OUR_INCLUDES})
+		add_test(NAME ${TNAME}
+				COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TNAME} --gtest_print_time=0
+				WORKING_DIRECTORY ${TEST_DIR})
+	endmacro()
+
+	# Our unit tests
+	ADD_UNIT_GTEST(example_test "tests/example.cc")
+
 endif()
-
-macro(STOLEN_FROM_HGRANULE TNAME)
-    add_executable(${TNAME} ${ARGN})
-    target_link_libraries(${TNAME} gtest gtest_main logger)
-    target_include_directories(${TNAME} PUBLIC ${GOOGLETEST_INCLUDE})
-    add_test(NAME ${TNAME}
-            COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TNAME} --gtest_print_time=0
-            WORKING_DIRECTORY ${TEST_DIR})
-endmacro()
-
-STOLEN_FROM_HGRANULE(logger_test "tests/test.cc")
