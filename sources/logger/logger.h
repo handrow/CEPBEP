@@ -42,7 +42,6 @@ class Logger {
         CRITICAL
     };
 
-
     explicit Logger(LogLvl lvl, const char* logfile_path = "/dev/stdout");
     ~Logger();
     void Send(LogLvl lvl, const char* str, ...);
@@ -54,7 +53,7 @@ class Logger {
 
     static const char* LVL_TO_STR[];
     static const size_t SIZE_OF_DATE_STR;
-    
+
     LogLvl __min_log_lvl;
     pthread_mutex_t __output_mtx;
     FILE* __fout;
