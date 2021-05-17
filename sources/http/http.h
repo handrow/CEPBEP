@@ -11,7 +11,11 @@ enum ParseError {
     ERR_OK,
     ERR_FAIL,
     ERR_UNKNOWN,
-    ERR_UNKNOWN_HTTP_METHOD
+    ERR_UNKNOWN_HTTP_METHOD,
+    ERR_UNKNOWN_HTTP_VERSION,
+    ERR_INCOMPLETE_HTTP_REQUEST,
+    ERR_INCOMPLETE_HTTP_RESPONSE,
+    ERR_INVALID_HTTP_HEADER
 };
 
 enum Method {
@@ -32,7 +36,8 @@ enum Method {
 enum ProtocolVersion {
     UNKNOWN_VERSION,
     HTTP_1_0,
-    HTTP_1_1
+    HTTP_1_1,
+    END_VERSION
 };
 
 const char* const METHOD_TO_STRING[] = {
@@ -63,7 +68,7 @@ struct URI {
 class Headers {
  public:
     typedef std::map<std::string, std::string>  Map;
-    typedef Map::value_type                     Pair;
+    typedef std::pair<std::string, std::string> Pair;
 
     enum DelStatus {
         HEADER_DEL_FAIL,
@@ -92,6 +97,10 @@ class Request {
     Headers         __headers;
     std::string     __body;
     URI             __uri;
+
+ protected:
+    ParseError          ParseStartLine(const std::string& req_str);
+    ParseError          ParseNewHeader(const std::string& head_str);
 
  public:
     explicit
@@ -128,6 +137,9 @@ class Response {
     std::string     __body;
     int             __code;
 
+ protected:
+    ParseError          ParseStartLine(const std::string& start_line);
+    ParseError          ParseNewHeader(const std::string& head_str);
  public:
     // explicit
     // Response(const std::string& str_response);

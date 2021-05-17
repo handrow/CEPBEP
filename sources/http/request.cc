@@ -1,5 +1,6 @@
 #include "http.h"
 #include <iostream>
+#include <sstream>
 
 namespace Http {
 
@@ -12,12 +13,117 @@ static Method StringToMethod(const std::string& method_str) {
     return UNKNOWN_METHOD;
 }
 
-ParseError          Request::ParseFromString(const std::string& str) {
-    __method = StringToMethod(str);
-    if (__method == UNKNOWN_METHOD)
-        return ERR_UNKNOWN_HTTP_METHOD;
-    return ERR_OK;
+static ProtocolVersion StringToVersion(const std::string& version_str) {
+    for (unsigned version_idx = 0; version_idx < END_VERSION; ++version_idx) {
+        if (VERSION_TO_STRING[version_idx] == version_str)
+            return static_cast<ProtocolVersion>(version_idx);
+    }
+    return UNKNOWN_VERSION;
+}
 
+ParseError          Request::ParseStartLine(const std::string& start_line) {
+    size_t tok_begin = 0;
+    size_t tok_end = 0;
+
+    /// Method parsing
+    {
+        tok_end = start_line.find_first_of(' ', tok_begin);
+        if (tok_end == std::string::npos)
+            return ERR_INCOMPLETE_HTTP_REQUEST;
+        __method = StringToMethod(start_line.substr(tok_begin, tok_end - tok_begin));
+        if (__method == UNKNOWN_METHOD)
+            return ERR_UNKNOWN_HTTP_METHOD;
+        tok_begin = ++tok_end;  // skip space and init new begin
+    }
+
+    /// Uri parsing
+    {
+        tok_end = start_line.find_first_of(' ', tok_begin);
+        if (tok_end == std::string::npos)
+            return ERR_INCOMPLETE_HTTP_REQUEST;
+        __uri.__text = start_line.substr(tok_begin, tok_end - tok_begin);
+        // TODO(handrow): validation of URI
+        tok_begin = ++tok_end;  // skip space and init new begin
+    }
+
+    /// Version parsing
+    {
+        tok_end = start_line.find_first_of('\n', tok_begin);
+        if (tok_end == std::string::npos)
+            tok_end = start_line.length();
+        __version = StringToVersion(start_line.substr(tok_begin, tok_end - tok_begin));
+        if (__version == UNKNOWN_VERSION)
+            return ERR_UNKNOWN_HTTP_VERSION;
+        tok_begin = ++tok_end;
+    }
+
+    return ERR_OK;
+}
+
+ParseError          Request::ParseNewHeader(const std::string& head_str) {
+    //KEY: VALUE\n
+    size_t          tok_begin = 0;
+    size_t          tok_end = 0;
+    Headers::Pair   head;
+
+    /// Key Parsing
+    tok_end = head_str.find_first_of(':', tok_begin);
+    if (tok_end == std::string::npos)
+        return ERR_INVALID_HTTP_HEADER;
+    head.first = head_str.substr(tok_begin, tok_end - tok_begin);
+
+    /// Space check and skip
+    if (head_str[++tok_end] != ' ')
+        return ERR_INVALID_HTTP_HEADER;
+    tok_begin = ++tok_end;
+
+    /// Value Parsing
+    tok_end = head_str.find_first_of('\n', tok_begin);
+    if (tok_end == std::string::npos)
+        tok_end = head_str.length();
+    head.second = head_str.substr(tok_begin, tok_end - tok_begin);
+
+    __headers.SetHeader(head.first, head.second);
+
+    return ERR_OK;
+}
+
+ParseError          Request::ParseFromString(const std::string& req_str) {
+    ParseError      error;
+    size_t          tok_begin = 0;
+    size_t          tok_end = 0;
+
+    /// StartLine Parsing
+    {
+        tok_end = req_str.find_first_of('\n', tok_begin);
+        if (tok_end == std::string::npos)
+            return ERR_INCOMPLETE_HTTP_REQUEST;
+        error = ParseStartLine(req_str.substr(tok_begin, tok_end - tok_begin));
+        if (error != ERR_OK)
+            return error;
+        tok_begin = ++tok_end;
+    }
+
+    /// Headers Parsing
+    for (;;) {
+        tok_end = req_str.find_first_of('\n', tok_begin);
+        if (tok_end == std::string::npos)
+            return ERR_INCOMPLETE_HTTP_REQUEST;
+        if (tok_end == tok_begin)  // empty string
+            break;
+        error = ParseNewHeader(req_str.substr(tok_begin, tok_end - tok_begin));
+        if (error != ERR_OK)
+            return error;
+        tok_begin = ++tok_end;
+    }
+
+    /// Body Parsing
+    {
+        tok_begin = ++tok_end;  // skip empty line
+        __body = req_str.substr(tok_begin);
+    }
+
+    return ERR_OK;
 }
 
 
