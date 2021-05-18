@@ -7,7 +7,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY 	${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_CXX_FLAGS 				"-Wall -Wextra -Werror")
 set(CMAKE_CXX_STANDARD 				98)
 
-set(OUR_LIBRARIES					logger)
+set(OUR_LIBRARIES					socket logger)
 set(OUR_INCLUDES					sources/)
 
 
@@ -15,6 +15,11 @@ set(OUR_INCLUDES					sources/)
 add_library(logger
 	"sources/logger/logger.cc"
 	"sources/logger/logger.h"
+)
+
+add_library(socket
+	"sources/socket/socket.cc"
+	"sources/socket/socket.h"
 )
 
 
