@@ -17,21 +17,30 @@ class Socket {
  public:
     Socket(uint16_t port, const char* host, Logger* logger);
     ~Socket();
-    void Listen() const; // просмотр фд, создание соединения
+    void Listen() const; // создание соединения, просмотр фд, вызов/создание воркера => воркеры сожно сдеелать потоками/процессами
+
+ private:
+    int __sock;
+    Logger* __logger;
+    Worker* __w;
+};
+
+class Worker
+{
+ public:
+    Worker(int fd);
     // неуверен где должны быть эти методы
     // работает согласно данным обрабатываему Connection подробности в миро
     void AssReadind(); // читает в буфер connection.__c_buf, а пока читаем слушаем или обрабатываем другие соединения, когда заканчиватся вызывется Connection.Hendler();
     void AssWriting();
 
-    void Spining(); // бегает по __Connections, если все читают/пишут Listen() -> опять порождает вопросы по асинхронности сколько он должен слушать? или как он узнает о том что чтнение/запись у коннекта окончены.
- 
- private:
-    static const int MAX_CONNECTIONS;
-    int __sock;
-    Logger* __logger;
+    void Spining(); // бегает по __Connections, если все читают/пишут sleep/lock, если поток один Listen() -> опять порождает вопросы по асинхронности сколько он должен слушать? или как он узнает о том что чтнение/запись у коннекта окончены.
 
+ private:
     Connection* __Connections; // Connection* = new Connections[1000]; ?
+    static const int MAX_CONNECTIONS;
 };
+
 
 class Connection {
  public:
