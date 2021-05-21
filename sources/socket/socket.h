@@ -25,7 +25,7 @@ class Socket {
 
  private:
     int __sock;
-    fd_set __active_fd_set, __read_fd_set;
+    fd_set __active_fd_set, __read_fd_set, __write_fd_set;
     Logger* __logger;
     struct sockaddr_in __clientname;
     std::vector<Worker> __w;
