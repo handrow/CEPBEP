@@ -12,7 +12,7 @@ int main(int, char**) {
     warning(&SAYONARA, "MURAVEY %s %p", "iiiiiiii", &SAYONARA);
     critical(&SAYONARA, "III");
 
-    ft::Socket s(5555, "127.0.0.1", &SAYONARA);
+    ft::Socket s(5555, "127.0.0.1");
     s.Listen();
     }
     catch (std::runtime_error e) {

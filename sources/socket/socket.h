@@ -3,6 +3,7 @@
 
 # include "../logger/logger.h"
 
+# include <fcntl.h>
 # include <unistd.h>
 # include <sys/socket.h>
 # include <netinet/in.h>
@@ -13,81 +14,97 @@
 
 namespace ft {
 
-long	timer_now(void);
-void	pth_sleep(long time_to);
+long            timer_now(void);
+void            pth_sleep(long time_to);
+long            tv_to_usec(struct timeval tv);
+struct timeval  usec_to_tv(long usec);
+
+struct Data {
+    fd_set __active_fd_set, __read_fd_set, __write_fd_set;
+    int __c_nmbr;
+    struct timeval __live_time;
+};
+
+static const int BUFF_SIZE;
+static const long MAX_READ_TIME;
+static const long MAX_WAIT_TIME;
+static const size_t MAX_MSG_SIZE;
+Logger* __logger;
 
 class Socket {
  public:
-    Socket(uint16_t port, const char* host, Logger* logger);
+    Socket(uint16_t port, const char* host);
     ~Socket();
     void Listen(); // создание соединения, просмотр фд, вызов/создание воркера => воркеры можно сделать потоками/процессами
+    void EventSelector(const int& event);
     void NewConnection();
+    void DataUpload();
+    void FindConnection(const int& i, const Connection::SttConnection& stt);
+    static const int NumPthreads;
 
  private:
+    static const int MAX_CONNECTIONS;
     int __sock;
-    fd_set __active_fd_set, __read_fd_set, __write_fd_set;
-    Logger* __logger;
+    
     struct sockaddr_in __clientname;
     std::vector<Worker> __w;
-    static const int MAX_CONNECTIONS;
 };
 
 class Worker
 {
  public:
     Worker();
-    // неуверен где должны быть эти методы
-    // работает согласно данным обрабатываему Connection подробности в миро
-    void AssReadind(); // читает в буфер connection.__c_buf, а пока читаем слушаем или обрабатываем другие соединения, когда заканчиватся вызывется Connection.Hendler();
-    void AssWriting();
 
-    void Spining(); // бегает по __Connections, если все читают/пишут sleep/lock, если поток один Listen() -> опять порождает вопросы по асинхронности сколько он должен слушать? или как он узнает о том что чтнение/запись у коннекта окончены.
     void AddConnection(const Connection& new_c);
+    void FindKill();
+    void DataTransfer();
+    void Spining();
+    std::vector<Connection> __connections; // Connection* = new Connections[1000]; ?
 
  private:
-    static int BUSY;
-    std::vector<Connection> __connections; // Connection* = new Connections[1000]; ?
+    int __busy;
 };
 
 
 class Connection {
  public:
     enum SttConnection {
-        READING,
+        NEW,
+        READ,
+        CHECK_READ,
+        END_READ,
         READ_BODY,
+        SEND,
+        CHECK_SEND,
+        END_READ,
         WORKING,
-        RESPONSE,
         ERROR
     };
 
     Connection(const struct sockaddr_in& clientname, int fd);
     ~Connection();
+    void AssRead(); // читает в буфер connection.__c_buf, а пока читаем слушаем или обрабатываем другие соединения, когда заканчиватся вызывется Connection.Hendler();
+    void AssWrite();
     bool Handler(); // подробности на миро
-
-    // я неуверен должны ли эти функции быть тут, если да то возникает ряд вопрос связанных с асинхронностью
-
-    // void AssReadind();
-    // void AssWriting();
     void CallHttpParser();
     void MakeBuf();
+    void CheckRead();
+    void CheckWrite();
     void Work(); // будем предавать туда данные парсера и там уже делать дело согласно запросу
+    long __start_time;
+    long __time_to_die;
+    int __fd;
+    SttConnection __stt;
 
  private:
-    static bool ENDING; // определяется после парсинга хттп, мб будет перекрываться с SttConnection 
-    static int BODY_SIZE;
-    //надо сделать глобальными константами
-    static const int BUFF_SIZE;
-    static const long MAX_WAIT_TIME;
-    static const long MAX_READ_TIME;
-    static const size_t MAX_MSG_SIZE;
 
     const struct sockaddr_in __clientname;
-    int __fd;
-    long __start_time;
-    char* __c_buf; // хз мб ненадо
+    bool __ending;
+    char* __c_buf;
+    size_t __body_size;
+    size_t __was_read;
     std::string __s_buf;
     std::string __send;
-    SttConnection __stt;
 };
 
 }  // namespase ft
