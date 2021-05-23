@@ -11,6 +11,7 @@
 
 # include <string>
 # include <vector>
+# include <queue>
 
 namespace ft {
 
@@ -21,7 +22,6 @@ struct timeval  usec_to_tv(long usec);
 
 struct Data {
     fd_set __active_fd_set, __read_fd_set, __write_fd_set;
-    int __c_nmbr;
     struct timeval __live_time;
 };
 
@@ -39,7 +39,7 @@ class Socket {
     void EventSelector(const int& event);
     void NewConnection();
     void DataUpload();
-    void FindConnection(const int& i, const Connection::SttConnection& stt);
+    void AddToQ(const int& fd, const Connection::SttConnection& stt);
     static const int NumPthreads;
 
  private:
@@ -48,6 +48,8 @@ class Socket {
     
     struct sockaddr_in __clientname;
     std::vector<Worker> __w;
+    std::queue<std::pair<int, Connection::SttConnection> > __queue;
+    std::vector<Connection> __connections; // Connection* = new Connections[1000]; ?
 };
 
 class Worker
@@ -55,11 +57,19 @@ class Worker
  public:
     Worker();
 
+    void Handler(); // подробности на миро
     void AddConnection(const Connection& new_c);
-    void FindKill();
-    void DataTransfer();
     void Spining();
-    std::vector<Connection> __connections; // Connection* = new Connections[1000]; ?
+    void Kill();
+    void StartRead();
+    void Upload();
+    void CheckRec();
+    void CheckSend();
+    
+    int Find();
+    std::queue<std::pair<int, Connection::SttConnection> >* __ptr_queue;
+    std::vector<Connection>* __ptr_connections;
+    std::pair<int, Connection::SttConnection> __task;
 
  private:
     int __busy;
@@ -70,6 +80,7 @@ class Connection {
  public:
     enum SttConnection {
         NEW,
+        UPLOAD,
         READ,
         CHECK_READ,
         END_READ,
@@ -78,6 +89,7 @@ class Connection {
         CHECK_SEND,
         END_READ,
         WORKING,
+        KILL,
         ERROR
     };
 
@@ -85,20 +97,19 @@ class Connection {
     ~Connection();
     void AssRead(); // читает в буфер connection.__c_buf, а пока читаем слушаем или обрабатываем другие соединения, когда заканчиватся вызывется Connection.Hendler();
     void AssWrite();
-    bool Handler(); // подробности на миро
     void CallHttpParser();
     void MakeBuf();
-    void CheckRead();
-    void CheckWrite();
+    int CheckRead();
+    int CheckWrite();
     void Work(); // будем предавать туда данные парсера и там уже делать дело согласно запросу
     long __start_time;
     long __time_to_die;
     int __fd;
     SttConnection __stt;
+    const struct sockaddr_in __clientname;
 
  private:
 
-    const struct sockaddr_in __clientname;
     bool __ending;
     char* __c_buf;
     size_t __body_size;
