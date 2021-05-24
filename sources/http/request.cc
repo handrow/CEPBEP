@@ -24,6 +24,10 @@ static ProtocolVersion StringToVersion(const std::string& version_str) {
 ParseError          Request::ParseStartLine(const std::string& start_line) {
     size_t tok_begin = 0;
     size_t tok_end = 0;
+    // TODO(handrow):      In the interest of robustness, servers SHOULD ignore any empty
+                        // line(s) received where a Request-Line is expected. In other words, if
+                        // the server is reading the protocol stream at the beginning of a
+                        // message and receives a CRLF first, it should ignore the CRLF.
 
     /// Method parsing
     {
@@ -60,6 +64,16 @@ ParseError          Request::ParseStartLine(const std::string& start_line) {
     return ERR_OK;
 }
 
+bool  isSeparator(int c) {
+    if ((c >= 0 && c <= 31) || c == 127 
+        || c == '(' || c == ')' || c == '<' || c == '>' || c == '@'
+        || c == ',' || c == ';' || c == ':' || c == '\\' 
+        || c == '/' || c == '[' || c == ']' || c == '?' || c == '"'
+        || c == '=' || c == '{' || c == '}' || isspace(c))
+        return true;
+    return false;
+}
+
 ParseError          Request::ParseNewHeader(const std::string& head_str) {
     //KEY: VALUE\n
     size_t          tok_begin = 0;
@@ -71,11 +85,18 @@ ParseError          Request::ParseNewHeader(const std::string& head_str) {
     if (tok_end == std::string::npos)
         return ERR_INVALID_HTTP_HEADER;
     head.first = head_str.substr(tok_begin, tok_end - tok_begin);
+    for (size_t i = 0; i < head.first.length(); ++i) {
+        if (isSeparator(head.first[i])) {
+            std::cout << "SEP IN TOKEN" << std::endl; return ERR_INVALID_HTTP_HEADER;
+        }
+    }
 
     /// Space check and skip
     if (head_str[++tok_end] != ' ')
         return ERR_INVALID_HTTP_HEADER;
-    tok_begin = ++tok_end;
+    while (isspace(head_str[tok_end]))
+        tok_begin = ++tok_end;
+    // tok_begin = ++tok_end;
 
     /// Value Parsing
     tok_end = head_str.find_first_of('\n', tok_begin);
@@ -92,6 +113,10 @@ ParseError          Request::ParseFromString(const std::string& req_str) {
     ParseError      error;
     size_t          tok_begin = 0;
     size_t          tok_end = 0;
+
+    /// Ignore CRLF before Request-Line
+    while (req_str[tok_end] == '\n')
+        tok_begin = ++tok_end;
 
     /// StartLine Parsing
     {
