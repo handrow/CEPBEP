@@ -131,10 +131,14 @@ class Request {
 
 
 class Response {
+ public:
+    typedef std::map<int, std::string> CodeToMessageMap;
+
  protected:
     ProtocolVersion __version;
     Headers         __headers;
     std::string     __body;
+    std::string     __code_phrase;
     int             __code;
 
  protected:
@@ -143,6 +147,7 @@ class Response {
  public:
     // explicit
     // Response(const std::string& str_response);
+    Response() {}
     Response(int code, const std::string& body);
 
     ParseError          ParseFromString(const std::string& str_response);
@@ -159,6 +164,9 @@ class Response {
 
     void                SetCode(int code);
     int                 GetCode() const;
+
+    void                SetCodeMessage(const std::string& phrase);
+    std::string         GetCodeMessage(int code);
 };
 
 }  // namespace Http

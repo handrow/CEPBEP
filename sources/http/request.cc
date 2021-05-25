@@ -64,14 +64,24 @@ ParseError          Request::ParseStartLine(const std::string& start_line) {
     return ERR_OK;
 }
 
-bool  isSeparator(int c) {
-    if ((c >= 0 && c <= 31) || c == 127 
+static inline bool    IsSeparator(int c) {
+    return (iscntrl(c) || isspace(c) 
         || c == '(' || c == ')' || c == '<' || c == '>' || c == '@'
         || c == ',' || c == ';' || c == ':' || c == '\\' 
         || c == '/' || c == '[' || c == ']' || c == '?' || c == '"'
-        || c == '=' || c == '{' || c == '}' || isspace(c))
-        return true;
-    return false;
+        || c == '=' || c == '{' || c == '}' || c == 127);
+}
+
+static inline bool    IsPrint(int c) {
+    return (c >= 33 && c <= 126);
+}
+
+size_t  FindLastPrint(const std::string& str) {
+    for (size_t i = str.length() - 1; i >= 0; --i) {
+        if (IsPrint(str[i]))
+            return i;
+    }
+    return 0;
 }
 
 ParseError          Request::ParseNewHeader(const std::string& head_str) {
@@ -86,7 +96,7 @@ ParseError          Request::ParseNewHeader(const std::string& head_str) {
         return ERR_INVALID_HTTP_HEADER;
     head.first = head_str.substr(tok_begin, tok_end - tok_begin);
     for (size_t i = 0; i < head.first.length(); ++i) {
-        if (isSeparator(head.first[i])) {
+        if (IsSeparator(head.first[i])) {
             std::cout << "SEP IN TOKEN" << std::endl; return ERR_INVALID_HTTP_HEADER;
         }
     }
@@ -96,16 +106,16 @@ ParseError          Request::ParseNewHeader(const std::string& head_str) {
         return ERR_INVALID_HTTP_HEADER;
     while (isspace(head_str[tok_end]))
         tok_begin = ++tok_end;
-    // tok_begin = ++tok_end;
 
     /// Value Parsing
     tok_end = head_str.find_first_of('\n', tok_begin);
     if (tok_end == std::string::npos)
         tok_end = head_str.length();
-    head.second = head_str.substr(tok_begin, tok_end - tok_begin);
-
+    size_t last_of_print = FindLastPrint(head_str);
+    //std::cout << "LAST OF PRINT: " << head_str[last_of_print] << std::endl;
+    head.second = head_str.substr(tok_begin, last_of_print - tok_begin + 1);
     __headers.SetHeader(head.first, head.second);
-
+    //std::cout << "head.second.size()"<< head.second.size() << std::endl;
     return ERR_OK;
 }
 
