@@ -33,13 +33,22 @@ Logger* __logger;
 
 class Socket {
  public:
+    enum Tasks {
+        NEW_CONNECTION,
+        CHECK_REC,
+        CHECK_SEND,
+        CHECK_EXCEP,
+        UPLOAD,
+        KILL
+    };
+
     Socket(uint16_t port, const char* host);
     ~Socket();
     void Listen(); // создание соединения, просмотр фд, вызов/создание воркера => воркеры можно сделать потоками/процессами
     void EventSelector(const int& event);
     void NewConnection();
     void DataUpload();
-    void AddToQ(const int& fd, const Connection::SttConnection& stt);
+    void AddToQ(const int& fd, const Tasks& task);
     static const int NumPthreads;
 
  private:
