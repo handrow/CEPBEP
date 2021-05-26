@@ -1,5 +1,5 @@
 #include "http.h"
-#include <iostream>
+#include "utils.h"
 #include <sstream>
 
 namespace Http {
@@ -64,26 +64,6 @@ ParseError          Request::ParseStartLine(const std::string& start_line) {
     return ERR_OK;
 }
 
-static inline bool    IsSeparator(int c) {
-    return (iscntrl(c) || isspace(c) 
-        || c == '(' || c == ')' || c == '<' || c == '>' || c == '@'
-        || c == ',' || c == ';' || c == ':' || c == '\\' 
-        || c == '/' || c == '[' || c == ']' || c == '?' || c == '"'
-        || c == '=' || c == '{' || c == '}' || c == 127);
-}
-
-static inline bool    IsPrint(int c) {
-    return (c >= 33 && c <= 126);
-}
-
-size_t  FindLastPrint(const std::string& str) {
-    for (size_t i = str.length() - 1; i >= 0; --i) {
-        if (IsPrint(str[i]))
-            return i;
-    }
-    return 0;
-}
-
 ParseError          Request::ParseNewHeader(const std::string& head_str) {
     //KEY: VALUE\n
     size_t          tok_begin = 0;
@@ -97,7 +77,7 @@ ParseError          Request::ParseNewHeader(const std::string& head_str) {
     head.first = head_str.substr(tok_begin, tok_end - tok_begin);
     for (size_t i = 0; i < head.first.length(); ++i) {
         if (IsSeparator(head.first[i])) {
-            std::cout << "SEP IN TOKEN" << std::endl; return ERR_INVALID_HTTP_HEADER;
+            return ERR_INVALID_HTTP_HEADER;
         }
     }
 
@@ -112,10 +92,8 @@ ParseError          Request::ParseNewHeader(const std::string& head_str) {
     if (tok_end == std::string::npos)
         tok_end = head_str.length();
     size_t last_of_print = FindLastPrint(head_str);
-    //std::cout << "LAST OF PRINT: " << head_str[last_of_print] << std::endl;
     head.second = head_str.substr(tok_begin, last_of_print - tok_begin + 1);
     __headers.SetHeader(head.first, head.second);
-    //std::cout << "head.second.size()"<< head.second.size() << std::endl;
     return ERR_OK;
 }
 

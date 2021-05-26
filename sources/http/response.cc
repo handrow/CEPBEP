@@ -18,10 +18,8 @@ static ProtocolVersion StringToVersion(const std::string& version_str) {
     return UNKNOWN_VERSION;
 }
 
-// TODO:(handrow) add StringToVersion func to response.cc
-// check content length and data in response
-// make status code and status code text
-// check if error code is always equal to text code
+// TODO:(handrow) check content length and data in response
+// DO NOT COPY STATIC VERSION_TO_STRING FUNC
 ParseError          Response::ParseStartLine(const std::string& start_line) {
     size_t tok_begin = 0;
     size_t tok_end = 0;
@@ -86,7 +84,7 @@ ParseError          Response::ParseFromString(const std::string& str_response) {
     {
         tok_end = str_response.find_first_of('\n', tok_begin);
         if (tok_end == std::string::npos)
-            return ERR_INCOMPLETE_HTTP_REQUEST;
+            return ERR_INCOMPLETE_HTTP_RESPONSE;
         error = ParseStartLine(str_response.substr(tok_begin, tok_end - tok_begin));
         if (error != ERR_OK)
             return error;
@@ -97,7 +95,7 @@ ParseError          Response::ParseFromString(const std::string& str_response) {
     for (;;) {
         tok_end = str_response.find_first_of('\n', tok_begin);
         if (tok_end == std::string::npos)
-            return ERR_INCOMPLETE_HTTP_REQUEST;
+            return ERR_INCOMPLETE_HTTP_RESPONSE;
         if (tok_end == tok_begin)  // empty string
             break;
         error = ParseNewHeader(str_response.substr(tok_begin, tok_end - tok_begin));
