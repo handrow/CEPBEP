@@ -59,9 +59,15 @@ const char* const VERSION_TO_STRING[] = {
    "HTTP/1.1"
 };
 
+typedef std::map<std::string, std::string>  QueryMap;
 
 struct URI {
-   std::string __text;
+    std::string __scheme;
+    std::string __authority;
+    std::string __path;
+    QueryMap    __query;
+    std::string __fragment;
+    std::string __text;
 };
 
 
@@ -71,8 +77,8 @@ class Headers {
    typedef std::pair<std::string, std::string> Pair;
 
    enum DelStatus {
-      HEADER_DEL_FAIL,
-      HEADER_DEL_OK
+       HEADER_DEL_FAIL,
+       HEADER_DEL_OK
    };
 
  protected:

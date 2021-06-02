@@ -22,4 +22,12 @@ size_t  FindLastPrint(const std::string& str) {
     return 0;
 }
 
+bool    IsUnrsvdSym(char sym) {
+    return (isalnum(sym)
+            || sym == '-'
+            || sym == '.'
+            || sym == '~'
+            || sym == '_');
+}
+
 } // namespace Http

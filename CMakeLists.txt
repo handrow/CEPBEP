@@ -24,6 +24,7 @@ add_library(http_parser
 	"sources/http/utils.cc"
 	"sources/http/http.h"
 	"sources/http/utils.h"
+	"sources/http/url.cc"
 )
 
 # Main executable
