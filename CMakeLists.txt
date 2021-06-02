@@ -12,6 +12,11 @@ set(OUR_INCLUDES                    sources/)
 
 include_directories(PUBLIC ${OUR_INCLUDES})
 
+set(OUR_LIBRARIES
+    ft-logger
+    # ft-netlib
+)
+
 # logger target
 add_library(logger
     "sources/logger/logger.cc"
