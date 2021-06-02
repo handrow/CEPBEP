@@ -1,11 +1,29 @@
-#include "logger/logger.h"
+#include "common/types.h"
+#include "common/error.h"
+
+#include <cstdio>
+
+enum ParseErrors {
+    OK,
+    BAD_HEADER,
+    BAD_GUY
+};
+
+const char* ParseErrMessages[] = {
+    "No error",
+    "Bad header",
+    "Bad ass"
+};
+
+struct HttpError: public Error {
+    explicit HttpError(ParseErrors ec) : Error(ec, ParseErrMessages[ec]) {}
+};
+
 int main(int, char**) {
-    ft::Logger SAYONARA(ft::Logger::WARNING);
-    
-    log(&SAYONARA, ft::Logger::DEBUG, "HELLO %s", "sssS");
-    log(&SAYONARA, ft::Logger::INFO, "HELLO %s", "sssS");
-    info(&SAYONARA, "MURAVEY");
-    error(&SAYONARA, "SUDO");
-    warning(&SAYONARA, "MURAVEY %s %p", "iiiiiiii", &SAYONARA);
-    critical(&SAYONARA, "III");
+    errno = 9;
+    SystemError write_err(errno);
+    printf("%d: %s\n", write_err.errcode, write_err.message.c_str());
+
+    HttpError http_err(BAD_HEADER);
+    printf("%d: %s\n", http_err.errcode, http_err.message.c_str());
 }
