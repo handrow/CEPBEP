@@ -18,14 +18,16 @@ add_library(logger
 )
 
 add_library(http_parser
+	"sources/http/http.h"
 	"sources/http/request.cc"
 	"sources/http/response.cc"
 	"sources/http/headers.cc"
-	"sources/http/utils.cc"
-	"sources/http/http.h"
 	"sources/http/utils.h"
-	"sources/http/url.cc"
+	"sources/http/utils.cc"
+	"sources/http/uri.h"
+	"sources/http/uri.cc"
 )
+target_include_directories(http_parser PUBLIC "sources/")
 
 # Main executable
 add_executable(CEPBEP main.cc)

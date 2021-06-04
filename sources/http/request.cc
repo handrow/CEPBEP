@@ -45,7 +45,7 @@ ParseError          Request::ParseStartLine(const std::string& start_line) {
         tok_end = start_line.find_first_of(' ', tok_begin);
         if (tok_end == std::string::npos)
             return ERR_INCOMPLETE_HTTP_REQUEST;
-        __uri.__text = start_line.substr(tok_begin, tok_end - tok_begin);
+        __uri = start_line.substr(tok_begin, tok_end - tok_begin);
         // TODO(handrow): validation of URI
         tok_begin = ++tok_end;  // skip space and init new begin
     }
@@ -139,7 +139,6 @@ ParseError          Request::ParseFromString(const std::string& req_str) {
     return ERR_OK;
 }
 
-
 std::string         Request::ParseToString() const {
     std::string str = METHOD_TO_STRING[GetMethod()] + std::string(" ")
                     + GetUri() + std::string(" ")
@@ -148,7 +147,6 @@ std::string         Request::ParseToString() const {
                     + __body;
     return str;
 }
-
 
 Request::Request(Method method)
 : __version(UNKNOWN_VERSION)
@@ -183,11 +181,11 @@ ProtocolVersion     Request::GetVersion() const {
 }
 
 void                Request::SetUri(const std::string& uri) {
-    __uri.__text = uri;
+    __uri = uri; // TODO refactor
 }
 
 std::string         Request::GetUri() const {
-    return __uri.__text;
+    return __uri; // TODO refactor
 }
 
 void                Request::SetBody(const std::string& body) {
