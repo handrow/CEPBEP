@@ -13,8 +13,9 @@ set(OUR_INCLUDES                    sources/)
 include_directories(PUBLIC ${OUR_INCLUDES})
 
 set(OUR_LIBRARIES
-    ft-logger
-    # ft-netlib
+    logger
+    netlib
+    common
 )
 
 # logger target
