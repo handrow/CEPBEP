@@ -14,7 +14,7 @@ struct Error {
     i32         errcode;
     std::string message;
 
-    explicit Error(i32 ec, const std::string& msg = std::string()) : errcode(ec), message(msg) {}
+    explicit Error(i32 ec = ERR_OK, const std::string& msg = std::string()) : errcode(ec), message(msg) {}
 
     inline bool IsOk() const { return errcode == ERR_OK; }
     inline bool IsError() const { return errcode != ERR_OK; }
@@ -23,7 +23,7 @@ struct Error {
 struct SystemError: public Error {
     enum { ERRNO_MSG_BUFF_SZ = 1024 };
 
-    explicit SystemError(errno_t errno_code) : Error(errno_code) {
+    explicit SystemError(errno_t errno_code = ERR_OK) : Error(errno_code) {
         char errno_msg_buffer[ERRNO_MSG_BUFF_SZ];
         strerror_r(errno_code, errno_msg_buffer, sizeof(errno_msg_buffer));
         this->message = std::string(reinterpret_cast<const char *>(errno_msg_buffer));
