@@ -1,5 +1,5 @@
-#include "http.h"
-#include "utils.h"
+#include "http/http.h"
+#include "http/utils.h"
 #include <sstream>
 
 namespace Http {
@@ -24,10 +24,6 @@ static ProtocolVersion StringToVersion(const std::string& version_str) {
 ParseError          Request::ParseStartLine(const std::string& start_line) {
     size_t tok_begin = 0;
     size_t tok_end = 0;
-    // TODO(handrow):      In the interest of robustness, servers SHOULD ignore any empty
-                        // line(s) received where a Request-Line is expected. In other words, if
-                        // the server is reading the protocol stream at the beginning of a
-                        // message and receives a CRLF first, it should ignore the CRLF.
 
     /// Method parsing
     {
@@ -65,7 +61,6 @@ ParseError          Request::ParseStartLine(const std::string& start_line) {
 }
 
 ParseError          Request::ParseNewHeader(const std::string& head_str) {
-    //KEY: VALUE\n
     size_t          tok_begin = 0;
     size_t          tok_end = 0;
     Headers::Pair   head;
