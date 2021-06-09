@@ -18,12 +18,6 @@ add_library(logger
 )
 
 add_library(http_parser
-	"sources/http/http.h"
-	"sources/http/request.cc"
-	"sources/http/response.cc"
-	"sources/http/headers.cc"
-	"sources/http/utils.h"
-	"sources/http/utils.cc"
 	"sources/http/uri.h"
 	"sources/http/uri.cc"
 )
