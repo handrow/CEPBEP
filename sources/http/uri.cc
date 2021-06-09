@@ -2,10 +2,6 @@
 
 namespace Http {
 
-//   Note: Servers ought to be cautious about depending on URI lengths
-//   above 255 bytes, because some older client or proxy
-//   implementations might not properly support these lengths.
-
 inline static
 bool        IsUnrsvdSym(char sym) {
     return (isalnum(sym)
@@ -92,7 +88,7 @@ std::string         URI::PercentDecode(const std::string& encoded_str) {
 }
 
 std::string         URI::EncodeScheme(Scheme scheme) {
-    return scheme == URI_SCHEME_HTTP ? "http" : ""; // check return if Unknown scheme
+    return scheme == URI_SCHEME_HTTP ? "http" : "";
 }
 
 URI::Scheme         URI::DecodeScheme(const std::string& str, Error* err) {
@@ -107,7 +103,8 @@ std::string         URI::EncodeAuthority(const Authority& auth) {
     if (!(auth.__username.empty())) {
         auth_str += auth.__username;
         if (!(auth.__password.empty()))
-            auth_str += ":" + auth.__password + "@";
+            auth_str += ":" + auth.__password;
+        auth_str += "@";
     }
     auth_str += auth.__hostname;
     if (!(auth.__port.empty()))
@@ -127,11 +124,11 @@ URI::Authority      URI::DecodeAuthority(const std::string& str, Error*) {
         tok_end = 0; // no userinfo
     else {
         usize tok_delim = str.find_first_of(':', tok_begin);
-        if (tok_delim == std::string::npos)
+        if (tok_delim < tok_end)
+            auth.__password = str.substr(tok_delim + 1, tok_end - (tok_delim + 1));
+        else
             tok_delim = tok_end;
         auth.__username = str.substr(tok_begin, tok_delim - tok_begin);
-        ++tok_delim;
-        auth.__password = str.substr(tok_delim, tok_end - tok_delim);
         tok_begin = ++tok_end;
     }
 
