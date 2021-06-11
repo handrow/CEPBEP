@@ -16,7 +16,6 @@ enum UriErrorCode {
 };
 
 struct URI {
-
     typedef std::map<std::string, std::string>  QueryMap;
     typedef std::pair<std::string, std::string> QueryPair;
 
@@ -53,9 +52,7 @@ struct URI {
 
     static std::string  EncodeUri(const URI& uri);
     static URI          DecodeUri(const std::string& uri_str, Error* err);
-
 };
 
 }  // namespace Http
-
-#endif  // HTTP_URL_H_
+#endif  // HTTP_URI_H_

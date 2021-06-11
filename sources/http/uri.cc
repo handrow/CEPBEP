@@ -11,8 +11,6 @@ bool        IsUnrsvdSym(char sym) {
             || sym == '_');
 }
 
-//TODO:(handrow) find out about encoding !#%^&()=+  
-
 inline static
 std::string StrToLower(const std::string& str) {
     std::string low_str;
@@ -77,12 +75,12 @@ std::string         URI::PercentDecode(const std::string& encoded_str) {
             int low_part = HexSymToNum(encoded_str[i + 2]);
             if (high_part < 0 || low_part < 0)
                 return "";
-            char decoded_sym = char(u8(high_part) * 16 + u8(low_part));
+            char decoded_sym = static_cast<char>(u8(high_part) * 16 + u8(low_part));
             i += 2;
             decoded_str += decoded_sym;
-        }
-        else
+        } else {
             decoded_str += encoded_str[i];
+        }
     }
     return decoded_str;
 }
@@ -120,9 +118,9 @@ URI::Authority      URI::DecodeAuthority(const std::string& str, Error*) {
 
     // parse userinfo
     tok_end = str.find_first_of('@', tok_begin);
-    if (tok_end == std::string::npos)
-        tok_end = 0; // no userinfo
-    else {
+    if (tok_end == std::string::npos) {
+        tok_end = 0;  // no userinfo
+    } else {
         usize tok_delim = str.find_first_of(':', tok_begin);
         if (tok_delim < tok_end)
             auth.__password = str.substr(tok_delim + 1, tok_end - (tok_delim + 1));
@@ -138,8 +136,7 @@ URI::Authority      URI::DecodeAuthority(const std::string& str, Error*) {
     if (tok_end == std::string::npos) {
         tok_end = str.length();
         auth.__hostname = StrToLower(str.substr(tok_begin, tok_end - tok_begin));
-    }
-    else {
+    } else {
         auth.__hostname = StrToLower(str.substr(tok_begin, tok_end - tok_begin));
         tok_begin = ++tok_end;
 
@@ -152,9 +149,9 @@ URI::Authority      URI::DecodeAuthority(const std::string& str, Error*) {
 std::string         URI::EncodeQuery(const QueryMap& params) {
     std::string query_str;
     for (QueryMap::const_iterator it = params.begin();;) {
-        query_str += ( PercentEncode(it->first)
-                     + "="
-                     + PercentEncode(it->second) );
+        query_str += (PercentEncode(it->first)
+                  + "="
+                  + PercentEncode(it->second));
         if (++it != params.end())
             query_str += "&";
         else
@@ -216,15 +213,15 @@ URI                 URI::DecodeUri(const std::string& uri_str, Error* err) {
         uri.__scheme = DecodeScheme(uri_str.substr(tok_begin, tok_end - tok_begin), err);
         if (err->IsError())
             return uri;
-        tok_begin = tok_end + 3; // init new begin
+        tok_begin = tok_end + 3;  // init new begin
 
         // init authority end
         tok_end = uri_str.find_first_of("/?#", tok_begin);
         uri.__auth = DecodeAuthority(uri_str.substr(tok_begin, tok_end - tok_begin), err);
         tok_begin = tok_end;
-    }
-    else
+    } else {
         uri.__scheme = URI_SCHEME_URL;
+    }
 
     // init path end
     tok_end = uri_str.find_first_of("?#", tok_begin);
@@ -233,9 +230,9 @@ URI                 URI::DecodeUri(const std::string& uri_str, Error* err) {
     if (uri_str[tok_end] == '?') {
         tok_begin = ++tok_end;
         tok_end = uri_str.find_first_of("#", tok_begin);
-        uri.__query_params = DecodeQuery(uri_str.substr(tok_begin, tok_end - tok_begin), err); // check percent encode
+        uri.__query_params = DecodeQuery(uri_str.substr(tok_begin, tok_end - tok_begin), err);
     }
-    
+
     if (uri_str[tok_end] == '#') {
         tok_begin = ++tok_end;
         tok_end = uri_str.length();
