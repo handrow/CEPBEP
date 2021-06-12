@@ -12,12 +12,6 @@ set(OUR_INCLUDES                    sources/)
 
 include_directories(PUBLIC ${OUR_INCLUDES})
 
-set(OUR_LIBRARIES
-    logger
-    http_parser
-    netlib
-)
-
 # logger target
 add_library(logger
     "sources/logger/logger.cc"
@@ -50,10 +44,12 @@ add_library(netlib
     "sources/netlib/event/loop.cc"
 )
 add_library(config_parser
-	"sourses/config_parser/config_parser.cc"
-	"sourses/config_parser/config_parser.h"	
+    "sources/config/config.cc"
+    "sources/config/utils.h"
+    "sources/config/config.h"
 )
 
+target_include_directories(ft-config PUBLIC ${OUR_INCLUDES})
 
 # Main executable
 add_executable(CEPBEP main.cc)
