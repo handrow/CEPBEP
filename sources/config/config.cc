@@ -25,6 +25,20 @@ void trim(std::string &str, char sing) {
         str.erase(str.length() - 1, 1);
 }
 
+bool                  Category::HasField(const std::string& fname) const {
+    FieldsConstIter element = __fields.find(fname);
+    if (element->first == fname)
+        return true;
+    return false;
+}
+
+bool                  Category::HasCategory(const std::string& cname) const {
+    SubcategoryConstIter element = __subs.find(cname);
+    if (element->first == cname)
+        return true;
+    return false;
+}
+
 void Category::SetField(const std::string& fname, const std::string& fvalue) {
     __fields.insert(Field(fname, fvalue));
 }

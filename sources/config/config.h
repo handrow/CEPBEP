@@ -69,7 +69,7 @@ class Category {
     FieldsRange           GetFieldsIterRange();
     FieldsConstRange      GetFieldsIterRange() const;
 
-    static Category      ParseFromINI(const std::string& filepath, Error *err);
+    static Category       ParseFromINI(const std::string& filepath, Error *err);
     static void           DumpToINI(const Category& config_obj, const std::string& filepath, Error *err);
 };
 
