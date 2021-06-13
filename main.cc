@@ -31,7 +31,8 @@ int main(int, char**) {
     // HttpError http_err(BAD_HEADER);
     // printf("%d: %s\n", http_err.errcode, http_err.message.c_str());
     Http::URI uu;
-    //au = uu.DecodeAuthority("userinfo:passwrd@www.example.com:1030");
+    Error err(0, "no error");
+    // au = uu.DecodeAuthority("userinfo:passwrd@www.example.com:8080", &err);
     // foo://example.com:8042/over/there?name=ferret#nose
     // http://www.example.com/mypage.html?crcat=test&crsource=test&crkw=buy-a-lot
     // std::cout << uu.EncodeAuthority(au) << std::endl;
@@ -52,28 +53,6 @@ int main(int, char**) {
     //     std::cout << uu.EncodeUri(uri) << std::endl;
     //     std::cout << "Error: (Code: " << err.errcode <<  ", Msg: \"" << err.message << "\")\n";
     // }
+    uu = uu.DecodeUri("http://hello.world.com", &err);
 
-    {
-        Error err(0, "No error");
-        std::cout << Http::URI::EncodeUri(Http::URI::DecodeUri("/path/to/resource?a=1&b=2&c=3#anchor", &err)) << std::endl;
-        std::cout << "Error: (Code: " << err.errcode <<  ", Msg: \"" << err.message << "\")\n";
-    }
-
-    {
-        Error err(0, "No error");
-        std::cout << Http::URI::EncodeUri(Http::URI::DecodeUri("/?a=1&b=2&c=3#anchor", &err)) << std::endl;
-        std::cout << "Error: (Code: " << err.errcode <<  ", Msg: \"" << err.message << "\")\n";
-    }
-
-    {
-        Error err(0, "No error");
-        std::cout << Http::URI::EncodeUri(Http::URI::DecodeUri("", &err)) << std::endl;
-        std::cout << "Error: (Code: " << err.errcode <<  ", Msg: \"" << err.message << "\")\n";
-    }
-
-    {
-        Error err(0, "No error");
-        std::cout << Http::URI::EncodeUri(Http::URI::DecodeUri("/", &err)) << std::endl;
-        std::cout << "Error: (Code: " << err.errcode <<  ", Msg: \"" << err.message << "\")\n";
-    }
 }

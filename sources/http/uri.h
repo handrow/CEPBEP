@@ -12,7 +12,8 @@ namespace Http {
 enum UriErrorCode {
     URI_NO_ERR = 30000,
     URI_BAD_SCHEME,
-    URI_BAD_SYNTAX
+    URI_BAD_SYNTAX,
+    URI_BAD_PATH_SYNTAX
 };
 
 struct URI {
@@ -52,6 +53,8 @@ struct URI {
 
     static std::string  EncodeUri(const URI& uri);
     static URI          DecodeUri(const std::string& uri_str, Error* err);
+
+    static std::string  DecodePath(const URI& uri, const std::string& encoded_path, Error* err);
 };
 
 }  // namespace Http

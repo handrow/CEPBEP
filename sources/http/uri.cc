@@ -12,6 +12,14 @@ bool        IsUnrsvdSym(char sym) {
 }
 
 inline static
+bool        IsSubDelim(char sym) {
+    return sym == '!' || sym == '$' || sym == '&' ||
+           sym == '\''|| sym == '(' || sym == ')' ||
+           sym == '*' || sym == '+' || sym ==  ','||
+           sym ==  ';'|| sym == '='; 
+}
+
+inline static
 std::string StrToLower(const std::string& str) {
     std::string low_str;
     for (usize i = 0; i < str.length(); ++i)
@@ -56,6 +64,49 @@ int         HexSymToNum(char c) {
     return it->second;
 }
 
+static inline
+bool        IsPChar(char sym) {
+    return IsUnrsvdSym(sym) || IsSubDelim(sym) || sym == ':' || sym == '@' || sym == '%' || sym == '/';
+}
+
+//      pchar = unreserved / pct-encoded / sub-delims / ":" / "@"
+//      sub-delims = "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "="
+
+std::string  URI::DecodePath(const URI& uri, const std::string& encoded_path, Error* err) {
+    std::string decoded_path;
+    usize tok_begin = 0;
+    usize tok_end = 0;
+
+    tok_end = encoded_path.find('/');
+    if (encoded_path[tok_begin] != encoded_path[tok_end])
+        return *err = Error(URI_BAD_PATH_SYNTAX, "Bad Path palocka"), encoded_path;
+    if (tok_end == std::string::npos)
+        tok_end = encoded_path.length();
+
+    if (uri.__scheme == URI_SCHEME_URL) {
+        for (usize i = 0; i < tok_end; ++i) {
+            if (encoded_path[i] == ':')
+                return *err = Error(URI_BAD_PATH_SYNTAX, "Bad Path COLON"), encoded_path;
+        }
+        if (encoded_path[tok_begin] == '/' && encoded_path[++tok_begin] == '/')
+            return *err = Error(URI_BAD_PATH_SYNTAX, "Bad Path DOUBLE //"), encoded_path;
+    } else {
+        if (encoded_path[tok_begin] != '/' && tok_begin != encoded_path.length())
+            return *err = Error(URI_BAD_PATH_SYNTAX, "Bad Path DOEST BEGIN WITH /"), encoded_path;
+    }
+
+    for (usize i = 0; i < encoded_path.length(); ++i) {
+        if (!IsPChar(encoded_path[i]))
+            return *err = Error(URI_BAD_PATH_SYNTAX, "Bad Path NE CHAR"), encoded_path;
+    }
+
+    return encoded_path;
+
+    // если нет authority путь не может начинаться с  "//"
+    // если есть authotity путь начинается либо с "/" либо он пустой
+    // may be a relative-path reference, in which case the first path segment cannot contain a colon (":") character. (if no scheme)
+}
+
 std::string         URI::PercentEncode(const std::string& decoded_str) {
     std::string encoded_str;
     for (usize sym_idx = 0; sym_idx < decoded_str.length(); ++sym_idx) {
@@ -93,7 +144,7 @@ URI::Scheme         URI::DecodeScheme(const std::string& str, Error* err) {
     std::string input_str = str;
     if (StrToLower(str) == "http")
         return URI_SCHEME_HTTP;
-    return *err = Error(30001, "Unknown URI Scheme"), URI_SCHEME_UNKNOWN;
+    return *err = Error(URI_BAD_SCHEME, "Unknown URI Scheme"), URI_SCHEME_UNKNOWN;
 }
 
 std::string         URI::EncodeAuthority(const Authority& auth) {
@@ -111,7 +162,7 @@ std::string         URI::EncodeAuthority(const Authority& auth) {
 }
 
 // authority = [ userinfo "@" ] host [ ":" port ]
-URI::Authority      URI::DecodeAuthority(const std::string& str, Error*) {
+URI::Authority      URI::DecodeAuthority(const std::string& str, Error* err) {
     Authority   auth;
     usize       tok_begin = 0;
     usize       tok_end = 0;
@@ -133,15 +184,13 @@ URI::Authority      URI::DecodeAuthority(const std::string& str, Error*) {
     // parse host
     tok_end = str.find_first_of(':', tok_begin);
     // no ':' means default port
-    if (tok_end == std::string::npos) {
+    if (tok_end == std::string::npos)
         tok_end = str.length();
-        auth.__hostname = StrToLower(str.substr(tok_begin, tok_end - tok_begin));
+    auth.__hostname = StrToLower(str.substr(tok_begin, tok_end - tok_begin));
+    if (str[tok_end] == ':' && ++tok_end != str.length()) {
+        auth.__port = str.substr(tok_end, str.length() - tok_end); // TODO:(handrow) check that port is digit
     } else {
-        auth.__hostname = StrToLower(str.substr(tok_begin, tok_end - tok_begin));
-        tok_begin = ++tok_end;
-
-        tok_end = str.length();
-        auth.__port = str.substr(tok_begin, tok_end - tok_begin);
+        return *err = Error(URI_BAD_SYNTAX, "Bad URI Syntax"), auth;
     }
     return auth;
 }
@@ -168,8 +217,10 @@ URI::QueryMap       URI::DecodeQuery(const std::string& query, Error *) {
     usize       val_begin = 0;
     usize       val_end = 0;
 
-    while ((key_end = query.find("=", key_begin)) != std::string::npos) {
-        if ((val_begin = query.find_first_not_of('=', key_end)) == std::string::npos)
+    key_end = query.find("=", key_begin);
+    while (key_end != std::string::npos) {
+        val_begin = query.find_first_not_of('=', key_end);
+        if (val_begin == std::string::npos)
             break;
         val_end = query.find("&", val_begin);
 
@@ -225,7 +276,9 @@ URI                 URI::DecodeUri(const std::string& uri_str, Error* err) {
 
     // init path end
     tok_end = uri_str.find_first_of("?#", tok_begin);
-    uri.__path = uri_str.substr(tok_begin, tok_end - tok_begin);
+    uri.__path = DecodePath(uri, uri_str.substr(tok_begin, tok_end - tok_begin), err);
+    if (err->IsError())
+        return uri;
 
     if (uri_str[tok_end] == '?') {
         tok_begin = ++tok_end;
