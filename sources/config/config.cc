@@ -25,14 +25,14 @@ bool                  Category::HasCategory(const std::string& cname) const {
 
 bool                  Category::HasField(const std::string& fname) const {
     FieldsConstIter element = __fields.find(fname);
-    if (element->first == fname)
+    if (element != __fields.end())
         return true;
     return false;
 }
 
 bool                  Category::HasCategory(const std::string& cname) const {
     SubcategoryConstIter element = __subs.find(cname);
-    if (element->first == cname)
+    if (element != __subs.end())
         return true;
     return false;
 }
