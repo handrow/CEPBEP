@@ -1,4 +1,3 @@
-#include <fstream>
 #include <iostream>
 
 #include "config/config.h"
@@ -27,14 +26,14 @@ void trim(std::string &str, char sing) {
 
 bool                  Category::HasField(const std::string& fname) const {
     FieldsConstIter element = __fields.find(fname);
-    if (element->first == fname)
+    if (element != __fields.end())
         return true;
     return false;
 }
 
 bool                  Category::HasCategory(const std::string& cname) const {
     SubcategoryConstIter element = __subs.find(cname);
-    if (element->first == cname)
+    if (element != __subs.end())
         return true;
     return false;
 }
@@ -113,60 +112,58 @@ std::string EditLine(std::string line, std::ifstream& file) {
     return (line);
 }
 
-std::vector<std::string> FileReading(const std::string& filepath, Error *err) {
-    std::ifstream file(filepath);
-    std::vector<std::string> data;
+std::pair<Category, usize> Category::ParseFromCategory(std::ifstream &file, std::string& buffer) {
+    Category subcat;
+    std::string fild_name;
+    std::string fild_value;
+    usize check_end_file = 0;
+    if (getline(file, buffer))
+        check_end_file = 1;
+    buffer = EditLine(buffer, file);
+    while (check_end_file) {
+        if (buffer.size()) {
+            trim(fild_name = buffer.substr(0, buffer.find('=')), ' ');
+            trim(fild_value = buffer.substr(buffer.find('=') + 1, buffer.size() - 1), ' ');
+            subcat.SetField(fild_name, fild_value);
+        }
+        if (!getline(file, buffer))
+            check_end_file = 0;
+        buffer = EditLine(buffer, file);
+        if (buffer[0] == '[')
+            break;
+    }
+    return (std::pair<Category, usize>(subcat, check_end_file));
+}
 
+Category Category::ParseFromINI(const std::string& filepath, Error *err) {
+    Category global;
+    std::string buffer;
+    std::ifstream file(filepath);
     if (!file.is_open())
         *err = Error(CONF_FILE_NOT_FOUND_ERR, "File open error");
     else
         *err = Error(CONF_NO_ERR, "No error");
-    for (std::string buffer; getline(file, buffer); ) {
-        buffer = EditLine(buffer, file);
-        if (buffer.size())
-            data.push_back(buffer);
-    }
-    return (data);
-}
-
-std::pair<Category, usize> Category::ParseFromCategory(const std::vector<std::string>& data, usize start) {
-    Category subcat;
-    std::string fild_name;
-    std::string fild_value;
-    while (data[start][0] != '[' && start < data.size()) {
-        trim(fild_name = data[start].substr(0, data[start].find('=')), ' ');
-        trim(fild_value = data[start].substr(data[start].find('=') + 1, data[start].size() - 1), ' ');
-        subcat.SetField(fild_name, fild_value);
-        if (data[start + 1][0] == '[')
-            break;
-        start++;
-    }
-    return (std::pair<Category, usize>(subcat, start));
-}
-
-Category Category::ParseFromINI(const std::string& filepath, Error *err) {
-    std::vector<std::string> data = FileReading(filepath, err);
-    Category global;
     if (err->IsError())
         return global;
-    std::pair<Category, usize> subcat_and_count = global.ParseFromCategory(data, 0);
+    std::pair<Category, usize> subcat_and_count = global.ParseFromCategory(file, buffer);
+    usize check_end_file = subcat_and_count.second;
     global = subcat_and_count.first;
-    for (usize i = subcat_and_count.second; i < data.size(); i++) {
-        if (data[i][0] == '[' && data[i].find(':') > data.size()) {
-            std::string category_name = data[i].substr(1, data[i].size() - 2);
-            std::pair<Category, usize> subcat_and_count = global.ParseFromCategory(data, i + 1);
+    while (check_end_file) {
+        if (buffer[0] == '[' && buffer.find(':') > buffer.size()) {
+            std::string category_name = buffer.substr(1, buffer.size() - 2);
+            std::pair<Category, usize> subcat_and_count = global.ParseFromCategory(file, buffer);
             global.SetSubcategory(category_name, subcat_and_count.first);
-            i = subcat_and_count.second;
-        } else if (data[i][0] == '[') {
-            std::vector<std::string> path = stringSplit(data[i], ':');
+            check_end_file = subcat_and_count.second;
+        } else if (buffer[0] == '[') {
+            std::vector<std::string> path = stringSplit(buffer, ':');
             Category *subcat = &global.GetSubcategoryRef(path[0]);
             for (size_t count = 1; count < path.size() - 1; count++) {
                 subcat = &subcat->GetSubcategoryRef(path[count]);
             }
             std::string category_name = path[path.size() - 1];
-            subcat_and_count = global.ParseFromCategory(data, i + 1);
+            subcat_and_count = global.ParseFromCategory(file, buffer);
             subcat->SetSubcategory(category_name, subcat_and_count.first);
-            i = subcat_and_count.second;
+            check_end_file = subcat_and_count.second;
         }
     }
     return (global);

@@ -41,7 +41,7 @@ class Category {
  private:
     FieldMap        __fields;
     CategoryMap     __subs;
-    std::pair<Category, usize> ParseFromCategory(const std::vector<std::string>& data, usize start);
+    std::pair<Category, usize> ParseFromCategory(std::ifstream &file, std::string& buffer);
     void WriteToFile(const Category& subcat, std::ofstream& out, std::string &path) const;
 
  public:

@@ -90,5 +90,6 @@ if (ENABLE_UNIT_TESTS)
     ADD_UNIT_GTEST(response_reader_test "tests/response_reader_test.cc")
     ADD_UNIT_GTEST(res_req_to_string_test "tests/res_req_to_string_test.cc")
     ADD_UNIT_GTEST(res_req_chunked_message_test "tests/res_req_chunked_message_test.cc")
+    ADD_UNIT_GTEST(config_tests "tests/config.cc")
 
 endif()
