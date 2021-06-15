@@ -1,58 +1,50 @@
-#include "common/types.h"
-#include "common/error.h"
+#include "http/uri.h"
 #include <iostream>
-#include "sources/http/uri.h"
 
-// #include <cstdio>
+int main(void) {
+    Http::URI uri;
 
-// enum ParseErrors {
-//     OK,
-//     BAD_HEADER,
-//     BAD_GUY
-// };
+    Error err(0, "No error");
+    uri = Http::URI::Parse("HtTp:/Host/mirea/%D0%98%D0%92%D0%91%D0%9E-06-17?A=B&C=D&J=E#sosi_jopy", &err);
 
-// const char* ParseErrMessages[] = {
-//     "No error",
-//     "Bad header",
-//     "Bad ass"
-// };
+    std::cout << "USER:  " << uri.userinfo << "\n"
+              << "HOST:  " << uri.hostname << "\n"
+              << "PATH:  " << uri.path << "\n"
+              << "QUERY: " << uri.query_str << "\n"
+              << "FRAG:  " << uri.fragment << "\n";
 
-// struct HttpError: public Error {
-//     explicit HttpError(ParseErrors ec) : Error(ec, ParseErrMessages[ec]) {}
-// };
+    std::cout << "\n" << uri.ToString() << "\n";
 
-int main(int, char**) {
-    Http::URI::Authority au;
-    Http::URI::QueryMap m;
-    // errno = 9;
-    // SystemError write_err(errno);
-    // printf("%d: %s\n", write_err.errcode, write_err.message.c_str());
+    {
+        Http::Query query = Http::Query::Parse(uri.query_str, &err);
+        std::cout << "\nQueries:\n";
+        for (Http::Query::ParamMap::iterator it = query.param_map.begin();
+            it != query.param_map.end();
+            ++it
+        ) {
+            std::cout << "    " << it->first << "=" << it->second << "\n";
+        }
+    }
 
-    // HttpError http_err(BAD_HEADER);
-    // printf("%d: %s\n", http_err.errcode, http_err.message.c_str());
-    Http::URI uu;
-    Error err(0, "no error");
-    // au = uu.DecodeAuthority("userinfo:passwrd@www.example.com:8080", &err);
-    // foo://example.com:8042/over/there?name=ferret#nose
-    // http://www.example.com/mypage.html?crcat=test&crsource=test&crkw=buy-a-lot
-    // std::cout << uu.EncodeAuthority(au) << std::endl;
-    //m = uu.DecodeQuery("f1=v1&f2=v2&f3=v3");
-    // std::cout << uu.EncodeQuery(m) << std::endl;
-    // uu.DecodeUri("http://www.example.com/mypage.html?crcat=test&crsource=test&crkw=buy-a-lot#nose");
+    {
+        Http::Query query = Http::Query::Parse("", &err);
+        std::cout << "\nQueries:\n";
+        for (Http::Query::ParamMap::iterator it = query.param_map.begin();
+            it != query.param_map.end();
+            ++it
+        ) {
+            std::cout << "    " << it->first << "=" << it->second << "\n";
+        }
+    }
 
-    // {
-    //     Error err(0, "No error");
-    //     std::cout << uu.EncodeUri(uu.DecodeUri("http://www.example.com/mypage.html?crcat=test1&crsource=test_source&crkw=buy-a-lot&crcat=test2#nose", &err)) << std::endl;
-    //     std::cout << "Error: (Code: " << err.errcode <<  ", Msg: \"" << err.message << "\")\n";
-    // }
-
-    // {
-    //     Error err(0, "No error");
-    //     Http::URI uri = uu.DecodeUri("http://www.example.com?req=%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%D0%BC%D0%B8%D1%80%20-%20UTF8&req_eng=Hello_World", &err);
-    //     std::cout << uri.__query_params["req"] << std::endl;
-    //     std::cout << uu.EncodeUri(uri) << std::endl;
-    //     std::cout << "Error: (Code: " << err.errcode <<  ", Msg: \"" << err.message << "\")\n";
-    // }
-    uu = uu.DecodeUri("http://hello.world.com", &err);
-
+    {
+        Http::Query query = Http::Query::Parse("abc=egh&", &err);
+        std::cout << "\nQueries:\n";
+        for (Http::Query::ParamMap::iterator it = query.param_map.begin();
+            it != query.param_map.end();
+            ++it
+        ) {
+            std::cout << "    " << it->first << "=" << it->second << "\n";
+        }
+    }
 }

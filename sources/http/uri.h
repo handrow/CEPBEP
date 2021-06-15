@@ -16,46 +16,58 @@ enum UriErrorCode {
     URI_BAD_PATH_SYNTAX
 };
 
+namespace __pct_encode_inner {
+inline std::string  ByteToHexStr(u8 byte) {
+    static const char* hex_alphabet = "0123456789ABCDEF";
+    return std::string(1, hex_alphabet[byte / 16])
+            + std::string(1, hex_alphabet[byte % 16]);
+}
+}  // namespace __inner
+
+template <typename SafePredicate> // bool ()(char c)
+std::string PercentEncode(const std::string& decoded_str, SafePredicate is_safe_sym) {
+    using namespace __pct_encode_inner;
+
+    std::string encoded_str;
+
+    for (usize sym_idx = 0; sym_idx < decoded_str.length(); ++sym_idx) {
+        if (!is_safe_sym(decoded_str[sym_idx]))
+            encoded_str += ("%" + ByteToHexStr(decoded_str[sym_idx]));
+        else
+            encoded_str += decoded_str[sym_idx];
+    }
+
+    return encoded_str;
+}
+
+std::string PercentDecode(const std::string& str);
+
+bool IsUnrsvdSym(char c);
+bool IsPathSafeSym(char c);
+
 struct URI {
-    typedef std::map<std::string, std::string>  QueryMap;
-    typedef std::pair<std::string, std::string> QueryPair;
+    std::string userinfo;
+    std::string hostname;
+    std::string path;
+    std::string query_str;
+    std::string fragment;
 
-    struct Authority {
-        std::string __username;
-        std::string __password;
-        std::string __hostname;
-        std::string __port;
-    };
+    std::string         ToString() const;
 
-    enum Scheme {
-        URI_SCHEME_UNKNOWN,
-        URI_SCHEME_HTTP,
-        URI_SCHEME_URL,
-    };
+    static URI          Parse(const std::string& uri_str, Error* err);
+};
 
-    Scheme      __scheme;
-    Authority   __auth;
-    std::string __path;
-    QueryMap    __query_params;
-    std::string __fragment;
+struct Query {
+    typedef std::map<std::string, std::string>  ParamMap;
+    typedef ParamMap::value_type                ParamPair;
 
-    static std::string  PercentEncode(const std::string& str);
-    static std::string  PercentDecode(const std::string& str);
+    ParamMap    param_map;
 
-    static std::string  EncodeQuery(const QueryMap& params);
-    static QueryMap     DecodeQuery(const std::string& query, Error* err);
+    std::string         ToString() const;
 
-    static std::string  EncodeScheme(Scheme scheme);
-    static Scheme       DecodeScheme(const std::string& str, Error* err);
-
-    static std::string  EncodeAuthority(const Authority& auth);
-    static Authority    DecodeAuthority(const std::string& str, Error* err);
-
-    static std::string  EncodeUri(const URI& uri);
-    static URI          DecodeUri(const std::string& uri_str, Error* err);
-
-    static std::string  DecodePath(const URI& uri, const std::string& encoded_path, Error* err);
+    static Query        Parse(const std::string& query_str, Error* err);
 };
 
 }  // namespace Http
+
 #endif  // HTTP_URI_H_
