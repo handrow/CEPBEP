@@ -57,6 +57,6 @@ if (ENABLE_UNIT_TESTS)
 
 	# Our unit tests
 	ADD_UNIT_GTEST(example_test "tests/example.cc")
-    ADD_UNIT_GTEST(uri_test "tests/uri.cc")
+    ADD_UNIT_GTEST(uri_test "tests/uri_test.cc")
 
 endif()

@@ -13,7 +13,10 @@ enum UriErrorCode {
     URI_NO_ERR = 30000,
     URI_BAD_SCHEME,
     URI_BAD_SYNTAX,
-    URI_BAD_PATH_SYNTAX
+    URI_BAD_HOST,
+    URI_BAD_PATH_SYNTAX,
+    URI_BAD_QUERY_SYNTAX,
+    URI_BAD_USERINFO
 };
 
 namespace __pct_encode_inner {
