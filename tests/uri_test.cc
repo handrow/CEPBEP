@@ -142,7 +142,7 @@ TEST(Uri_Tests, uri_parse) {
         EXPECT_TRUE(uri.userinfo == "");
         EXPECT_TRUE(uri.hostname == "");
         EXPECT_TRUE(uri.query_str.size() == 0);
-        EXPECT_TRUE(uri.path  == "");
+        EXPECT_TRUE(uri.path  == "/");
         EXPECT_TRUE(uri.fragment == "");
         EXPECT_TRUE(err.IsOk());
     }
@@ -186,6 +186,13 @@ TEST(Uri_Tests, uri_parse) {
     {
         Error err(0, "No error");
         URI uri = URI::Parse("/", &err);
+        EXPECT_TRUE(uri.path == "/");
+        EXPECT_TRUE(err.IsOk());
+    }
+
+    {
+        Error err(0, "No error");
+        URI uri = URI::Parse("http://www.example.com?a=b", &err);
         EXPECT_TRUE(uri.path == "/");
         EXPECT_TRUE(err.IsOk());
     }

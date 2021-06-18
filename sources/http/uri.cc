@@ -395,6 +395,8 @@ void    URI_FSM_AddFrag(UriFsmStateData* d) {
 
 StateIdx URI_FSM_End(UriFsmStateData* d) {
     d->run = false;
+    if (d->uri->path.empty())
+        d->uri->path = "/";
     return STT_END;
 }
 
