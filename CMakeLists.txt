@@ -7,7 +7,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY 	${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_CXX_FLAGS 				"-Wall -Wextra -Werror")
 set(CMAKE_CXX_STANDARD 				98)
 
-set(OUR_LIBRARIES					logger)
+set(OUR_LIBRARIES					logger http_parser)
 set(OUR_INCLUDES					sources/)
 
 
@@ -17,6 +17,11 @@ add_library(logger
 	"sources/logger/logger.h"
 )
 
+add_library(http_parser
+	"sources/http/uri.h"
+	"sources/http/uri.cc"
+)
+target_include_directories(http_parser PUBLIC "sources/")
 
 # Main executable
 add_executable(CEPBEP main.cc)
@@ -52,5 +57,6 @@ if (ENABLE_UNIT_TESTS)
 
 	# Our unit tests
 	ADD_UNIT_GTEST(example_test "tests/example.cc")
+    ADD_UNIT_GTEST(uri_test "tests/uri_test.cc")
 
 endif()

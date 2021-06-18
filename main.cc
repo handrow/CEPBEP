@@ -1,29 +1,50 @@
-#include "common/types.h"
-#include "common/error.h"
+#include "http/uri.h"
+#include <iostream>
 
-#include <cstdio>
+int main(void) {
+    Http::URI uri;
 
-enum ParseErrors {
-    OK,
-    BAD_HEADER,
-    BAD_GUY
-};
+    Error err(0, "No error");
+    uri = Http::URI::Parse("HtTp:/Host/mirea/%D0%98%D0%92%D0%91%D0%9E-06-17?A=B&C=D&J=E#sosi_jopy", &err);
 
-const char* ParseErrMessages[] = {
-    "No error",
-    "Bad header",
-    "Bad ass"
-};
+    std::cout << "USER:  " << uri.userinfo << "\n"
+              << "HOST:  " << uri.hostname << "\n"
+              << "PATH:  " << uri.path << "\n"
+              << "QUERY: " << uri.query_str << "\n"
+              << "FRAG:  " << uri.fragment << "\n";
 
-struct HttpError: public Error {
-    explicit HttpError(ParseErrors ec) : Error(ec, ParseErrMessages[ec]) {}
-};
+    std::cout << "\n" << uri.ToString() << "\n";
 
-int main(int, char**) {
-    errno = 9;
-    SystemError write_err(errno);
-    printf("%d: %s\n", write_err.errcode, write_err.message.c_str());
+    {
+        Http::Query query = Http::Query::Parse(uri.query_str, &err);
+        std::cout << "\nQueries:\n";
+        for (Http::Query::ParamMap::iterator it = query.param_map.begin();
+            it != query.param_map.end();
+            ++it
+        ) {
+            std::cout << "    " << it->first << "=" << it->second << "\n";
+        }
+    }
 
-    HttpError http_err(BAD_HEADER);
-    printf("%d: %s\n", http_err.errcode, http_err.message.c_str());
+    {
+        Http::Query query = Http::Query::Parse("", &err);
+        std::cout << "\nQueries:\n";
+        for (Http::Query::ParamMap::iterator it = query.param_map.begin();
+            it != query.param_map.end();
+            ++it
+        ) {
+            std::cout << "    " << it->first << "=" << it->second << "\n";
+        }
+    }
+
+    {
+        Http::Query query = Http::Query::Parse("abc=egh&", &err);
+        std::cout << "\nQueries:\n";
+        for (Http::Query::ParamMap::iterator it = query.param_map.begin();
+            it != query.param_map.end();
+            ++it
+        ) {
+            std::cout << "    " << it->first << "=" << it->second << "\n";
+        }
+    }
 }
