@@ -1,49 +1,60 @@
 #ifndef NETLIB_POLLER_H_
 #define NETLIB_POLLER_H_
 
+#include <sys/poll.h>
+
+#include <vector>
+
 #include "common/types.h"
 #include "common/error.h"
 
-#include <sys/poll.h>
-#include <vector>
 
-namespace NetLib {
+namespace Netlib {
 
 class Poller {
  public:
-    enum Event : u8 {
-        POLL_NONE   	= 0b000000,
-        POLL_READ	    = POLLIN,
-        POLL_WRITE  	= POLLOUT,
-        POLL_ERROR	    = POLLERR,
-        POLL_CLOSE	    = POLLHUP,
+    static const usize npos = 0x0ull - 1ull;
+
+    typedef u8 EventSet;
+
+    enum Event : EventSet {
+        POLL_NONE       = 0x0,
+        POLL_READ       = POLLIN,
+        POLL_WRITE      = POLLOUT,
+        POLL_ERROR      = POLLERR,
+        POLL_CLOSE      = POLLHUP,
         POLL_NOT_OPEN   = POLLNVAL
     };
 
     struct Result {
         fd_t fd;
-        Event ev;
+        EventSet ev;
     };
+
+ public:
+    Poller() : __timeout_ms(0) {}
 
     Result Poll(Error* err);
 
-    void AddFd(fd_t, u8 event_mask = POLL_NONE);
+    void AddFd(fd_t fd, EventSet event_mask = POLL_NONE);
+    void RmFd(fd_t fd);
 
-    void SetEvMask(fd_t fd, u8 event_mask);
-    void AddEvMask(fd_t fd, u8 event_mask);
-    void RmEvMask(fd_t fd, u8 event_mask);
-    u8 GetEvMask(fd_t fd) const;
+    void SetEvMask(fd_t fd, EventSet event_mask);
+    void AddEvMask(fd_t fd, EventSet event_mask);
+    void RmEvMask(fd_t fd, EventSet event_mask);
+    EventSet GetEvMask(fd_t fd) const;
 
     void SetPollTimeout(u32 msec);
 
  private:
-    int __FindPollFd(fd_t fd) const;
-    int __FindEventFd() const;
+    usize __FindPollFd(fd_t fd) const;
+    usize __FindEventFd() const;
 
+ private:
     std::vector<pollfd> __pfds;
-    int                 __timeout;
+    int                 __timeout_ms;
 };
 
-}  // namespace NetLib
+}  // namespace Netlib
 
 #endif  // NETLIB_POLLER_H_

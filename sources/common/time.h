@@ -12,7 +12,7 @@ usec_to_tv(u64 usec) {
     return tv;
 }
 
-inline long
+inline i64
 tv_to_usec(timeval_t tv) {
     return tv.tv_sec * 1000000 + tv.tv_usec;
 }

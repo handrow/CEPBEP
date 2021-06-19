@@ -1,6 +1,5 @@
 #include "gtest/gtest.h"
-#include "../sources/logger/logger.h"
-#include <vector>
+#include "logger/logger.h"
 
 TEST(example, run) {
     EXPECT_TRUE(true);
