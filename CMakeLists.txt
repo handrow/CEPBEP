@@ -12,6 +12,14 @@ set(OUR_INCLUDES                    sources/)
 
 include_directories(PUBLIC ${OUR_INCLUDES})
 
+set(OUR_LIBRARIES
+    logger
+    http_parser
+    netlib
+)
+
+include_directories(${OUR_INCLUDES})
+
 # logger target
 add_library(logger
     "sources/logger/logger.cc"
@@ -26,6 +34,9 @@ add_library(http_parser
 add_library(netlib
     "sources/netlib/poller.cc"
     "sources/netlib/poller.h"
+
+    "sources/netlib/socket.cc"
+    "sources/netlib/socket.h"
 )
 
 # Main executable
@@ -41,11 +52,10 @@ if (ENABLE_UNIT_TESTS)
     enable_testing()
     include(FetchContent)
     FetchContent_Declare(
-    googletest
-    GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG release-1.8.0
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG release-1.8.0
     )
-
     FetchContent_MakeAvailable(googletest)
     FetchContent_GetProperties(googletest)
 
@@ -63,5 +73,6 @@ if (ENABLE_UNIT_TESTS)
     ADD_UNIT_GTEST(example_test "tests/example.cc")
     ADD_UNIT_GTEST(uri_test "tests/uri_test.cc")
     ADD_UNIT_GTEST(poller_test "tests/poller_test.cc")
+    ADD_UNIT_GTEST(socket_test "tests/sock_test.cc")
 
 endif()
