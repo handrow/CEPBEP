@@ -18,8 +18,6 @@ set(OUR_LIBRARIES
     netlib
 )
 
-include_directories(${OUR_INCLUDES})
-
 # logger target
 add_library(logger
     "sources/logger/logger.cc"
@@ -29,6 +27,10 @@ add_library(logger
 add_library(http_parser
     "sources/http/uri.h"
     "sources/http/uri.cc"
+    "sources/http/http.h"
+    "sources/http/http.cc"
+    "sources/http/reader.h"
+    "sources/http/request_reader.cc"
 )
 
 add_library(netlib
