@@ -1,8 +1,8 @@
 #include "socket.h"
 
-namespace NetLib {
+namespace Netlib {
 
-//IPADDRV4
+// IPADDRV4
 
 IpAddrV4::IpAddrV4(u32 addr) {
     __val.raw = htonl(addr);
@@ -22,7 +22,7 @@ IpAddrV4::operator u32() const {
     return ntohl(__val.raw);
 }
 
-//PORT
+// PORT
 
 Port::Port(u16 addr) {
     __val.raw = htons(addr);
@@ -41,7 +41,7 @@ Port::operator u16() const {
     return ntohs(__val.raw);
 }
 
-//SOCKIONFO
+// SOCKIONFO
 
 SockInfo::SockInfo(IpAddrV4 ip, Port port)
 : addr_BE(ip)
@@ -61,7 +61,7 @@ SockInfo::operator sockaddr_in() const {
     return saddr;
 }
 
-//SOCKET
+// SOCKET
 
 Socket::Socket(const SockInfo& sinfo, fd_t fd) : __info(sinfo), __fd(fd) {}
 
@@ -142,4 +142,4 @@ isize   Socket::Write(const std::string& s, Error* err) {
     return rc;
 }
 
-}  // namespace Socket
+}  // namespace Netlib

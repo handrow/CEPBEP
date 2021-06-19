@@ -13,7 +13,7 @@
 #include "../common/types.h"
 #include "../common/error.h"
 
-namespace NetLib {
+namespace Netlib {
 
 enum NetLibErrorCode {
 
@@ -33,8 +33,8 @@ struct IpAddrV4 {
         u8  bytes[4];
     } __val;
 
-             IpAddrV4(u32 addr);
-             IpAddrV4(const std::string& str);
+             IpAddrV4(u32 addr);                // NOLINT(*)
+             IpAddrV4(const std::string& str);  // NOLINT(*)
     operator std::string() const;
     operator u32() const;
 };
@@ -45,8 +45,8 @@ struct Port {
         u8  bytes[2];
     } __val;
 
-             Port(u16 addr);
-             Port(const std::string& str);
+             Port(u16 addr);                    // NOLINT(*)
+             Port(const std::string& str);      // NOLINT(*)
     operator std::string() const;
     operator u16() const;
 

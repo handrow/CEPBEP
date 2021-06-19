@@ -8,43 +8,42 @@ namespace mut_std {
 template <typename T>
 class vector : public ::std::vector<T> {
  public:
-	typedef typename ::std::vector<T>::value_type 				value_type;
-    typedef typename ::std::vector<T>::allocator_type 			allocator_type;
-    typedef typename ::std::vector<T>::reference 				reference;
-    typedef typename ::std::vector<T>::const_reference 			const_reference;
-    typedef typename ::std::vector<T>::iterator 				iterator;
-    typedef typename ::std::vector<T>::const_iterator 			const_iterator;
-    typedef typename ::std::vector<T>::size_type 				size_type;
-    typedef typename ::std::vector<T>::difference_type 			difference_type;
-    typedef typename ::std::vector<T>::pointer 					pointer;
-    typedef typename ::std::vector<T>::const_pointer 			const_pointer;
-    typedef typename ::std::vector<T>::reverse_iterator 		reverse_iterator;
-    typedef typename ::std::vector<T>::const_reverse_iterator 	const_reverse_iterator;
-
+    typedef typename ::std::vector<T>::value_type               value_type;
+    typedef typename ::std::vector<T>::allocator_type           allocator_type;
+    typedef typename ::std::vector<T>::reference                reference;
+    typedef typename ::std::vector<T>::const_reference          const_reference;
+    typedef typename ::std::vector<T>::iterator                 iterator;
+    typedef typename ::std::vector<T>::const_iterator           const_iterator;
+    typedef typename ::std::vector<T>::size_type                size_type;
+    typedef typename ::std::vector<T>::difference_type          difference_type;
+    typedef typename ::std::vector<T>::pointer                  pointer;
+    typedef typename ::std::vector<T>::const_pointer            const_pointer;
+    typedef typename ::std::vector<T>::reverse_iterator         reverse_iterator;
+    typedef typename ::std::vector<T>::const_reverse_iterator   const_reverse_iterator;
 
  private:
-	inline static
-	void __fast_swap_elements(pointer el1, pointer el2) {
-		const static size_t value_size = sizeof(value_type);
-		uint8_t	tmp_mem[value_size];
+    inline static
+    void __fast_swap_elements(pointer el1, pointer el2) {
+        static const size_t VALUE_SIZE = sizeof(value_type);
+        uint8_t tmp_mem[VALUE_SIZE];  // ignore
 
-		if (el1 != el2) {
-			::memmove(tmp_mem, el1, value_size);
-			::memmove(el1, el2, value_size);
-			::memmove(el2, tmp_mem, value_size);
-		}
-	}
+        if (el1 != el2) {
+            ::memmove(tmp_mem, el1, VALUE_SIZE);
+            ::memmove(el1, el2, VALUE_SIZE);
+            ::memmove(el2, tmp_mem, VALUE_SIZE);
+        }
+    }
 
  public:
-	iterator
-	erase(iterator position) {
-		pointer p = position.base();
-		pointer last = this->end().base() - 1;
-		
-		__fast_swap_elements(p, last);
-		this->pop_back();
-		return position;
-	}
+    iterator
+    erase(iterator position) {
+        pointer p = position.base();
+        pointer last = this->end().base() - 1;
+
+        __fast_swap_elements(p, last);
+        this->pop_back();
+        return position;
+    }
 
 };
 
