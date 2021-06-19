@@ -11,35 +11,37 @@ namespace NetLib {
 
 class Poller {
  public:
-	enum Event : u16 {
-		POLL_NON 	= 0b000000,
-		POLL_READ	= 0b000001,
-		POLL_WRITE	= 0b000100,
-		POLL_ERROR	= 0b001000,
-		POLL_CLOSE	= 0b010000
-	};
+    enum Event : u8 {
+        POLL_NONE   	= 0b000000,
+        POLL_READ	    = POLLIN,
+        POLL_WRITE  	= POLLOUT,
+        POLL_ERROR	    = POLLERR,
+        POLL_CLOSE	    = POLLHUP,
+        POLL_NOT_OPEN   = POLLNVAL
+    };
 
-	struct Result {
-		fd_t fd;
-		Event ev;
-	};
+    struct Result {
+        fd_t fd;
+        Event ev;
+    };
 
-	Result Poll(Error* err);
+    Result Poll(Error* err);
 
-	void AddFd(fd_t, u16 event_mask = POLL_NON);
+    void AddFd(fd_t, u8 event_mask = POLL_NONE);
 
-	void SetEvMask(fd_t fd, u16 event_mask);
-	void AddEvMask(fd_t fd, u16 event_mask);
-	void RMEvMask(fd_t fd, u16 event_mask);
-	u16 GetEvMask(fd_t fd);
+    void SetEvMask(fd_t fd, u8 event_mask);
+    void AddEvMask(fd_t fd, u8 event_mask);
+    void RmEvMask(fd_t fd, u8 event_mask);
+    u8 GetEvMask(fd_t fd) const;
 
-	void SetPollTimeout(u32 msec);
+    void SetPollTimeout(u32 msec);
 
  private:
-	pollfd* FindStruct(fd_t fd = 0);
+    int __FindPollFd(fd_t fd) const;
+    int __FindEventFd() const;
 
-	std::vector<pollfd> __pfds;
-	int					__timeout;
+    std::vector<pollfd> __pfds;
+    int                 __timeout;
 };
 
 }  // namespace NetLib

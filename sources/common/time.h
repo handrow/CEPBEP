@@ -1,8 +1,8 @@
 #ifndef COMMON_TIME_H_
-# define COMMON_TIME_H_
+#define COMMON_TIME_H_
 
-# include "types.h"
-# include <sys/time.h>
+#include "types.h"
+#include <sys/time.h>
 
 inline timeval_t
 usec_to_tv(u64 usec) {
