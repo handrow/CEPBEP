@@ -203,7 +203,7 @@ TEST(Query_Tests, query_to_string) {
 
     {
         Query q;
-        
+
         q.param_map["key1"] = "val1";
         q.param_map["key2"] = "val2";
         q.param_map["key3"] = "val3";

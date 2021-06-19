@@ -1,11 +1,12 @@
 #ifndef HTTP_URI_H_
 #define HTTP_URI_H_
 
+#include <string>
+#include <map>
+
 #include "common/types.h"
 #include "common/error.h"
 
-#include <string>
-#include <map>
 
 namespace Http {
 
@@ -25,9 +26,9 @@ inline std::string  ByteToHexStr(u8 byte) {
     return std::string(1, hex_alphabet[byte / 16])
             + std::string(1, hex_alphabet[byte % 16]);
 }
-}  // namespace __inner
+}  // namespace __pct_encode_inner
 
-template <typename SafePredicate> // bool ()(char c)
+template <typename SafePredicate>  // bool ()(char c)
 std::string PercentEncode(const std::string& decoded_str, SafePredicate is_safe_sym) {
     using namespace __pct_encode_inner;
 

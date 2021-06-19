@@ -1,4 +1,4 @@
-#include "logger.h"
+#include "logger/logger.h"
 
 namespace ft {
 
@@ -47,7 +47,7 @@ std::string Logger::GetCurrentTime() {
     return str_time + USToString(tv.tv_usec);
 }
 
-std::string Logger::FormatMessage(const char* message, Logger::LogLvl lvl){
+std::string Logger::FormatMessage(const char* message, Logger::LogLvl lvl) {
     const size_t LOG_LVL_MAX_LEN = 8;
     const size_t log_level_len = strlen(LVL_TO_STR[lvl]);
     const size_t log_level_padding = LOG_LVL_MAX_LEN - log_level_len;

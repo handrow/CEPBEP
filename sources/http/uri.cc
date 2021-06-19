@@ -148,7 +148,7 @@ Query               Query::Parse(const std::string& query_str, Error*) {
 
         tok_end = query_str.find_first_of("&", tok_begin);
 
-        const std::string key_val_str = query_str.substr(tok_begin, tok_end - tok_begin);       
+        const std::string key_val_str = query_str.substr(tok_begin, tok_end - tok_begin);
         query.param_map.insert(ParseParamPamPam(key_val_str));
     }
     return query;
@@ -189,7 +189,6 @@ struct UriFsmStateData {
     inline usize GetTokLen() const {
         return tok_end - tok_begin;
     }
-
 };
 
 typedef FSM<UriFsmStateData, STATES_NUM> UriFsmParser;
@@ -235,17 +234,17 @@ StateIdx URI_FSM_AuthTrigger(UriFsmStateData* d) {
     return next_state;
 }
 
-bool    IsValidPercentEncoding(const std::string& str, usize& i) {
-    return (str.length() > i && str.length() - i > 3
-            && str[i] == '%'
-            && ishexnumber(str[++i])
-            && ishexnumber(str[++i]));
+bool    IsValidPercentEncoding(const std::string& str, usize* i) {
+    return (str.length() > *i && str.length() - *i > 3
+            && str[*i] == '%'
+            && ishexnumber(str[++(*i)])
+            && ishexnumber(str[++(*i)]));
 }
 
 void    ValidateUserInfo(const std::string& ui_str, Error* err) {
     for (usize i = 0; i < ui_str.length(); ++i) {
         if (!IsUnrsvdSym(ui_str[i]) && !IsSubDelim(ui_str[i])
-            && ui_str[i] != ':' && !IsValidPercentEncoding(ui_str, i)
+            && ui_str[i] != ':' && !IsValidPercentEncoding(ui_str, &i)
         ) {
             *err = Error(URI_BAD_USERINFO, "Bad user info syntax");
             break;
@@ -265,18 +264,18 @@ void     URI_FSM_AddUserInfo(UriFsmStateData* d) {
 void    ValidateHost(const std::string& host_str, Error *err) {
     usize i = 0;
     for (; i < host_str.length() && host_str[i] != ':'; ++i) {
-        if (!IsUnrsvdSym(host_str[i]) && !IsSubDelim(host_str[i]) && !IsValidPercentEncoding(host_str, i)) {
+        if (!IsUnrsvdSym(host_str[i]) && !IsSubDelim(host_str[i]) && !IsValidPercentEncoding(host_str, &i)) {
             *err = Error(URI_BAD_HOST, "Bad host syntax");
             return;
         }
     }
 
-    if (i == 0) { // if it's true, then it meanse that we have an empty hostname
+    if (i == 0) {  // if it's true, then it meanse that we have an empty hostname
         *err = Error(URI_BAD_HOST, "Empty host");
         return;
     }
 
-    if (i < host_str.length()) { // if it's true, then it means that we stopped on the ':'
+    if (i < host_str.length()) {  // if it's true, then it means that we stopped on the ':'
         usize j = i + 1;
         for (; j < host_str.length(); ++j) {
             if (!isdigit(host_str[j])) {
@@ -284,7 +283,7 @@ void    ValidateHost(const std::string& host_str, Error *err) {
                 return;
             }
         }
-        if (j == i + 1) { // if it's true, then it meanse that we have an empty hostname
+        if (j == i + 1) {  // if it's true, then it meanse that we have an empty hostname
             *err = Error(URI_BAD_HOST, "Bad port syntax");
             return;
         }
@@ -329,7 +328,7 @@ void    ValidatePath(const std::string& path_str, Error* err) {
                 ) {
                     if (!IsUnrsvdSym(path_str[seg_end]) && !IsSubDelim(path_str[seg_end])
                         && path_str[seg_end] != ':' && path_str[seg_end] != '@'
-                        && !IsValidPercentEncoding(path_str, seg_end)
+                        && !IsValidPercentEncoding(path_str, &seg_end)
                     ) {
                         *err = Error(URI_BAD_PATH_SYNTAX, "Bad path syntax");
                         return;
@@ -400,7 +399,7 @@ StateIdx URI_FSM_End(UriFsmStateData* d) {
     return STT_END;
 }
 
-} // namespace
+}  // namespace
 
 
 URI          URI::Parse(const std::string& uri_str, Error* err) {
