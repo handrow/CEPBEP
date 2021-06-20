@@ -51,6 +51,8 @@ class RequestReader {
     void        __FlushParsedData();
     std::string __GetParsedData() const;
 
+    static bool __IsMetaState(State);
+
     State       STT_INIT_Handler(bool* run);
     State       STT_METHOD_Handler(bool* run);
     State       STT_METHOD_END_Handler(bool* run);

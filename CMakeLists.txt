@@ -76,5 +76,6 @@ if (ENABLE_UNIT_TESTS)
     ADD_UNIT_GTEST(uri_test "tests/uri_test.cc")
     ADD_UNIT_GTEST(poller_test "tests/poller_test.cc")
     ADD_UNIT_GTEST(socket_test "tests/sock_test.cc")
+    ADD_UNIT_GTEST(request_reader_test "tests/request_reader_test.cc"
 
 endif()

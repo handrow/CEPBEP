@@ -15,12 +15,42 @@ usize IsCRLF(const std::string& s, usize i) {
     else                                    return 0;
 }
 
-usize IsHeaderKeySym(const std::string& s, usize i) {
-    return !IsWhiteSpace(s, i); // TODO(handrow): Check for valid header key syms
+bool IsSeparator(char sym) {
+    return sym == '(' || sym == ')' ||
+           sym == '<' || sym == '>' ||
+           sym == '@' || sym == ',' ||
+           sym == ';' || sym == ':' ||
+           sym == '\\'|| sym == '"' ||
+           sym == '/' || sym == '[' ||
+           sym == ']' || sym == ']' ||
+           sym == '?' || sym == '=' ||
+           sym == '{' || sym == '}' ||
+           sym == 32  || sym == 9;
 }
 
-usize IsHeaderValSym(const std::string&, usize) {
-    return true; // TODO(handrow): Check for valid header value syms
+bool IsValidHdrKey(char sym) {
+
+    return (sym > 31 && sym < 127) || IsSeparator(sym);
+}
+
+bool IsValidHdrValue(char sym) {
+    return IsValidHdrKey(sym);
+}
+
+//  field-name     = token (1*<any CHAR except CTLs or separators>)
+//  field-value    = *( field-content | LWS )
+//  field-content  = <the OCTETs making up the field-value
+//                    and consisting of either *TEXT or combinations
+//                    of token, separators, and quoted-string>
+
+usize IsHeaderKeySym(const std::string& s, usize i) {
+
+    return IsValidHdrKey(s[i]) && !IsWhiteSpace(s, i);
+}
+
+usize IsHeaderValSym(const std::string& s, usize i) {
+
+    return IsValidHdrValue(s[i]);
 }
 
 }  // namespace
@@ -293,11 +323,17 @@ RequestReader::STT_END_Handler(bool* run) {
     return next_state;
 }
 
+// Meta state, it's a state, which doesn't need any input symbols for transition
+bool        RequestReader::__IsMetaState(State stt) {
+    return  stt == STT_END ||
+            stt == STT_META_END ||
+            stt == STT_HDR_V_END;
+}
 
 void        RequestReader::__Parse() {
     bool run = true;
     while (run) {
-        if (__remainder[__i] == '\0') // TODO(handrow): BE SMART!
+        if (__remainder[__i] == '\0' && !__IsMetaState(__state))
             break;
         switch (__state) {
             case STT_INIT:          __state = STT_INIT_Handler(&run);       break;

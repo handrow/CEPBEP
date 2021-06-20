@@ -12,7 +12,7 @@ int main(void) {
     rreader.Read("Host:   Hello man  \r\n");
     std::cout << rreader.HasParsedMessage() << std::endl;
 
-    rreader.Read("\n ");
+    rreader.Read("\n");
     std::cout << rreader.HasParsedMessage() << std::endl;
 
     Http::Request req = rreader.GetParsedMessage();
