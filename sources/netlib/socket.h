@@ -10,8 +10,8 @@
 #include <cerrno>
 #include <fcntl.h>
 
-#include "../common/types.h"
-#include "../common/error.h"
+#include "common/types.h"
+#include "common/error.h"
 
 namespace Netlib {
 
