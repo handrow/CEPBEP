@@ -41,6 +41,9 @@ add_library(netlib
 
     "sources/netlib/socket.cc"
     "sources/netlib/socket.h"
+
+    "sources/netlib/event.h"
+    "sources/netlib/event_zoo.h"
 )
 
 # Main executable
