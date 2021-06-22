@@ -39,13 +39,13 @@ Error  ParseRequestLine(const std::string& buff, Method* mtd, URI* uri, Protocol
 // HDR_PAIR: *(WS) (HDR_KEY) (":") *(WS) (HDR_VALUE) *(WS) (CRLF)
 Error  ParseHeaders(const std::string& buff, Headers* hdrs);
 
-}
+}  // namespace __CommonParsers
 
 class RequestReader {
  private:
     enum   State {
         STT_SKIP_EMPTY_LINES,  // input needed
-        STT_SKIP_CRLF_EMPTY_LINES, // input needed
+        STT_SKIP_CRLF_EMPTY_LINES,  // input needed
 
         STT_BUFF_REQ_LINE,  // input needed
         STT_PARSE_REQ_LINE,
