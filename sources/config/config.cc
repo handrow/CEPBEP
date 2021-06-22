@@ -23,20 +23,6 @@ bool                  Category::HasCategory(const std::string& cname) const {
     return element != __subs.end();
 }
 
-bool                  Category::HasField(const std::string& fname) const {
-    FieldsConstIter element = __fields.find(fname);
-    if (element != __fields.end())
-        return true;
-    return false;
-}
-
-bool                  Category::HasCategory(const std::string& cname) const {
-    SubcategoryConstIter element = __subs.find(cname);
-    if (element != __subs.end())
-        return true;
-    return false;
-}
-
 void Category::SetField(const std::string& fname, const std::string& fvalue) {
     __fields[fname] = fvalue;
 }
