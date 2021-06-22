@@ -18,8 +18,6 @@ set(OUR_LIBRARIES
     netlib
 )
 
-include_directories(${OUR_INCLUDES})
-
 # logger target
 add_library(logger
     "sources/logger/logger.cc"
@@ -29,6 +27,12 @@ add_library(logger
 add_library(http_parser
     "sources/http/uri.h"
     "sources/http/uri.cc"
+    "sources/http/http.h"
+    "sources/http/http.cc"
+    "sources/http/reader.h"
+    "sources/http/reader_request.cc"
+    "sources/http/reader_response.cc"
+    "sources/http/reader_common.cc"
 )
 
 add_library(netlib
@@ -74,5 +78,6 @@ if (ENABLE_UNIT_TESTS)
     ADD_UNIT_GTEST(uri_test "tests/uri_test.cc")
     ADD_UNIT_GTEST(poller_test "tests/poller_test.cc")
     ADD_UNIT_GTEST(socket_test "tests/sock_test.cc")
+    ADD_UNIT_GTEST(request_reader_test "tests/request_reader_test.cc")
 
 endif()
