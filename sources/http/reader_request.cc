@@ -101,7 +101,9 @@ RequestReader::STT_ParseHeaders(bool* run) {
     if (__err.IsError()) {
         next_state = STT_ERROR_OCCURED;
         *run = false;
-    } else if (__req_data.method == METHOD_POST) {
+    } else if (__req_data.method == METHOD_POST &&
+               Headers::GetContentLength(__req_data.headers) > 0
+    ) {
         next_state = STT_READ_BODY_CONTENT_LENGTH;
     } else {
         next_state = STT_HAVE_MESSAGE;
