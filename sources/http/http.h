@@ -6,6 +6,7 @@
 
 #include "http/uri.h"
 #include "common/types.h"
+#include "common/string_utils.h"
 
 namespace Http {
 
@@ -27,8 +28,8 @@ enum Method {
 Method MethodFromString(const std::string& method_str);
 
 struct Headers {
-    typedef std::map<std::string, std::string> HeaderMap;
-    typedef HeaderMap::value_type              HeaderPair;
+    typedef std::map<std::string, std::string, CaseInsensitiveLess> HeaderMap;
+    typedef HeaderMap::value_type                                   HeaderPair;
 
     /// PROPERTIES
     HeaderMap       __map;

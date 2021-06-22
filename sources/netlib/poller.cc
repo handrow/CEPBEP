@@ -3,7 +3,7 @@
 namespace Netlib {
 
 Poller::Result Poller::Poll(Error* err) {
-    Result result = {.ev = POLL_NONE, .fd = -1};
+    Result result = {.fd = -1, .ev = POLL_NONE};
 
     int rc = poll(__pfds.data(), __pfds.size(), __timeout_ms);
 
@@ -36,8 +36,8 @@ usize Poller::__FindEventFd() const {
 
 void Poller::AddFd(fd_t fd, EventSet event_mask) {
     __pfds.push_back((pollfd){
-        .events = event_mask,
         .fd = fd,
+        .events = event_mask,
         .revents = 0});
 }
 

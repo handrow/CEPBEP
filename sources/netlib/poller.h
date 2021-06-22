@@ -13,11 +13,11 @@ namespace Netlib {
 
 class Poller {
  public:
-    static const usize npos = 0x0ull - 1ull;
+    static const usize npos = 0ull - 1ull;
 
     typedef u8 EventSet;
 
-    enum Event : EventSet {
+    enum PollEvent {
         POLL_NONE       = 0x0,
         POLL_READ       = POLLIN,
         POLL_WRITE      = POLLOUT,
