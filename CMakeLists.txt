@@ -49,8 +49,6 @@ add_library(config_parser
     "sources/config/config.h"
 )
 
-target_include_directories(ft-config PUBLIC ${OUR_INCLUDES})
-
 # Main executable
 add_executable(CEPBEP main.cc)
 target_link_libraries(CEPBEP ${OUR_LIBRARIES})

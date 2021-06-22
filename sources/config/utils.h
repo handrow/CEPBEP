@@ -7,9 +7,8 @@
 
 namespace Config {
 
-std::vector<std::string> stringSplit(std::string str, char sign);
-void trim(std::string &str, char sign);
-std::string EditLine(std::string line, std::ifstream& file);
+std::vector<std::string> string_split(const std::string& str, char sign);
+std::string trim(const std::string& str, char delimiter);
 
 };  // namespace Config
 

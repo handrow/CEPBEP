@@ -41,8 +41,7 @@ class Category {
  private:
     FieldMap        __fields;
     CategoryMap     __subs;
-    std::pair<Category, usize> ParseFromCategory(std::ifstream &file, std::string& buffer);
-    void WriteToFile(const Category& subcat, std::ofstream& out, std::string &path) const;
+    void WriteToFile(const Category& subcat, std::ofstream& out, std::string& path) const;
 
  public:
     bool                  HasField(const std::string& fname) const;
@@ -71,6 +70,12 @@ class Category {
 
     static Category       ParseFromINI(const std::string& filepath, Error *err);
     static void           DumpToINI(const Category& config_obj, const std::string& filepath, Error *err);
+
+ private:
+    static usize IsField(const std::string& str);
+    static void AddField(const std::string& str, Category* cat);
+    static Category* Pars(const std::string& str, Category& cat, Category* now);
+    static Category* UseNewCat(const std::string& str, Category& cat);
 };
 
 }  // namespace Config
