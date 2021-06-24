@@ -149,7 +149,7 @@ void            ResponseReader::Process() {
     bool run = true;
 
     while (run) {
-        if (__i >= __buffer.size() && !__IsMetaState(__state))
+        if (__i > __buffer.size() && !__IsMetaState(__state))
             break;
         switch (__state) {
             case STT_SKIP_EMPTY_LINES:          __state = STT_SkipEmptyLines(&run); break;

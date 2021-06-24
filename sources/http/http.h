@@ -17,6 +17,8 @@ enum ProtocolVersion {
 };
 
 ProtocolVersion ProtocolVersionFromString(const std::string& version_str);
+std::string     ProtocolVersionToString(const ProtocolVersion& ver);
+
 
 enum Method {
     METHOD_UNKNOWN,
@@ -25,7 +27,8 @@ enum Method {
     METHOD_DELETE,
 };
 
-Method MethodFromString(const std::string& method_str);
+Method          MethodFromString(const std::string& method_str);
+std::string     MethodToString(const Method& method);
 
 struct Headers {
     typedef std::map<std::string, std::string, CaseInsensitiveLess> HeaderMap;
@@ -53,6 +56,9 @@ struct Response {
     Headers         headers;
     std::string     body;
 };
+
+std::string     RequestToString(const Request& req);
+std::string     ResponseToString(const Response& res);
 
 }  // namespace Http
 
