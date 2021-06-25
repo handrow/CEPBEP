@@ -73,6 +73,11 @@ std::string     RequestToString(const Request& req) {
 }
 
 std::string     ResponseToString(const Response& res) {
+
+    // preparing:
+    //  - Check phrase and make it default for some error code
+    //  - Check Content-length and calculate it if it not exists
+
     std::string str;
     str += ProtocolVersionToString(res.version) + " "
         +  std::to_string(res.code) + " "
@@ -87,6 +92,7 @@ std::string     ResponseToString(const Response& res) {
 
     if (Headers::GetContentLength(res.headers) > 0)
         str += res.body;
+    // res.body.subsrt(0. content_len)
 
     return str;
 }

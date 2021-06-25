@@ -113,16 +113,17 @@ ResponseReader::STT_ParseHeaders(bool* run) {
 
 ResponseReader::State
 ResponseReader::STT_ReadBodyContentLength(bool* run) {
+    const usize content_len = Headers::GetContentLength(__res_data.headers);
     State next_state = STT_READ_BODY_CONTENT_LENGTH;
 
-    if (__i >= Headers::GetContentLength(__res_data.headers)) {
+    if (__buffer.size() >= content_len) {
         next_state = STT_HAVE_MESSAGE;
+        __i = content_len;
         __res_data.body = __GetParsedBuffer();
         __FlushParsedBuffer();
-        *run = false;
-    } else {
-        __i += 1;
     }
+
+    *run = false;
 
     return next_state;
 }
@@ -149,7 +150,7 @@ void            ResponseReader::Process() {
     bool run = true;
 
     while (run) {
-        if (__i > __buffer.size() && !__IsMetaState(__state))
+        if (__i >= __buffer.size() && !__IsMetaState(__state))
             break;
         switch (__state) {
             case STT_SKIP_EMPTY_LINES:          __state = STT_SkipEmptyLines(&run); break;
@@ -170,7 +171,8 @@ bool            ResponseReader::__IsMetaState(State stt) {
     return stt == STT_PARSE_RES_LINE ||
            stt == STT_PARSE_HEADERS  ||
            stt == STT_HAVE_MESSAGE   ||
-           stt == STT_ERROR_OCCURED;
+           stt == STT_ERROR_OCCURED  ||
+           stt == STT_READ_BODY_CONTENT_LENGTH;
 }
 
 void            ResponseReader::__ClearResponse() {

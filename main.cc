@@ -26,13 +26,17 @@ int main() {
     Http::ResponseReader res_rdr;
 
     res_rdr.Read("http/1.1 200 OK   \n");
-    res_rdr.Read("server: pravoslavniy \r");
+    res_rdr.Read("server");
+    res_rdr.Process();
+    res_rdr.Read(": pravoslavniy \r");
     res_rdr.Read("\nOn pokasival");
     res_rdr.Read(": pisun \r\n");
     res_rdr.Read("Content-Length: 6 \r\n");
 
     res_rdr.Read("\n");
-    res_rdr.Read("zochem");
+    res_rdr.Read("zoche");
+    res_rdr.Process();
+    res_rdr.Read("m");
     res_rdr.Process();
 
 
