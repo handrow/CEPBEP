@@ -1,15 +1,14 @@
-#ifndef NETLIB_POLLER_H_
-#define NETLIB_POLLER_H_
+#ifndef NETLIB_IO_POLLER_H_
+#define NETLIB_IO_POLLER_H_
 
 #include <sys/poll.h>
 
-#include <vector>
-
 #include "common/types.h"
-#include "common/error.h"
+#include "common/fast_vector.h"
 
+#include "netlib/io/errors.h"
 
-namespace Netlib {
+namespace IO {
 
 class Poller {
  public:
@@ -51,10 +50,10 @@ class Poller {
     usize __FindEventFd() const;
 
  private:
-    std::vector<pollfd> __pfds;
+    mut_std::vector<pollfd> __pfds;
     int                 __timeout_ms;
 };
 
-}  // namespace Netlib
+}  // namespace IO
 
-#endif  // NETLIB_POLLER_H_
+#endif  // NETLIB_IO_POLLER_H_

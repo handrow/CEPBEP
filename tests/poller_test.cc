@@ -1,14 +1,14 @@
 #include "gtest/gtest.h"
 
 #include "common/tests.h"
-#include "netlib/poller.h"
+#include "netlib/io/poller.h"
 
 namespace {
 
 static const fd_t    stdout_fd = 1;
 
-TEST(Netlib_Poller, Stdout_Sample) {
-    using namespace Netlib;
+TEST(Netlib_IO_Poller, Stdout_Sample) {
+    using namespace IO;
 
     Poller poller;
     poller.AddFd(1, Poller::POLL_WRITE);
