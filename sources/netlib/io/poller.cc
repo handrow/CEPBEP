@@ -1,6 +1,6 @@
-#include "netlib/poller.h"
+#include "netlib/io/poller.h"
 
-namespace Netlib {
+namespace IO {
 
 Poller::Result Poller::Poll(Error* err) {
     Result result = {.fd = -1, .ev = POLL_NONE};
@@ -65,4 +65,4 @@ void Poller::SetPollTimeout(u32 msec) {
     __timeout_ms = msec;
 }
 
-}  // namespace Netlib
+}  // namespace IO

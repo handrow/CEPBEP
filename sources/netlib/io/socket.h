@@ -1,26 +1,17 @@
-#ifndef NETLIB_SOCKET_H_
-#define NETLIB_SOCKET_H_
+#ifndef NETLIB_IO_SOCKET_H_
+#define NETLIB_IO_SOCKET_H_
 
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include <string>
-#include <cerrno>
-#include <fcntl.h>
-
 #include "common/types.h"
-#include "common/error.h"
 
-namespace Netlib {
+#include "netlib/io/errors.h"
+#include "netlib/io/file.h"
 
-enum NetLibErrorCode {
-
-    NET_NO_ERR = 10000,
-    NET_SYSTEM_ERR,
-    NET_BAD_FAMILY_ERR
-};
+namespace IO {
 
 // IpAddrV4(0x7f000001) -> [0x7f, 0x0, 0x0, 0x1]
 // IpAddrV4("127.0.0.1") -> [0x7f, 0x0, 0x0, 0x1]
@@ -61,25 +52,17 @@ struct SockInfo {
     operator struct sockaddr_in() const;
 };
 
-class Socket {
+class Socket : public File {
  protected:
     SockInfo  __info;
-    fd_t      __fd;
 
  public:
     explicit Socket(const SockInfo& sinfo = SockInfo(), fd_t fd = -1);
 
     static Socket CreateListenSocket(const SockInfo& info, Error* err);
     static Socket AcceptNewConnection(Socket* listen_sock, Error* err);
-
-    void        AddFileFlag(int flag, Error* err);
-    void        Close();
-    fd_t        GetFd();
-    std::string Read(usize nbytes, Error* err);
-    isize       Write(const std::string& s, Error* err);
-
 };
 
-}  // namespace Netlib
+}  // namespace IO
 
-#endif  // NETLIB_SOCKET_H_
+#endif  // NETLIB_IO_SOCKET_H_

@@ -36,14 +36,18 @@ add_library(http_parser
 )
 
 add_library(netlib
-    "sources/netlib/poller.cc"
-    "sources/netlib/poller.h"
+    "sources/netlib/io/errors.h"
+    "sources/netlib/io/file.h"
+    "sources/netlib/io/poller.h"
+    "sources/netlib/io/socket.h"
+    "sources/netlib/io/file.cc"
+    "sources/netlib/io/poller.cc"
+    "sources/netlib/io/socket.cc"
 
-    "sources/netlib/socket.cc"
-    "sources/netlib/socket.h"
-
-    "sources/netlib/event.h"
-    "sources/netlib/event_zoo.h"
+    "sources/netlib/event/event.h"
+    "sources/netlib/event/loop.h"
+    "sources/netlib/event/queue.h"
+    "sources/netlib/event/loop.cc"
 )
 
 # Main executable
