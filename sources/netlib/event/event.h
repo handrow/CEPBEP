@@ -1,8 +1,6 @@
 #ifndef NETLIB_EVENT_EVENT_H_
 #define NETLIB_EVENT_EVENT_H_
 
-#include <memory>
-
 #include "common/types.h"
 #include "common/error.h"
 #include "common/time.h"
