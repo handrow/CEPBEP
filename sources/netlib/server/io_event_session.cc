@@ -4,6 +4,8 @@
 namespace Server {
 
 void  EV_IO_SessionAccept::Handle() {
+    printf("EV_IO_SessionAccept\n");
+
     Error err;
     IO::Socket con_sock = IO::Socket::AcceptNewConnection(&__lstn->ios, &err);
     if (err.IsError()) {
@@ -16,15 +18,19 @@ void  EV_IO_SessionAccept::Handle() {
 }
 
 void  EV_IO_SessionClose::Handle() {
+    printf("EV_IO_SessionClose\n");
+
     SessionStream ss_copy = *__session;
-    const fd_t session_fd = GetFd(__session);
+    const fd_t session_fd = GetFd(*__session);
 
     __notifier->StopWatchFor(session_fd);
     ss_copy.ios.Close();
 }
 
 void  EV_IO_SessionRead::Handle() {
-    const fd_t session_fd = GetFd(__session);
+    printf("EV_IO_SessionRead\n");
+
+    const fd_t session_fd = GetFd(*__session);
 
     Error err;
     std::string byte_portion = __session->ios.Read(SOCKET_READ_BUFF_SZ, &err);
@@ -35,6 +41,7 @@ void  EV_IO_SessionRead::Handle() {
     }
 
     __session->req_rdr.Read(byte_portion);
+    __session->req_rdr.Process();
 
     if (__session->req_rdr.HasMessage()) {
         __evloop->PushEvent(new EV_CS_NewHttpReq(__session->req_rdr.GetMessage(), __session, __notifier, __evloop));
@@ -51,7 +58,9 @@ void  EV_IO_SessionRead::Handle() {
 }
 
 void  EV_IO_SessionWrite::Handle() {
-    const fd_t session_fd = GetFd(__session);
+    printf("EV_IO_SessionWrite\n");
+
+    const fd_t session_fd = GetFd(*__session);
 
     Error err;
     if (__session->res_buff.empty()) {
@@ -68,6 +77,7 @@ void  EV_IO_SessionWrite::Handle() {
 }
 
 void  EV_IO_SessionErr::Handle() {
+    printf("EV_IO_SessionErr\n");
 }
 
 }  // namespace Server
