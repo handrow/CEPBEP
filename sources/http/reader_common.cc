@@ -243,6 +243,33 @@ Error  ParseHeaders(const std::string& buff, Headers* hdrs) {
     return Error(0);
 }
 
+namespace {
+
+usize HexNumFromString(const std::string& hex_str) {
+    usize num;
+    std::stringstream ss;
+    ss << std::hex << hex_str;
+    ss >> num;
+
+    return num;
+}
+
+}  // namespace
+
+Error  ParseChunkSize(const std::string& buff, usize* chunk_size) {
+    std::string str = buff;
+
+    if (str.back() == '\n') {
+        str.resize(str.size() - 1);
+    }
+    if (str.back() == '\r') {
+        str.resize(str.size() - 1);
+    }
+
+    *chunk_size = HexNumFromString(str);
+    return Error(Error::ERR_OK);  // no error
+}
+
 }  // namespace __CommonParsers
 
 }  // namespace Http

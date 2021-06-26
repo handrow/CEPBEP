@@ -15,8 +15,24 @@ usize           Headers::GetContentLength(const Headers& hdrs) {
 
 bool     Headers::IsChunkedEncoding(const Headers& hdrs) {
     HeaderMap::const_iterator it = hdrs.__map.find("Transfer-Encoding");
-    return it != hdrs.__map.end() &&
-           it->second == "chunked"; // TODO(handrow): fix "gzip, chunked"
+    if (it != hdrs.__map.end()) {
+        const std::string src = it->second;
+        usize tok_begin = 0;
+        usize tok_end = 0;
+        for (;;) {
+            tok_begin = src.find_first_not_of(", ", tok_end);
+            if (tok_begin == std::string::npos)
+                break ;
+            tok_end = src.find_first_of(", ", tok_begin);
+            if (tok_end == std::string::npos)
+                tok_end = src.size();
+            std::string word = src.substr(tok_begin, tok_end - tok_begin);
+
+            if (word == "chunked")
+                return true;
+        }
+    }
+    return false;
 }
 
 Method      MethodFromString(const std::string& method_str) {

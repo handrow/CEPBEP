@@ -101,6 +101,8 @@ RequestReader::STT_ParseHeaders(bool* run) {
     if (__err.IsError()) {
         next_state = STT_ERROR_OCCURED;
         *run = false;
+    } else if (Headers::IsChunkedEncoding(__req_data.headers)) {
+        next_state = STT_BUFF_CHUNK_SIZE;
     } else if (__req_data.method == METHOD_POST &&
                Headers::GetContentLength(__req_data.headers) > 0
     ) {
@@ -112,6 +114,78 @@ RequestReader::STT_ParseHeaders(bool* run) {
 
     return next_state;
 }
+
+RequestReader::State
+RequestReader::STT_BuffChunkSize(bool*) {
+    State next_state = STT_BUFF_CHUNK_SIZE;
+
+    if (__buffer[__i] == '\n') {
+        next_state = STT_PARSE_CHUNK_SIZE;
+    }
+    __i += 1;
+
+    return next_state;
+}
+
+RequestReader::State
+RequestReader::STT_ParseChunkSize(bool* run) {
+    State next_state = STT_READ_CHUNK_DATA;
+    __err = ParseChunkSize(__GetParsedBuffer(),
+                          &__chunk_size);
+    __FlushParsedBuffer();
+
+    if (__err.IsError()) {
+        next_state = STT_ERROR_OCCURED;
+        *run = false;
+    }
+
+    return next_state;
+}
+
+RequestReader::State
+RequestReader::STT_ReadChunkData(bool* run) {
+    State next_state = STT_READ_CHUNK_DATA;
+
+    if (__buffer.size() >= __chunk_size) {
+        next_state = STT_SKIP_CRLF_CHUNK_DATA;
+        __i = __chunk_size;
+        __req_data.body += __GetParsedBuffer();
+        __FlushParsedBuffer();
+    } else {
+        *run = false;
+    }
+
+    return next_state;
+}
+
+RequestReader::State
+RequestReader::STT_SkipCrlfChunkData(bool* run) {
+    State next_state = STT_SKIP_CRLF_CHUNK_DATA;
+
+    if (__buffer.substr(0, 2) == "\r\n") {
+        next_state = (__chunk_size == 0) ? STT_HAVE_MESSAGE
+                                         : STT_BUFF_CHUNK_SIZE;
+        __i += 2;
+        __FlushParsedBuffer();
+    } else if (__buffer.substr(0, 1) == "\n") {
+        next_state = (__chunk_size == 0) ? STT_HAVE_MESSAGE
+                                         : STT_BUFF_CHUNK_SIZE;
+        __i += 1;
+        __FlushParsedBuffer();
+    } else if (__buffer.size() == 0 || __buffer.substr(0, 1) == "\r") {
+        *run = false;
+    } else {
+        next_state = STT_ERROR_OCCURED;
+        __err = Error(HTTP_READER_NO_CHUNK_CRLF_END, "No linefeed at the end of the chunk-data");
+        *run = false;
+    }
+
+    if (next_state == STT_HAVE_MESSAGE)
+        *run = false;
+
+    return next_state;
+}
+
 
 RequestReader::State
 RequestReader::STT_ReadBodyContentLength(bool* run) {
@@ -163,6 +237,10 @@ void            RequestReader::Process() {
             case STT_BUFF_HEADER_PAIR:          __state = STT_BuffHeaderPair(&run); break;
             case STT_PARSE_HEADERS:             __state = STT_ParseHeaders(&run); break;
             case STT_READ_BODY_CONTENT_LENGTH:  __state = STT_ReadBodyContentLength(&run); break;
+            case STT_BUFF_CHUNK_SIZE:           __state = STT_BuffChunkSize(&run); break;
+            case STT_PARSE_CHUNK_SIZE:          __state = STT_ParseChunkSize(&run); break;
+            case STT_READ_CHUNK_DATA:           __state = STT_ReadChunkData(&run); break;
+            case STT_SKIP_CRLF_CHUNK_DATA:      __state = STT_SkipCrlfChunkData(&run); break;
             case STT_HAVE_MESSAGE:              __state = STT_HaveMessage(&run); break;
             case STT_ERROR_OCCURED:             __state = STT_ErrorOccured(&run); break;
         }
@@ -170,9 +248,10 @@ void            RequestReader::Process() {
 }
 
 bool            RequestReader::__IsMetaState(State stt) {
-    return stt == STT_PARSE_REQ_LINE ||
-           stt == STT_PARSE_HEADERS  ||
-           stt == STT_HAVE_MESSAGE   ||
+    return stt == STT_PARSE_REQ_LINE  ||
+           stt == STT_PARSE_HEADERS   ||
+           stt == STT_HAVE_MESSAGE    ||
+           stt == STT_READ_CHUNK_DATA ||
            stt == STT_ERROR_OCCURED;
 }
 
