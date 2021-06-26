@@ -20,7 +20,7 @@ class File {
     explicit    File(fd_t fd = -1);
     void        AddFileFlag(int flag, Error* err);
     void        Close();
-    fd_t        GetFd();
+    fd_t        GetFd() const;
     std::string Read(usize nbytes, Error* err);
     isize       Write(const std::string& s, Error* err);
 };

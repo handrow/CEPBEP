@@ -1,6 +1,7 @@
 #ifndef COMMON_TYPES_H_
 #define COMMON_TYPES_H_
 
+#include <utility>
 #include <sys/types.h>
 #include <cstdint>
 #include <unistd.h>
@@ -20,5 +21,10 @@ typedef ssize_t     isize;
 
 typedef int             fd_t;
 typedef struct timeval  timeval_t;
+
+template <class Container>
+struct insert_res {
+    typedef std::pair<typename Container::iterator, bool>  t;
+};
 
 #endif  // COMMON_TYPES_H_

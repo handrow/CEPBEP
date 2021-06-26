@@ -12,8 +12,8 @@ namespace Event {
         __q.push(ev);
     }
 
-    void Loop::SetDefaultEvent(IEventPtr ev) {
-        __default_ev = ev;
+    void Loop::AddLoopHook(IEventPtr ev) {
+        __loop_hooks.push_back(ev);
     }
 
     void Loop::Stop() {
@@ -29,8 +29,11 @@ namespace Event {
                 __q.pop();
             }
 
-            if (__default_ev != NULL)
-                __default_ev->Handle();
+            for (LoopHooks::iterator it = __loop_hooks.begin();
+                                     it != __loop_hooks.end();
+                                     ++it) {
+                (*it)->Handle();
+            }
         }
     }
 }

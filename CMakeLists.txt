@@ -48,6 +48,13 @@ add_library(netlib
     "sources/netlib/event/loop.h"
     "sources/netlib/event/queue.h"
     "sources/netlib/event/loop.cc"
+
+    "sources/netlib/server/cs_events.h"
+    "sources/netlib/server/io_events.h"
+    "sources/netlib/server/io_notifier.h"
+    "sources/netlib/server/io.h"
+    "sources/netlib/server/preferences.h"
+    "sources/netlib/server/io_notifier.cc"
 )
 
 # Main executable

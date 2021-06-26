@@ -17,7 +17,7 @@ void    File::Close() {
     close(__fd);
 }
 
-fd_t    File::GetFd() {
+fd_t    File::GetFd() const {
     return __fd;
 }
 

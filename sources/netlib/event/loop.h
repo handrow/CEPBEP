@@ -1,6 +1,8 @@
 #ifndef NETLIB_EVENT_LOOP_H_
 #define NETLIB_EVENT_LOOP_H_
 
+#include <list>
+
 #include "netlib/event/event.h"
 #include "netlib/event/queue.h"
 
@@ -8,19 +10,22 @@ namespace Event {
 
 class Loop {
  private:
-    EventQueue  __q;
-    bool        __run;
-    IEventPtr   __default_ev;
+    typedef std::list<IEventPtr> LoopHooks;
+
+ private:
+    EventQueue             __q;
+    bool                   __run;
+    LoopHooks              __loop_hooks;
 
  public:
     static const u64 INFINITE_TIME = 0x0ull - 0x1ull;
 
-    Loop() : __run(true), __default_ev(NULL) {
+    Loop() : __run(true) {
     }
 
     u64  GetTimeToNextEventMS() const;
     void PushEvent(IEventPtr ev);
-    void SetDefaultEvent(IEventPtr ev);
+    void AddLoopHook(IEventPtr ev);
     void Stop();
     void Run();
 };
