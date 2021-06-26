@@ -55,6 +55,8 @@ add_library(netlib
     "sources/netlib/server/io.h"
     "sources/netlib/server/preferences.h"
     "sources/netlib/server/io_notifier.cc"
+    "sources/netlib/server/io_event_session.cc"
+    "sources/netlib/server/cs_events.cc"
 )
 
 # Main executable

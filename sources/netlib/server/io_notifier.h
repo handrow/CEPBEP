@@ -45,7 +45,7 @@ class IoNotifier {
     Event::Loop*        __evloop;
 
  private:
-    Event::IEventPtr    __CreateEvent(const IO::Poller::Result& pres) const;
+    Event::IEventPtr    __CreateEvent(const IO::Poller::Result& pres);
 
  public:
     void Process();

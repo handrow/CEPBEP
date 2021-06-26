@@ -127,7 +127,7 @@ IO::Poller::EventSet  MostWantedPollEvent(IO::Poller::EventSet poll_evset) {
 }
 }  // namespace
 
-Event::IEventPtr     IoNotifier::__CreateEvent(const IO::Poller::Result& pres) const {
+Event::IEventPtr     IoNotifier::__CreateEvent(const IO::Poller::Result& pres) {
     const IO::Poller::EventSet single_ev = MostWantedPollEvent(pres.ev);
     Event::IEventPtr           event = NULL;
 
@@ -137,7 +137,7 @@ Event::IEventPtr     IoNotifier::__CreateEvent(const IO::Poller::Result& pres) c
             event = new EV_IO_Error;
 
         } else if (__sessions.count(pres.fd)) {
-            event = new EV_IO_SessionErr;
+            event = new EV_IO_SessionErr(&__sessions[pres.fd], this, __evloop);
 
         } else if (__static_files.count(pres.fd)) {
             event = new EV_IO_StaticFileErr;
@@ -150,7 +150,7 @@ Event::IEventPtr     IoNotifier::__CreateEvent(const IO::Poller::Result& pres) c
             event = new EV_IO_Error;
 
         } else if (__sessions.count(pres.fd)) {
-            event = new EV_IO_SessionClose;
+            event = new EV_IO_SessionClose(&__sessions[pres.fd], this, __evloop);
 
         } else if (__static_files.count(pres.fd)) {
             event = new EV_IO_StaticFileErr;
@@ -163,7 +163,7 @@ Event::IEventPtr     IoNotifier::__CreateEvent(const IO::Poller::Result& pres) c
             event = new EV_IO_Error;
 
         } else if (__sessions.count(pres.fd)) {
-            event = new EV_IO_SessionWrite;
+            event = new EV_IO_SessionWrite(&__sessions[pres.fd], this, __evloop);
 
         } else if (__static_files.count(pres.fd)) {
             event = new EV_IO_StaticFileWrite;
@@ -172,10 +172,10 @@ Event::IEventPtr     IoNotifier::__CreateEvent(const IO::Poller::Result& pres) c
 
     case IO::Poller::POLL_READ:
         if        (__listeners.count(pres.fd)) {
-            event = new EV_IO_SessionAccept;
+            event = new EV_IO_SessionAccept(&__listeners[pres.fd], this, __evloop);
 
         } else if (__sessions.count(pres.fd)) {
-            event = new EV_IO_SessionRead;
+            event = new EV_IO_SessionRead(&__sessions[pres.fd], this, __evloop);
 
         } else if (__static_files.count(pres.fd)) {
             event = new EV_IO_StaticFileRead;
