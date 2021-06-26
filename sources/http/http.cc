@@ -3,7 +3,23 @@
 
 namespace Http {
 
-Method          MethodFromString(const std::string& method_str) {
+usize           Headers::GetContentLength(const Headers& hdrs) {
+    usize res = 0;
+    HeaderMap::const_iterator it = hdrs.__map.find("Content-Length");
+
+    if (it != hdrs.__map.end()) {
+        res = Convert<usize>(it->second);
+    }
+    return res;
+}
+
+bool     Headers::IsChunkedEncoding(const Headers& hdrs) {
+    HeaderMap::const_iterator it = hdrs.__map.find("Transfer-Encoding");
+    return it != hdrs.__map.end() &&
+           it->second == "chunked"; // TODO(handrow): fix "gzip, chunked"
+}
+
+Method      MethodFromString(const std::string& method_str) {
     if (StrToUpper(method_str) == "GET")
         return METHOD_GET;
     if (StrToUpper(method_str) == "POST")

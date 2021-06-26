@@ -101,6 +101,8 @@ ResponseReader::STT_ParseHeaders(bool* run) {
     if (__err.IsError()) {
         next_state = STT_ERROR_OCCURED;
         *run = false;
+    } else if (Headers::IsChunkedEncoding(__res_data.headers)) {
+        next_state = STT_BUFF_CHUNK_SIZE;
     } else if (Headers::GetContentLength(__res_data.headers) > 0) {
         next_state = STT_READ_BODY_CONTENT_LENGTH;
     } else {
@@ -110,6 +112,43 @@ ResponseReader::STT_ParseHeaders(bool* run) {
 
     return next_state;
 }
+
+ResponseReader::State
+ResponseReader::STT_BuffChunkSize(bool*) {
+    State next_state = STT_BUFF_CHUNK_SIZE;
+
+    if (__buffer[__i] == '\n') {
+        next_state = STT_PARSE_CHUNK_SIZE;
+    }
+    __i += 1;
+
+    return next_state;
+}
+
+ResponseReader::State
+ResponseReader::STT_ParseChunkSize(bool* run) {
+    State next_state = STT_READ_CHUNK_DATA;
+    __err = ParseChunkSize(__GetParsedBuffer(),
+                          &__chunk_size);
+    __FlushParsedBuffer();
+
+    if (__err.IsError()) {
+        next_state = STT_ERROR_OCCURED;
+        *run = false;
+    }
+
+    return next_state;
+}
+
+ResponseReader::State
+ResponseReader::STT_ReadChunkData(bool* run) {
+    State next_state = STT_BUFF_CHUNK_SIZE;
+
+    // TODO
+
+    return next_state;
+}
+
 
 ResponseReader::State
 ResponseReader::STT_ReadBodyContentLength(bool* run) {
@@ -161,6 +200,9 @@ void            ResponseReader::Process() {
             case STT_BUFF_HEADER_PAIR:          __state = STT_BuffHeaderPair(&run); break;
             case STT_PARSE_HEADERS:             __state = STT_ParseHeaders(&run); break;
             case STT_READ_BODY_CONTENT_LENGTH:  __state = STT_ReadBodyContentLength(&run); break;
+            case STT_BUFF_CHUNK_SIZE:           __state = STT_BuffChunkSize(&run); break;
+            case STT_PARSE_CHUNK_SIZE:          __state = STT_ParseChunkSize(&run); break;
+            case STT_READ_CHUNK_DATA:           __state = STT_ReadChunkData(&run); break;
             case STT_HAVE_MESSAGE:              __state = STT_HaveMessage(&run); break;
             case STT_ERROR_OCCURED:             __state = STT_ErrorOccured(&run); break;
         }
@@ -215,4 +257,5 @@ Error           ResponseReader::GetError() const {
 Response         ResponseReader::GetMessage() const {
     return __res_data;
 }
+
 }  // namespace Http

@@ -39,6 +39,9 @@ Error  ParseRequestLine(const std::string& buff, Method* mtd, URI* uri, Protocol
 // HDR_PAIR: *(WS) (HDR_KEY) (":") *(WS) (HDR_VALUE) *(WS) (CRLF)
 Error  ParseHeaders(const std::string& buff, Headers* hdrs);
 
+// VALID: *(HEX) (CRLF)
+Error  ParseChunkSize(const std::string& buff, usize* chunk_size);
+
 }  // namespace __CommonParsers
 
 class RequestReader {
@@ -112,6 +115,9 @@ class ResponseReader {
         STT_PARSE_HEADERS,
 
         STT_READ_BODY_CONTENT_LENGTH,  // input needed
+        STT_BUFF_CHUNK_SIZE,
+        STT_PARSE_CHUNK_SIZE,
+        STT_READ_CHUNK_DATA,
 
         STT_HAVE_MESSAGE,  // makes self-pause
         STT_ERROR_OCCURED,  // makes self-pause
@@ -121,6 +127,7 @@ class ResponseReader {
     Error           __err;
     State           __state;
     Response        __res_data;
+    usize           __chunk_size;
     std::string     __buffer;
 
  private:
@@ -138,6 +145,9 @@ class ResponseReader {
     State   STT_BuffHeaderPair(bool* run);
     State   STT_ParseHeaders(bool* run);
     State   STT_ReadBodyContentLength(bool* run);
+    State   STT_BuffChunkSize(bool* run);
+    State   STT_ParseChunkSize(bool* run);
+    State   STT_ReadChunkData(bool* run);
     State   STT_HaveMessage(bool* run);
     State   STT_ErrorOccured(bool* run);
 
