@@ -53,7 +53,7 @@ std::string     ProtocolVersionToString(const ProtocolVersion& ver) {
         return "";
 }
 
-std::string     Request::ToString() const{
+std::string     Request::ToString() const {
     std::string str;
     usize content_len = Headers::GetContentLength(headers);
 
