@@ -45,10 +45,10 @@ struct CaseInsensitiveLess {
     }
 };
 
-template < typename Typo >
-Typo Convert(const std::string& str) {
+template < typename TypoA, typename TypoB >
+TypoA Convert(const TypoB& str) {
     std::stringstream ss;
-    Typo val;
+    TypoA val;
 
     ss << str;
     ss >> val;

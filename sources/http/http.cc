@@ -3,16 +3,6 @@
 
 namespace Http {
 
-usize           Headers::GetContentLength(const Headers& hdrs) {
-    usize res = 0;
-    HeaderMap::const_iterator it = hdrs.__map.find("Content-Length");
-
-    if (it != hdrs.__map.end()) {
-        res = Convert<usize>(it->second);
-    }
-    return res;
-}
-
 Method          MethodFromString(const std::string& method_str) {
     if (StrToUpper(method_str) == "GET")
         return METHOD_GET;
@@ -53,24 +43,28 @@ std::string     ProtocolVersionToString(const ProtocolVersion& ver) {
         return "";
 }
 
-std::string     Request::ToString() const {
-    std::string str;
-    usize content_len = Headers::GetContentLength(headers);
+bool           Headers::IsContentLengthed(const Headers& hdrs) {
+    HeaderMap::const_iterator it = hdrs.__map.find("Content-Length");
+    return it != hdrs.__map.end();
+}
 
-    str += MethodToString(method) + " "
-        + uri.ToString() + " "
-        + ProtocolVersionToString(version) + "\n";
+usize           Headers::GetContentLength(const Headers& hdrs) {
+    usize res = 0;
+    HeaderMap::const_iterator it = hdrs.__map.find("Content-Length");
 
-    if (headers.__map.size() > 0) {
-        for (Headers::HeaderMap::const_iterator it = headers.__map.begin();
-                                                it != headers.__map.end(); ++it)
-            str += it->first + ": " + it->second + "\n";
+    if (it != hdrs.__map.end()) {
+        res = Convert<usize>(it->second);
     }
-    str += "\n";
+    return res;
+}
 
-    if (method == METHOD_POST && content_len > 0)
-        str += body.substr(0, content_len);
+std::string     Headers::ToString() const {
+    std::string str;
 
+    for (Headers::HeaderMap::const_iterator it = __map.begin();
+                                            it != __map.end(); ++it)
+            str += it->first + ": " + it->second + "\n";
+    
     return str;
 }
 
@@ -147,23 +141,51 @@ std::string SearchCodeMap(int code) {
 
 }  // namespace
 
+std::string     Request::ToString() const {
+    std::string str;
+
+    str += MethodToString(method) + " "
+        + uri.ToString() + " "
+        + ProtocolVersionToString(version) + "\n";
+
+    usize content_len = 0;
+    if (method == METHOD_POST) {
+        if (Headers::IsContentLengthed(headers)) {
+            content_len = Headers::GetContentLength(headers);
+        } else {
+            content_len = body.size();
+            str += "Content-Length: " + Convert<std::string>(content_len) + "\n";
+        }
+    }
+
+    str += headers.ToString();
+    str += "\n";
+
+    str += body.substr(0, content_len);
+
+    return str;
+}
+
 std::string     Response::ToString() const {
 
-    std::string str;
-    std::string phrase = SearchCodeMap(code);
-    usize       content_len = Headers::GetContentLength(headers);
-                content_len = (content_len == 0) ? body.length()
-                                                 : content_len;
+    std::string  str;
+    std::string  phrase = (code_message.empty()) ? SearchCodeMap(code)
+                                                : code_message;
 
     str += ProtocolVersionToString(version) + " "
         +  std::to_string(code) + " "
         +  phrase + "\n";
 
-    if (headers.__map.size() > 0) {
-        for (Headers::HeaderMap::const_iterator it = headers.__map.begin();
-                                                it != headers.__map.end(); ++it)
-            str += it->first + ": " + it->second + "\n";
+    usize content_len = 0;
+    if (!Headers::IsContentLengthed(headers)) {
+        content_len = body.size();
+        str += "Content-Length: " + Convert<std::string>(content_len) + "\n";
+    } else {
+        content_len = Headers::GetContentLength(headers);
     }
+
+    str += headers.ToString();
+
     str += "\n";
     str += body.substr(0, content_len);
 

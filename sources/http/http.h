@@ -25,6 +25,7 @@ enum Method {
     METHOD_GET,
     METHOD_POST,
     METHOD_DELETE,
+    METHODS_NUM
 };
 
 Method          MethodFromString(const std::string& method_str);
@@ -39,6 +40,9 @@ struct Headers {
 
     /// HELPER FUNCTIONS
     static usize    GetContentLength(const Headers& hdrs);
+    static bool     IsContentLengthed(const Headers& hdrs);
+
+    std::string     ToString() const;
 };
 
 struct Request {
