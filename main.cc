@@ -40,5 +40,5 @@ int main() {
     res_rdr.Process();
 
 
-    std::cout << Http::ResponseToString(res_rdr.GetMessage());
+    std::cout << res_rdr.GetMessage().ToString();
 }

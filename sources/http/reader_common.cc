@@ -195,6 +195,9 @@ Error  ParseHeaderPair(const std::string& pair_str, Headers* hdrs) {
         return Error(HTTP_READER_BAD_HEADER_KEY, "Bad header key");
 
     key = GET_TOKEN(pair_str, 0, delimiter);
+    if (key.empty() || key.back() == ' ')
+        return Error(HTTP_READER_BAD_HEADER_KEY, "Bad header key");
+
     /// Key validation
     for (usize i = 0; i < key.size(); ++i) {
         if (!__CommonHelpers::IsValidHdrKey(key[i]))
@@ -214,7 +217,7 @@ Error  ParseHeaderPair(const std::string& pair_str, Headers* hdrs) {
     }
 
     hdrs->__map[key] = val;
-    /// I am the Programmer 😎
+
     return Error(0);
 }
 

@@ -47,6 +47,8 @@ struct Request {
     Method          method;
     Headers         headers;
     std::string     body;
+
+    std::string     ToString() const;
 };
 
 struct Response {
@@ -55,10 +57,9 @@ struct Response {
     std::string     code_message;
     Headers         headers;
     std::string     body;
-};
 
-std::string     RequestToString(const Request& req);
-std::string     ResponseToString(const Response& res);
+    std::string     ToString() const;
+};
 
 }  // namespace Http
 
