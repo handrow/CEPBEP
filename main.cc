@@ -1,56 +1,44 @@
 #include "http/reader.h"
 #include <iostream>
 
-#include "netlib/io/file.h"
-
-#include "netlib/event/loop.h"
-#include "netlib/event/queue.h"
-#include "netlib/event/event.h"
-
-class StopEvent: public Event::IEvent {
- private:
-    IO::File     r;
-    Event::Loop* loop_ptr;
-
- public:
-    StopEvent(const IO::File& f, Event::Loop* loop) : r(f), loop_ptr(loop) {
-    }
-
-    void Handle() {
-        Error err;
-        std::string result = r.Read(1000, &err);
-
-        std::cout << result << std::endl;
-        loop_ptr->Stop();
-    }
-
-};
-
-class WriteEvent : public Event::IEvent {
- private:
-    IO::File     w;
-    Event::Loop* loop_ptr;
-    int          i;
-
- public:
-    WriteEvent(int count, const IO::File& f, Event::Loop* loop) : w(f), loop_ptr(loop), i(count) {
-    }
-
-    void Handle() {
-        if (i <= 0) {
-            loop_ptr->PushEvent(new StopEvent(w, loop_ptr));
-        } else {
-            Error err;
-            w.Write("Hello\n", &err);
-            loop_ptr->PushEvent(new WriteEvent(i - 1, w, loop_ptr));
-        }
-    }
-};
-
-
 int main() {
-    Event::Loop lp;
+    // Http::RequestReader req_rdr;
 
-    lp.PushEvent(new WriteEvent(10, IO::File(open("lol.txt", O_RDWR | O_CREAT | O_TRUNC)), &lp));
-    lp.Run();
+    // req_rdr.Read("GET / HTTP/1.1       \n");
+    // req_rdr.Read("Ouw");
+    // req_rdr.Process();
+
+    // req_rdr.Read(":   BeeMovie    \r\n");
+    // req_rdr.Read("ouW:   Dog Fighters Movie\n");
+    // req_rdr.Read("oUw:Pig Movie\n");
+    // req_rdr.Read("\n");
+
+    // req_rdr.Read("GET    /path/to/gggg http/1.1  \n");
+
+    // req_rdr.Read("user-Agent");
+    // req_rdr.Process();
+    // req_rdr.Read(": FireFox \r\n");
+    // req_rdr.Read("Host: mail.ru       \r\n");
+    // req_rdr.Read("\n");
+
+    // req_rdr.Process();
+
+    Http::ResponseReader res_rdr;
+
+    res_rdr.Read("http/1.1 200 OK   \n");
+    res_rdr.Read("server");
+    res_rdr.Process();
+    res_rdr.Read(": pravoslavniy \r");
+    res_rdr.Read("\nOn pokasival");
+    res_rdr.Read(": pisun \r\n");
+    res_rdr.Read("Content-Length: 6 \r\n");
+
+    res_rdr.Read("\n");
+    res_rdr.Read("zoche");
+    res_rdr.Process();
+    res_rdr.Read("m");
+    res_rdr.Process();
+
+
+    std::cout << res_rdr.GetMessage().ToString();
 }

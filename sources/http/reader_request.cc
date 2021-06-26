@@ -115,16 +115,17 @@ RequestReader::STT_ParseHeaders(bool* run) {
 
 RequestReader::State
 RequestReader::STT_ReadBodyContentLength(bool* run) {
+    const usize content_len = Headers::GetContentLength(__req_data.headers);
     State next_state = STT_READ_BODY_CONTENT_LENGTH;
 
-    if (__i >= Headers::GetContentLength(__req_data.headers)) {
+    if (__buffer.size() >= content_len) {
         next_state = STT_HAVE_MESSAGE;
+        __i = content_len;
         __req_data.body = __GetParsedBuffer();
         __FlushParsedBuffer();
-        *run = false;
-    } else {
-        __i += 1;
     }
+
+    *run = false;
 
     return next_state;
 }
