@@ -72,10 +72,52 @@
 //     return true;
 // }
 
+bool check_end(const std::string& str, usize count) {
+    return count < str.size();
+}
+
+usize check_block(const std::string& reg, const std::string& str, usize reg_count, usize str_count) {
+    std::string block = reg.substr(reg_count + 1, reg.find("]") - reg_count - 1);
+    for (usize i = 0; i != std::string::npos; i = block.find("|", ++i)) {
+        if (i)
+            ++i;
+        usize end = block.find("|", i);
+        if (end == std::string::npos)
+            end = block.size();
+        while (i < block.size() && str_count < str.size()) {
+            if (block[i] == str[str_count]) {
+                ++i;
+                ++str_count;
+            } else
+                break;
+            if (i == end)
+                return str_count;
+        }
+    }
+    return std::string::npos;
+}
+
+bool str_regul(const std::string& reg, const std::string& str, usize reg_count, usize str_count) {
+    if (check_end(str, str_count) && (check_end(reg, reg_count) && reg[reg_count] == '*'))
+        return str_regul(reg, str, reg_count, str_count + 1) || str_regul(reg, str, reg_count + 1, str_count);
+    else if (check_end(str, str_count) && check_end(reg, reg_count) && str[str_count] == reg[reg_count])
+        return str_regul(reg, str, reg_count + 1, str_count + 1);
+    else if (reg[reg_count] == '[') {
+        str_count = check_block(reg, str, reg_count, str_count);
+        if (str_count != std::string::npos)
+            return str_regul(reg, str, reg.find("]") + 1, str_count);
+        return false;
+    }
+    else if (!check_end(str, str_count) && !check_end(reg, reg_count))
+        return true;
+    else if (!check_end(str, str_count) && reg[reg_count] == '*')
+        return str_regul(reg, str, reg_count + 1, str_count);
+    return false;
+}
+
 int main(int, char**) {
     Error err(0, "No error");
     Config::Category conf = Config::Category::ParseFromINI("../sources/config/config_examples/default.ini", &err);
     
     Config::Category::DumpToINI(conf, "../sources/config/config_examples/New.ini", &err);
-
 }  
