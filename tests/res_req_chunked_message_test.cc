@@ -11,12 +11,12 @@ TEST(Chunked_Request_Test, req_common_test) {
         hdrs.__map["Transfer-Encoding"] = "deflate, chunked, gzip";
 
         Request req = {
-            .method = METHOD_POST,
+            .version = HTTP_1_1,
             .uri = {
                 .hostname = "www.example.com",
                 .path = "/path",
             },
-            .version = HTTP_1_1,
+            .method = METHOD_POST,
             .headers = hdrs,
             .body = "Helloworld"
         };
@@ -35,12 +35,12 @@ TEST(Chunked_Request_Test, req_common_test) {
         hdrs.__map["Transfer-Encoding"] = "gzip, deflate, chunked";
 
         Request req = {
-            .method = METHOD_POST,
+            .version = HTTP_1_1,
             .uri = {
                 .hostname = "www.example.com",
                 .path = "/path",
             },
-            .version = HTTP_1_1,
+            .method = METHOD_POST,
             .headers = hdrs,
             .body = "The Transfer-Encoding"
         };

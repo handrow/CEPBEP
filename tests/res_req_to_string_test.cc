@@ -10,12 +10,12 @@ TEST(Request_to_string_test, req_multiple_headers_test) {
         hdrs.__map["Bravo"] = "Sonya";
 
         Request req = {
-            .method = METHOD_GET,
+            .version = HTTP_1_1,
             .uri = {
                 .hostname = "www.example.com",
                 .path = "/wow",
             },
-            .version = HTTP_1_1,
+            .method = METHOD_GET,
             .headers = hdrs,
             .body = "ABSADBSADB"
         };
@@ -33,11 +33,11 @@ TEST(Request_to_string_test, req_multiple_headers_test) {
         hdrs.__map["user"] = "did";
 
         Request req = {
-            .method = METHOD_POST,
+            .version = HTTP_1_0,
             .uri = {
                 .path = "/path",
             },
-            .version = HTTP_1_0,
+            .method = METHOD_POST,
             .headers = hdrs,
             .body = "hellodog"
         };

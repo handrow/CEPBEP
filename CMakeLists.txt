@@ -8,7 +8,7 @@ set(CMAKE_CXX_FLAGS                 "-Wall -Wextra -Werror")
 set(CMAKE_CXX_STANDARD              98)
 set(TEST_DIR                        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
-set(OUR_LIBRARIES                   logger http_parser netlib config_parser)
+set(OUR_LIBRARIES                   logger http_parser netlib config_parser ft)
 set(OUR_INCLUDES                    sources/)
 
 
@@ -46,10 +46,23 @@ add_library(netlib
     "sources/netlib/event/queue.h"
     "sources/netlib/event/loop.cc"
 )
+
 add_library(config_parser
     "sources/config/config.cc"
-    "sources/config/utils.h"
     "sources/config/config.h"
+)
+
+add_library(ft
+    "sources/common/error.h"
+    "sources/common/fast_vector.h"
+    "sources/common/fsm.h"
+    "sources/common/string_utils.h"
+    "sources/common/tests.h"
+    "sources/common/time.h"
+    "sources/common/types.h"
+
+    "sources/common/match.cc"
+    "sources/common/tokenizer.cc"
 )
 
 # Main executable
@@ -91,6 +104,6 @@ if (ENABLE_UNIT_TESTS)
     ADD_UNIT_GTEST(response_reader_test "tests/response_reader_test.cc")
     ADD_UNIT_GTEST(res_req_to_string_test "tests/res_req_to_string_test.cc")
     ADD_UNIT_GTEST(res_req_chunked_message_test "tests/res_req_chunked_message_test.cc")
-    ADD_UNIT_GTEST(config_tests "tests/config.cc")
+    ADD_UNIT_GTEST(config_ini_test "tests/config_ini_test.cc")
 
 endif()

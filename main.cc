@@ -1,5 +1,6 @@
 #include "common/types.h"
 #include "common/error.h"
+#include "common/string_utils.h"
 #include "config/config.h"
 
 #include <cstdio>
@@ -7,14 +8,16 @@
 #include <string>
 
 
+
 int main(int, char**) {
-    Error err(0, "No error");
-    Config::Category conf = Config::Category::ParseFromINI("../config_examples/default.ini", &err);
-
-    conf.GetSubcategoryRef("server1")
-        .GetSubcategoryRef("location")
-        .SetField("Google", "Boogle");
-    
-    Config::Category::DumpToINI(conf, "/dev/stdout", &err);
-
+    printf("%d\n", Match("a**********b", "ab"));
+    printf("%d\n", Match("a**********b", "a1234124b"));
+    printf("%d\n", Match("a*b", "a1234124b"));
+    printf("%d\n", Match("a*b", "*ab"));
+    printf("%d\n", Match("a*b", "a*b"));
+    printf("%d\n", Match("[aaaaa|bng]", "bng"));
+    printf("%d\n", Match("[aaaaa|bng]aa", "bngaa"));
+    printf("%d\n", Match("[aaaaa|b*g]aa", "b*gaa"));
+    printf("%d\n", Match("[aa|b*g]aa", "aaaa"));
+    printf("%d\n", Match("[aa|b*g]aa", "aaaaa"));
 }  
