@@ -1,17 +1,20 @@
-#include "http/reader.h"
+#include "common/types.h"
+#include "common/error.h"
+#include "config/config.h"
+
+#include <cstdio>
 #include <iostream>
+#include <string>
 
 
-int main() {
-    Http::RequestReader res;
+int main(int, char**) {
+    Error err(0, "No error");
+    Config::Category conf = Config::Category::ParseFromINI("../config_examples/default.ini", &err);
 
-    res.Read("POST /  HTTP/1.1   \nUser: agent\nTransfer-Encoding: abc, chunked, gzip\n\n");
-    res.Process();
-    res.Read("23\nThis is the data in the first chunk\n");
-    res.Process();
-    res.Read("1A\r\nand this is the second one\n");
-    res.Process();
-    res.Read("0\r\n\r\n");
-    res.Process();
+    conf.GetSubcategoryRef("server1")
+        .GetSubcategoryRef("location")
+        .SetField("Google", "Boogle");
+    
+    Config::Category::DumpToINI(conf, "/dev/stdout", &err);
 
-}
+}  

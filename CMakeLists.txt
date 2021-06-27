@@ -6,17 +6,14 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY  ${CMAKE_SOURCE_DIR}/bin)
 
 set(CMAKE_CXX_FLAGS                 "-Wall -Wextra -Werror")
 set(CMAKE_CXX_STANDARD              98)
+set(TEST_DIR                        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
-set(OUR_LIBRARIES                   logger http_parser netlib)
+set(OUR_LIBRARIES                   logger http_parser netlib config_parser)
 set(OUR_INCLUDES                    sources/)
 
-include_directories(PUBLIC ${OUR_INCLUDES})
 
-set(OUR_LIBRARIES
-    logger
-    http_parser
-    netlib
-)
+
+include_directories(PUBLIC ${OUR_INCLUDES})
 
 # logger target
 add_library(logger
@@ -48,6 +45,11 @@ add_library(netlib
     "sources/netlib/event/loop.h"
     "sources/netlib/event/queue.h"
     "sources/netlib/event/loop.cc"
+)
+add_library(config_parser
+    "sources/config/config.cc"
+    "sources/config/utils.h"
+    "sources/config/config.h"
 )
 
 # Main executable
@@ -89,5 +91,6 @@ if (ENABLE_UNIT_TESTS)
     ADD_UNIT_GTEST(response_reader_test "tests/response_reader_test.cc")
     ADD_UNIT_GTEST(res_req_to_string_test "tests/res_req_to_string_test.cc")
     ADD_UNIT_GTEST(res_req_chunked_message_test "tests/res_req_chunked_message_test.cc")
+    ADD_UNIT_GTEST(config_tests "tests/config.cc")
 
 endif()
