@@ -72,10 +72,10 @@ class Category {
     static void           DumpToINI(const Category& config_obj, const std::string& filepath, Error *err);
 
  private:
-    static usize IsField(const std::string& str);
+    static bool IsField(const std::string& str);
     static void AddField(const std::string& str, Category* cat);
-    static Category* Pars(const std::string& str, Category& cat, Category* now);
-    static Category* UseNewCat(const std::string& str, Category& cat);
+    static Category* Pars(const std::string& str, Category* root_category, Category* current_category_level);
+    static Category* SwitchCurrentCategory(const std::string& str, Category* root_category);
 };
 
 }  // namespace Config

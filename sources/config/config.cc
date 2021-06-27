@@ -24,7 +24,7 @@ bool                  Category::HasCategory(const std::string& cname) const {
 }
 
 void Category::SetField(const std::string& fname, const std::string& fvalue) {
-    __fields.insert(Field(fname, fvalue));
+    __fields[fname] = fvalue;
 }
 
 void Category::RemoveField(const std::string& fname) {
@@ -44,7 +44,7 @@ std::string         Category::GetFieldValue(const std::string& fname) const {
 }
 
 void Category::SetSubcategory(const std::string& cname, const Category& subcat) {
-    __subs.insert(std::make_pair(cname, subcat));
+    __subs[cname] = subcat;
 }
 
 void Category::RemoveSubcategory(const std::string& fname) {
@@ -82,7 +82,7 @@ Category::FieldsConstRange    Category::GetFieldsIterRange() const {
     return FieldsConstRange(__fields.begin(), __fields.end());
 }
 
-usize Category::IsField(const std::string& str) {
+bool Category::IsField(const std::string& str) {
     if (str[0] != '[')
         return 1;
     if (str[str.size() - 1] != ']')
@@ -91,35 +91,34 @@ usize Category::IsField(const std::string& str) {
 }
 
 void Category::AddField(const std::string& str, Category* cat) {
-    usize i = str.find("=");
-    cat->SetField(trim(str.substr(0, i - 1), ' '),
-                    trim(str.substr(i + 1), ' '));
+    const usize delim_pos = str.find("=");
+    cat->SetField(trim(str.substr(0, delim_pos), ' '),
+                    trim(str.substr(delim_pos + 1), ' '));
 }
 
-Category* Category::Pars(const std::string& str, Category& cat, Category* now) {
-    if (str != "") {
+Category* Category::Pars(const std::string& str, Category* root_category, Category* current_category_level) {
+    if (str.size() != 0) {
         if (IsField(str)) {
-            AddField(str, now);
+            AddField(str, current_category_level);
         } else {
-            now = UseNewCat(str.substr(1, str.size() - 2), cat);
+            return SwitchCurrentCategory(str, root_category);
         }
+    } else {
+        current_category_level = root_category;
     }
-    return now;
+    return current_category_level;
 }
 
-Category* Category::UseNewCat(const std::string& str, Category& cat) {
-    Category* sub_cat = &cat;
-    std::string rmdr = str;
+Category* Category::SwitchCurrentCategory(const std::string& str, Category* root_category) {
+    Category* sub_cat = root_category;
+    std::string rmdr = str.substr(1, str.size() - 2); // deleting '[' and ']' from the beginning and end of the line("[server]" -> "server")
 
-    for (usize i = rmdr.find(":"); i != std::string::npos; i = rmdr.find(":")) {
+    for (usize i = rmdr.find(':'); i != std::string::npos; i = rmdr.find(':')) {
         std::string sub = rmdr.substr(0, i);
-
-        SubcategoryIter it = sub_cat->__subs.find(sub);
-        if (it != sub_cat->__subs.end()) {
-            sub_cat = &(it->second);
-        } else {
-            sub_cat = &(sub_cat->__subs.insert(std::make_pair(sub, Category())).first->second);
-        }
+        std::pair<std::string, Category> pair(sub, Category());
+        sub_cat = &(sub_cat->__subs.insert(pair)
+                                   .first /* get iterator */
+                                   ->second /* get category ref */);
         rmdr = rmdr.substr(sub.size() + 1);
     }
     sub_cat = &(sub_cat->__subs.insert(std::make_pair(rmdr, Category())).first->second);
@@ -128,23 +127,21 @@ Category* Category::UseNewCat(const std::string& str, Category& cat) {
 
 Category       Category::ParseFromINI(const std::string& filepath, Error *err) {
     std::ifstream file(filepath);
-    Category cat;
-    Category* now = &cat;
-    if (!file.is_open())
+    Category root_category;
+    Category* current_category_level = &root_category;
+    if (!file.is_open()) {
         *err = Error(CONF_FILE_NOT_FOUND_ERR, "File open error");
-    else
-        *err = Error(CONF_NO_ERR, "No error");
-    if (err->IsError())
-        return cat;
+        return root_category;
+    }
     while (true) {
         std::string str;
         if (!getline(file, str))
-            return cat;
-        now = Pars(str.substr(0, str.find(';')), cat, now);
+            return root_category;
+        current_category_level = Pars(str.substr(0, str.find(';')/*remove comment*/), &root_category, current_category_level);
     }
 }
 
-void Category::WriteToFile(const Category& subcat, std::ofstream& out, std::string &path) const {
+void Category::WriteToFile(const Category& subcat, std::ofstream& out, std::string& path) const {
     FieldsConstRange fields_range = subcat.GetFieldsIterRange();
     out << std::endl;
     if (path.size() > 0) {
@@ -154,17 +151,17 @@ void Category::WriteToFile(const Category& subcat, std::ofstream& out, std::stri
         out << start->first << " = " << start->second << std::endl;
     }
     SubcategoryConstRange subs_range = subcat.GetSubcatoryIterRange();
-    for (SubcategoryConstIter start = subs_range.first; start != subs_range.second; start++) {
+    SubcategoryConstIter start = subs_range.first;
+    for (; start != subs_range.second; start++) {
         if (path.size() > 0)
             path = path + ':';
-        for (usize i = 0; i < start->first.size(); i++)
-            path = path + start->first[i];
+        path = path + start->first;
         subcat.WriteToFile(start->second, out, path);
-        for (usize count = path.size(); path[count - 1] != ':' && count > 1; ) {
-            path.pop_back();
-            count = path.size();
+        usize count_substr = path.size();
+        while (path[count_substr] != ':' && count_substr > 0) {
+            --count_substr;
         }
-        path.pop_back();
+        path = path.substr(0, count_substr);
     }
 }
 
