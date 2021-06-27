@@ -7,29 +7,13 @@
 
 namespace Server {
 
-class EV_CS_NewHttpReq : public Event::IEvent, private SessionEventData {
- private:
-    Http::Request __req;
-
+class EV_CS_NewHttpReq : public Event::IEvent {
  public:
-    EV_CS_NewHttpReq(const Http::Request& req, SessionStream* session, IoNotifier* notf, Event::Loop* lp)
-    : SessionEventData(session, notf, lp)
-    , __req(req) {
-    }
-
     virtual void Handle();
 };
 
-class EV_CS_NewHttpRes : public Event::IEvent, private SessionEventData {
- private:
-    Http::Response __res;
-
+class EV_CS_NewHttpRes : public Event::IEvent {
  public:
-    EV_CS_NewHttpRes(const Http::Response& res, SessionStream* session, IoNotifier* notf, Event::Loop* lp)
-    : SessionEventData(session, notf, lp)
-    , __res(res) {
-    }
-
     virtual void Handle();
 };
 

@@ -5,75 +5,36 @@
 
 namespace Server {
 
-struct ListenerEventData {
-    ListenerStream* __lstn;
-    IoNotifier*     __notifier;
-    Event::Loop*    __evloop;
+struct SessionData {
 
-    ListenerEventData(ListenerStream* lstn, IoNotifier* notifier, Event::Loop* lp)
-    : __lstn(lstn)
-    , __notifier(notifier)
-    , __evloop(lp) {
-    }
+    ConnectionStream  __connection;
+    /* notifier link, event loop link */
+    /* virtual server pref link */
+
 };
 
-struct SessionEventData {
-    static const usize SOCKET_READ_BUFF_SZ = 1024ull;
-    static const usize SOCKET_WRITE_BUFF_SZ = 1024ull;
-
-    SessionStream*   __session;
-    IoNotifier*      __notifier;
-    Event::Loop*     __evloop;
-
-    SessionEventData(SessionStream* session, IoNotifier* notifier, Event::Loop* lp)
-    : __session(session)
-    , __notifier(notifier)
-    , __evloop(lp) {
-    }
-};
-
-class EV_IO_SessionAccept : public Event::IEvent, private ListenerEventData {
+class EV_IO_SessionAccept : public Event::IEvent {
  public:
-    EV_IO_SessionAccept(ListenerStream* lstn, IoNotifier* notifier, Event::Loop* lp)
-    : ListenerEventData(lstn, notifier, lp) {
-    }
-
     virtual void Handle();
 };
 
-class EV_IO_SessionClose : public Event::IEvent, private SessionEventData {
+class EV_IO_SessionClose : public Event::IEvent {
  public:
-    EV_IO_SessionClose(SessionStream* session, IoNotifier* notifier, Event::Loop* lp)
-    : SessionEventData(session, notifier, lp) {
-    }
-
     virtual void Handle();
 };
 
-class EV_IO_SessionRead : public Event::IEvent, private SessionEventData {
+class EV_IO_SessionRead : public Event::IEvent {
  public:
-    EV_IO_SessionRead(SessionStream* session, IoNotifier* notifier, Event::Loop* lp)
-    : SessionEventData(session, notifier, lp) {
-    }
-
     virtual void Handle();
 };
 
-class EV_IO_SessionWrite : public Event::IEvent, private SessionEventData {
+class EV_IO_SessionWrite : public Event::IEvent {
  public:
-    EV_IO_SessionWrite(SessionStream* session, IoNotifier* notifier, Event::Loop* lp)
-    : SessionEventData(session, notifier, lp) {
-    }
-
     virtual void Handle();
 };
 
-class EV_IO_SessionErr : public Event::IEvent, private SessionEventData {
+class EV_IO_SessionErr : public Event::IEvent {
  public:
-    EV_IO_SessionErr(SessionStream* session, IoNotifier* notifier, Event::Loop* lp)
-    : SessionEventData(session, notifier, lp) {
-    }
-
     virtual void Handle();
 };
 

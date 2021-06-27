@@ -3,10 +3,10 @@
 
 namespace Server {
 
-fd_t  IoNotifier::WatchFor(const SessionStream& session) {
-    const fd_t                    fd = GetFd(session);
-    SessionsFdMap::value_type     ins_pair = std::make_pair(fd, session);
-    insert_res<SessionsFdMap>::t  res = __sessions.insert(ins_pair);
+fd_t  IoNotifier::WatchFor(const ConnectionStream& connection) {
+    const fd_t                       fd = GetFd(connection);
+    ConnectionsFdMap::value_type     ins_pair = std::make_pair(fd, connection);
+    insert_res<ConnectionsFdMap>::t  res = __connections.insert(ins_pair);
 
     if (res.second == true) {
         __io_poller.AddFd(fd);
@@ -43,7 +43,7 @@ void  IoNotifier::StopWatchFor(fd_t fd) {
     __io_poller.RmFd(fd);
 
     __listeners.erase(fd);
-    __sessions.erase(fd);
+    __connections.erase(fd);
     __static_files.erase(fd);
 }
 
@@ -59,13 +59,13 @@ void  IoNotifier::ResetPollerFlags(fd_t fd) {
     __io_poller.SetEvMask(fd, 0x0);
 }
 
-SessionStream    IoNotifier::GetSession(fd_t fd) const {
-    SessionsFdMap::const_iterator it = __sessions.find(fd);
-    if (it == __sessions.end()) {
+ConnectionStream    IoNotifier::GetConnection(fd_t fd) const {
+    ConnectionsFdMap::const_iterator it = __connections.find(fd);
+    if (it == __connections.end()) {
         return it->second;
     }
 
-    return (SessionStream){ .ios = IO::Socket() };  // TODO(mcottomn): Use default constructor
+    return (ConnectionStream){ .ios = IO::Socket() };  // TODO(mcottomn): Use default constructor
 }
 
 StaticFileStream IoNotifier::GetStaticFile(fd_t fd) const {
@@ -136,8 +136,8 @@ Event::IEventPtr     IoNotifier::__CreateEvent(const IO::Poller::Result& pres) {
         if        (__listeners.count(pres.fd)) {
             event = new EV_IO_Error;
 
-        } else if (__sessions.count(pres.fd)) {
-            event = new EV_IO_SessionErr(&__sessions[pres.fd], this, __evloop);
+        } else if (__connections.count(pres.fd)) {
+            event = new EV_IO_SessionErr;
 
         } else if (__static_files.count(pres.fd)) {
             event = new EV_IO_StaticFileErr;
@@ -149,8 +149,8 @@ Event::IEventPtr     IoNotifier::__CreateEvent(const IO::Poller::Result& pres) {
         if        (__listeners.count(pres.fd)) {
             event = new EV_IO_Error;
 
-        } else if (__sessions.count(pres.fd)) {
-            event = new EV_IO_SessionClose(&__sessions[pres.fd], this, __evloop);
+        } else if (__connections.count(pres.fd)) {
+            event = new EV_IO_SessionClose;
 
         } else if (__static_files.count(pres.fd)) {
             event = new EV_IO_StaticFileErr;
@@ -162,8 +162,8 @@ Event::IEventPtr     IoNotifier::__CreateEvent(const IO::Poller::Result& pres) {
         if        (__listeners.count(pres.fd)) {
             event = new EV_IO_Error;
 
-        } else if (__sessions.count(pres.fd)) {
-            event = new EV_IO_SessionWrite(&__sessions[pres.fd], this, __evloop);
+        } else if (__connections.count(pres.fd)) {
+            event = new EV_IO_SessionWrite;
 
         } else if (__static_files.count(pres.fd)) {
             event = new EV_IO_StaticFileWrite;
@@ -172,10 +172,10 @@ Event::IEventPtr     IoNotifier::__CreateEvent(const IO::Poller::Result& pres) {
 
     case IO::Poller::POLL_READ:
         if        (__listeners.count(pres.fd)) {
-            event = new EV_IO_SessionAccept(&__listeners[pres.fd], this, __evloop);
+            event = new EV_IO_SessionAccept;
 
-        } else if (__sessions.count(pres.fd)) {
-            event = new EV_IO_SessionRead(&__sessions[pres.fd], this, __evloop);
+        } else if (__connections.count(pres.fd)) {
+            event = new EV_IO_SessionRead;
 
         } else if (__static_files.count(pres.fd)) {
             event = new EV_IO_StaticFileRead;

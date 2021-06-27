@@ -11,14 +11,14 @@
 #include "netlib/event/loop.h"
 
 #include "netlib/server/preferences.h"
-#include "netlib/server/io.h"
+#include "netlib/server/io_streams.h"
 
 namespace Server {
 
 class IoNotifier {
  private:
-    typedef std::map<fd_t, ListenerStream>      ListenersFdMap;
-    typedef std::map<fd_t, SessionStream>       SessionsFdMap;
+    typedef std::map<fd_t, ListenerStream>        ListenersFdMap;
+    typedef std::map<fd_t, ConnectionStream>    ConnectionsFdMap;
     typedef std::map<fd_t, StaticFileStream>    StaticFilesFdMap;
 
  private:
@@ -39,7 +39,7 @@ class IoNotifier {
 
  private:
     ListenersFdMap      __listeners;
-    SessionsFdMap       __sessions;
+    ConnectionsFdMap    __connections;
     StaticFilesFdMap    __static_files;
     IO::Poller          __io_poller;
     Event::Loop*        __evloop;
@@ -50,13 +50,13 @@ class IoNotifier {
  public:
     void Process();
 
-    fd_t WatchFor(const SessionStream& session);
+    fd_t WatchFor(const ConnectionStream& conn);
     fd_t WatchFor(const StaticFileStream& sfile);
     fd_t WatchFor(const ListenerStream& listener);
 
     void StopWatchFor(fd_t fd);
 
-    SessionStream    GetSession(fd_t fd) const;
+    ConnectionStream GetConnection(fd_t fd) const;
     StaticFileStream GetStaticFile(fd_t fd) const;
     ListenerStream   GetListener(fd_t fd) const;
 

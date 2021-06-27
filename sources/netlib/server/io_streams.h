@@ -15,7 +15,7 @@ struct ListenerStream {
     IO::Socket          ios;
 };
 
-struct SessionStream {
+struct ConnectionStream {
     IO::Socket          ios;
     Http::RequestReader req_rdr;
     std::string         res_buff;
