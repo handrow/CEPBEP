@@ -3,7 +3,32 @@
 
 namespace Http {
 
-Method          MethodFromString(const std::string& method_str) {
+usize           Headers::GetContentLength(const Headers& hdrs) {
+    usize res = 0;
+    HeaderMap::const_iterator it = hdrs.__map.find("Content-Length");
+
+    if (it != hdrs.__map.end()) {
+        res = Convert<usize>(it->second);
+    }
+    return res;
+}
+
+bool     Headers::IsChunkedEncoding(const Headers& hdrs) {
+    HeaderMap::const_iterator it = hdrs.__map.find("Transfer-Encoding");
+    if (it != hdrs.__map.end()) {
+        Tokenizator tkz(it->second);
+        std::string token;
+        bool run = true;
+
+        while (token = tkz.Next(", ", &run), run) {
+            if (token == "chunked")
+                return true;
+        }
+    }
+    return false;
+}
+
+Method      MethodFromString(const std::string& method_str) {
     if (StrToUpper(method_str) == "GET")
         return METHOD_GET;
     if (StrToUpper(method_str) == "POST")
@@ -48,23 +73,13 @@ bool           Headers::IsContentLengthed(const Headers& hdrs) {
     return it != hdrs.__map.end();
 }
 
-usize           Headers::GetContentLength(const Headers& hdrs) {
-    usize res = 0;
-    HeaderMap::const_iterator it = hdrs.__map.find("Content-Length");
-
-    if (it != hdrs.__map.end()) {
-        res = Convert<usize>(it->second);
-    }
-    return res;
-}
-
 std::string     Headers::ToString() const {
     std::string str;
 
     for (Headers::HeaderMap::const_iterator it = __map.begin();
                                             it != __map.end(); ++it)
-            str += it->first + ": " + it->second + "\n";
-    
+            str += it->first + ": " + it->second + "\r\n";
+
     return str;
 }
 
@@ -139,55 +154,70 @@ std::string SearchCodeMap(int code) {
     return "Unknown phrase";
 }
 
+std::string  DeleteChunkedTag(const std::string& hdr_value) {
+    Tokenizator tkz(hdr_value);
+    std::string token;
+    bool run = true;
+
+    std::string new_val;
+    while (token = tkz.Next(", ", &run), run) {
+        if (token != "chunked")
+            new_val += token + ", ";
+    }
+    return new_val.substr(0, new_val.length() - 2);
+}
+
 }  // namespace
 
 std::string     Request::ToString() const {
-    std::string str;
+    Headers         patched_h = headers;
+    std::string     str;
 
+    /// Start-Line
     str += MethodToString(method) + " "
         + uri.ToString() + " "
-        + ProtocolVersionToString(version) + "\n";
+        + ProtocolVersionToString(version) + "\r\n";
 
-    usize content_len = 0;
-    if (method == METHOD_POST) {
-        if (Headers::IsContentLengthed(headers)) {
-            content_len = Headers::GetContentLength(headers);
-        } else {
-            content_len = body.size();
-            str += "Content-Length: " + Convert<std::string>(content_len) + "\n";
-        }
+    /// Headers
+    if (method != METHOD_GET) {
+        patched_h.__map["Content-Length"] = Convert<std::string>(body.size());
+        Headers::HeaderMap::iterator it = patched_h.__map.find("Transfer-Encoding");
+        if (it != patched_h.__map.end())
+            it->second = DeleteChunkedTag(it->second);
     }
+    str += patched_h.ToString();
+    str += "\r\n";
 
-    str += headers.ToString();
-    str += "\n";
-
-    str += body.substr(0, content_len);
+    /// Body
+    if (method != METHOD_GET)
+        str += body;
 
     return str;
 }
 
 std::string     Response::ToString() const {
-
+    Headers      patched_h = headers;
     std::string  str;
-    std::string  phrase = (code_message.empty()) ? SearchCodeMap(code)
-                                                : code_message;
 
+
+    /// Start-line
+    std::string  phrase = (code_message.empty()) ? SearchCodeMap(code)
+                                                 : code_message;
     str += ProtocolVersionToString(version) + " "
         +  std::to_string(code) + " "
-        +  phrase + "\n";
+        +  phrase + "\r\n";
 
-    usize content_len = 0;
-    if (!Headers::IsContentLengthed(headers)) {
-        content_len = body.size();
-        str += "Content-Length: " + Convert<std::string>(content_len) + "\n";
-    } else {
-        content_len = Headers::GetContentLength(headers);
-    }
+    /// Headers
+    patched_h.__map["Content-Length"] = Convert<std::string>(body.size());
+    Headers::HeaderMap::iterator it = patched_h.__map.find("Transfer-Encoding");
+    if (it != patched_h.__map.end())
+        it->second = DeleteChunkedTag(it->second);
 
-    str += headers.ToString();
+    str += patched_h.ToString();
+    str += "\r\n";
 
-    str += "\n";
-    str += body.substr(0, content_len);
+    /// Body
+    str += body;
 
     return str;
 }

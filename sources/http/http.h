@@ -43,6 +43,7 @@ struct Headers {
     static bool     IsContentLengthed(const Headers& hdrs);
 
     std::string     ToString() const;
+    static bool     IsChunkedEncoding(const Headers& hdrs);
 };
 
 struct Request {

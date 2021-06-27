@@ -56,4 +56,35 @@ TypoA Convert(const TypoB& str) {
     return val;
 }
 
+class Tokenizator {
+ private:
+    std::string __str;
+    usize       __tok_begin;
+    usize       __tok_end;
+
+ public:
+
+    Tokenizator(const std::string& str, usize offset = 0ULL)
+    : __str(str)
+    , __tok_begin(offset)
+    , __tok_end(offset) {
+    }
+
+    std::string Next(const char delims[], bool* run) {
+        return Next(delims, delims, run);
+    }
+
+    std::string Next(const char bdelims[], const char edelims[], bool* run) {
+        __tok_begin = __str.find_first_not_of(bdelims, __tok_end);
+        if (__tok_begin == std::string::npos) {
+            return *run = false, "";
+        }
+        __tok_end = __str.find_first_of(edelims, __tok_begin);
+        if (__tok_end == std::string::npos)
+            __tok_end = __str.length();
+
+        return __str.substr(__tok_begin, __tok_end - __tok_begin);
+    }
+};
+
 #endif  // COMMON_STRING_UTILS_H_

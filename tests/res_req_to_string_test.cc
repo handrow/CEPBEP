@@ -20,10 +20,10 @@ TEST(Request_to_string_test, req_multiple_headers_test) {
             .body = "ABSADBSADB"
         };
 
-        EXPECT_EQ(req.ToString(), "GET http://www.example.com/wow HTTP/1.1\n"
-                                  "Alpha: Dima\n"
-                                  "Bravo: Sonya\n"
-                                  "\n");
+        EXPECT_EQ(req.ToString(), "GET http://www.example.com/wow HTTP/1.1\r\n"
+                                  "Alpha: Dima\r\n"
+                                  "Bravo: Sonya\r\n"
+                                  "\r\n");
     }
 
     {
@@ -42,11 +42,11 @@ TEST(Request_to_string_test, req_multiple_headers_test) {
             .body = "hellodog"
         };
 
-        EXPECT_EQ(req.ToString(), "POST /path HTTP/1.0\n"
-                                  "content-length: 8\n"
-                                  "user: did\n"
-                                  "\n"
-                                "hellodog");
+        EXPECT_EQ(req.ToString(), "POST /path HTTP/1.0\r\n"
+                                  "content-length: 8\r\n"
+                                  "user: did\r\n"
+                                  "\r\n"
+                                  "hellodog");
     }
 }
 
@@ -55,7 +55,6 @@ TEST(Response_to_string_test, res_multiple_headers_test) {
     using namespace Http;
     {
         Headers hdrs;
-        hdrs.__map["content-length"] = "8";
         hdrs.__map["server"] = "do";
         hdrs.__map["server"] = "did";
 
@@ -67,11 +66,11 @@ TEST(Response_to_string_test, res_multiple_headers_test) {
             .body = "hellodog"
         };
 
-        EXPECT_EQ(res.ToString(), "HTTP/1.1 301 Moved Permanently\n"
-                                  "content-length: 8\n"
-                                  "server: did\n"
-                                  "\n"
-                                "hellodog");
+        EXPECT_EQ(res.ToString(), "HTTP/1.1 301 Moved Permanently\r\n"
+                                  "Content-Length: 8\r\n"
+                                  "server: did\r\n"
+                                  "\r\n"
+                                  "hellodog");
     }
 }
 
@@ -79,7 +78,7 @@ TEST(Response_to_string_test, res_smaller_cl_test) {
     using namespace Http;
     {
         Headers hdrs;
-        hdrs.__map["content-length"] = "7";
+        hdrs.__map["content-length"] = "8";
         hdrs.__map["server"] = "do";
 
         Response res = {
@@ -90,11 +89,11 @@ TEST(Response_to_string_test, res_smaller_cl_test) {
             .body = "hellodog"
         };
 
-        EXPECT_EQ(res.ToString(), "HTTP/1.1 301 Moved Permanently\n"
-                                  "content-length: 7\n"
-                                  "server: do\n"
-                                  "\n"
-                                "hellodo");
+        EXPECT_EQ(res.ToString(), "HTTP/1.1 301 Moved Permanently\r\n"
+                                  "content-length: 8\r\n"
+                                  "server: do\r\n"
+                                  "\r\n"
+                                  "hellodog");
     }
 }
 
