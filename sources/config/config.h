@@ -3,10 +3,7 @@
 
 #include <string>
 #include <map>
-#include <vector>
-#include <iostream>
-#include <utility>
-
+#include <fstream>
 
 #include "common/types.h"
 #include "common/error.h"
@@ -41,7 +38,13 @@ class Category {
  private:
     FieldMap        __fields;
     CategoryMap     __subs;
-    void WriteToFile(const Category& subcat, std::ofstream& out, std::string& path) const;
+
+ private:
+    static void           WriteToFile(const Category& subcat, std::ofstream* out, const std::string& catprefix = "");
+    static bool           IsField(const std::string& str);
+    static void           ParseField(const std::string& str, Category* cat);
+    static Category*      ParseLine(const std::string& str, Category* root_category, Category* current_category_level);
+    static Category*      SwitchCurrentCategory(const std::string& str, Category* root_category);
 
  public:
     bool                  HasField(const std::string& fname) const;
@@ -70,12 +73,6 @@ class Category {
 
     static Category       ParseFromINI(const std::string& filepath, Error *err);
     static void           DumpToINI(const Category& config_obj, const std::string& filepath, Error *err);
-
- private:
-    static bool IsField(const std::string& str);
-    static void AddField(const std::string& str, Category* cat);
-    static Category* Pars(const std::string& str, Category* root_category, Category* current_category_level);
-    static Category* SwitchCurrentCategory(const std::string& str, Category* root_category);
 };
 
 }  // namespace Config

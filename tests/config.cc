@@ -8,7 +8,7 @@ TEST(Config_Tests, has_field) {
     using namespace Config;
     {
         Error err(0, "No error");
-        Category cat = Category::ParseFromINI("../sources/config/config_examples/default.ini", &err);
+        Category cat = Category::ParseFromINI("../config_examples/default.ini", &err);
         
         EXPECT_TRUE(err.IsOk());
         EXPECT_TRUE(cat.HasField("server_name") == true);
@@ -22,7 +22,7 @@ TEST(Config_Tests, has_category) {
     using namespace Config;
     {
         Error err(0, "No error");
-        Category cat = Category::ParseFromINI("../sources/config/config_examples/default.ini", &err);
+        Category cat = Category::ParseFromINI("../config_examples/default.ini", &err);
         
         EXPECT_TRUE(err.IsOk());
         EXPECT_TRUE(cat.HasCategory("server1") == true);
@@ -35,7 +35,7 @@ TEST(Config_Tests, set_field) {
     using namespace Config;
     {
         Error err(0, "No error");
-        Category cat = Category::ParseFromINI("../sources/config/config_examples/default.ini", &err);
+        Category cat = Category::ParseFromINI("../config_examples/default.ini", &err);
         
         EXPECT_TRUE(err.IsOk());
         EXPECT_TRUE(cat.HasField("root") == false);
@@ -48,7 +48,7 @@ TEST(Config_Tests, remove_field) {
     using namespace Config;
     {
         Error err(0, "No error");
-        Category cat = Category::ParseFromINI("../sources/config/config_examples/default.ini", &err);
+        Category cat = Category::ParseFromINI("../config_examples/default.ini", &err);
         
         EXPECT_TRUE(err.IsOk());
         EXPECT_TRUE(cat.HasField("listen") == true);
@@ -61,7 +61,7 @@ TEST(Config_Tests, get_field_ref) {
     using namespace Config;
     {
         Error err(0, "No error");
-        Category cat = Category::ParseFromINI("../sources/config/config_examples/default.ini", &err);
+        Category cat = Category::ParseFromINI("../config_examples/default.ini", &err);
         
         EXPECT_TRUE(err.IsOk());
         EXPECT_TRUE(cat.GetFieldRef("server_name").first == "server_name");
@@ -73,7 +73,7 @@ TEST(Config_Tests, get_field_value) {
     using namespace Config;
     {
         Error err(0, "No error");
-        Category cat = Category::ParseFromINI("../sources/config/config_examples/default.ini", &err);
+        Category cat = Category::ParseFromINI("../config_examples/default.ini", &err);
         
         EXPECT_TRUE(err.IsOk());
         EXPECT_TRUE(cat.GetFieldValue("server_name") == "youpi");
@@ -84,7 +84,7 @@ TEST(Config_Tests, set_subcategory) {
     using namespace Config;
     {
         Error err(0, "No error");
-        Category cat = Category::ParseFromINI("../sources/config/config_examples/default.ini", &err);
+        Category cat = Category::ParseFromINI("../config_examples/default.ini", &err);
         
         EXPECT_TRUE(err.IsOk());
         EXPECT_TRUE(cat.HasCategory("server3") == false);
@@ -98,7 +98,7 @@ TEST(Config_Tests, remove_subcategory) {
     using namespace Config;
     {
         Error err(0, "No error");
-        Category cat = Category::ParseFromINI("../sources/config/config_examples/default.ini", &err);
+        Category cat = Category::ParseFromINI("../config_examples/default.ini", &err);
         
         EXPECT_TRUE(err.IsOk());
         EXPECT_TRUE(cat.HasCategory("server2") == true);
@@ -111,7 +111,7 @@ TEST(Config_Tests, get_subcategory_ref) {
     using namespace Config;
     {
         Error err(0, "No error");
-        Category cat = Category::ParseFromINI("../sources/config/config_examples/default.ini", &err);
+        Category cat = Category::ParseFromINI("../config_examples/default.ini", &err);
         
         EXPECT_TRUE(err.IsOk());
         EXPECT_TRUE(cat.GetSubcategoryRef("server1").HasCategory("location") == true);
@@ -123,7 +123,7 @@ TEST(Config_Tests, count_subcategories) {
     using namespace Config;
     {
         Error err(0, "No error");
-        Category cat = Category::ParseFromINI("../sources/config/config_examples/default.ini", &err);
+        Category cat = Category::ParseFromINI("../config_examples/default.ini", &err);
         
         EXPECT_TRUE(err.IsOk());
         EXPECT_TRUE(cat.CountSubcategories() == 2);
@@ -137,7 +137,7 @@ TEST(Config_Tests, count_fields) {
     using namespace Config;
     {
         Error err(0, "No error");
-        Category cat = Category::ParseFromINI("../sources/config/config_examples/default.ini", &err);
+        Category cat = Category::ParseFromINI("../config_examples/default.ini", &err);
         
         EXPECT_TRUE(err.IsOk());
         EXPECT_TRUE(cat.CountFields() == 2);
@@ -150,7 +150,7 @@ TEST(Config_Tests, get_subcatory_iter_range) {
     using namespace Config;
     {
         Error err(0, "No error");
-        Category cat = Category::ParseFromINI("../sources/config/config_examples/default.ini", &err);
+        Category cat = Category::ParseFromINI("../config_examples/default.ini", &err);
         
 
         EXPECT_TRUE(err.IsOk());
@@ -173,7 +173,7 @@ TEST(Config_Tests, get_fields_iter_range) {
     using namespace Config;
     {
         Error err(0, "No error");
-        Category cat = Category::ParseFromINI("../sources/config/config_examples/default.ini", &err);
+        Category cat = Category::ParseFromINI("../config_examples/default.ini", &err);
         
 
         EXPECT_TRUE(err.IsOk());
@@ -197,14 +197,14 @@ TEST(Config_Tests, dump_to_ini) {
     {
         Error err(0, "No error");
         Error err_ini(0, "No error");
-        Category cat = Category::ParseFromINI("../sources/config/config_examples/default.ini", &err);
-        Category::DumpToINI(cat, "../sources/config/config_examples/Test.ini", &err_ini);        
+        Category cat = Category::ParseFromINI("../config_examples/default.ini", &err);
+        Category::DumpToINI(cat, "../config_examples/Test.ini", &err_ini);        
 
         EXPECT_TRUE(err.IsOk());
         EXPECT_TRUE(err_ini.IsOk());
 
-        std::ifstream verifiable("../sources/config/config_examples/Test.ini");
-        std::ifstream testing("../sources/config/config_examples/Checking_file.ini");
+        std::ifstream verifiable("../config_examples/Test.ini");
+        std::ifstream testing("../config_examples/Checking_file.ini");
         std::string sverifiable;
         std::string stesting;
 

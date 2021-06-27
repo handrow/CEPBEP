@@ -6,9 +6,12 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY  ${CMAKE_SOURCE_DIR}/bin)
 
 set(CMAKE_CXX_FLAGS                 "-Wall -Wextra -Werror")
 set(CMAKE_CXX_STANDARD              98)
+set(TEST_DIR                        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
 set(OUR_LIBRARIES                   logger http_parser netlib config_parser)
 set(OUR_INCLUDES                    sources/)
+
+
 
 include_directories(PUBLIC ${OUR_INCLUDES})
 
