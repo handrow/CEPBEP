@@ -10,6 +10,11 @@
 
 namespace Http {
 
+/// Static class for constants
+struct TO_STRING_OPTIONS {
+    static const char  CRLF_SYM[];
+};
+
 enum ProtocolVersion {
     HTTP_NO_VERSION = 0,
     HTTP_1_0,
@@ -32,18 +37,28 @@ Method          MethodFromString(const std::string& method_str);
 std::string     MethodToString(const Method& method);
 
 struct Headers {
+ public:
     typedef std::map<std::string, std::string, CaseInsensitiveLess> HeaderMap;
     typedef HeaderMap::value_type                                   HeaderPair;
 
-    /// PROPERTIES
+ private:
     HeaderMap       __map;
 
+ public:
     /// HELPER FUNCTIONS
     static usize    GetContentLength(const Headers& hdrs);
     static bool     IsContentLengthed(const Headers& hdrs);
+    static bool     IsChunkedEncoding(const Headers& hdrs);
+
+    void            SetMap(const HeaderMap& hmap);
+    HeaderMap       GetMap() const;
+
+    std::string     Get(const std::string& hname, bool* isset = NULL) const;
+    void            Set(const std::string& hname, const std::string& hval);
+    void            Add(const std::string& hname, const std::string& hval
+                                                , const std::string& delimiter = ", ");
 
     std::string     ToString() const;
-    static bool     IsChunkedEncoding(const Headers& hdrs);
 };
 
 struct Request {

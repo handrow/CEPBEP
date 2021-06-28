@@ -63,10 +63,10 @@ TEST(Http_Response_Reader, One_Byte_Input_Processing) {
     EXPECT_EQ( res.version, HTTP_1_1 );
     EXPECT_EQ(res.code, 200);
     EXPECT_STREQ( res.code_message.c_str(), "OK" );
-    EXPECT_STREQ( res.headers.__map["H1"].c_str(), "V1" );
-    EXPECT_STREQ( res.headers.__map["h2"].c_str(), "v2" );
-    EXPECT_STREQ( res.headers.__map["H3"].c_str(), "v3" );
-    EXPECT_STREQ( res.headers.__map["Content-Length"].c_str(), "5" );
+    EXPECT_STREQ( res.headers.Get("H1").c_str(), "V1" );
+    EXPECT_STREQ( res.headers.Get("h2").c_str(), "v2" );
+    EXPECT_STREQ( res.headers.Get("H3").c_str(), "v3" );
+    EXPECT_STREQ( res.headers.Get("Content-Length").c_str(), "5" );
     EXPECT_EQ( Headers::GetContentLength(res.headers), 5ull );
     EXPECT_STREQ( res.body.c_str(), "ABCDE" );
 
@@ -102,10 +102,10 @@ TEST(Http_Request_Reader, Full_Input_Processing) {
     EXPECT_EQ( res.version, HTTP_1_1 );
     EXPECT_EQ(res.code, 301);
     EXPECT_STREQ( res.code_message.c_str(), "Moved Permanently" );
-    EXPECT_STREQ( res.headers.__map["H1"].c_str(), "V1" );
-    EXPECT_STREQ( res.headers.__map["h2"].c_str(), "v2" );
-    EXPECT_STREQ( res.headers.__map["H3"].c_str(), "v3" );
-    EXPECT_STREQ( res.headers.__map["Content-Length"].c_str(), "7" );
+    EXPECT_STREQ( res.headers.Get("H1").c_str(), "V1" );
+    EXPECT_STREQ( res.headers.Get("h2").c_str(), "v2" );
+    EXPECT_STREQ( res.headers.Get("H3").c_str(), "v3" );
+    EXPECT_STREQ( res.headers.Get("Content-Length").c_str(), "7" );
     EXPECT_EQ( Headers::GetContentLength(res.headers), 7ull );
     EXPECT_STREQ( res.body.c_str(), "ABCDEFG" );
 
@@ -144,7 +144,7 @@ TEST(Http_Request_Reader, Few_Messages_Input_Processing) {
         EXPECT_EQ(res.code, 200);
         EXPECT_STREQ( res.code_message.c_str(), "OK" );
 
-        EXPECT_STREQ( res.headers.__map["Content-Length"].c_str(), "10" );
+        EXPECT_STREQ( res.headers.Get("Content-Length").c_str(), "10" );
         EXPECT_EQ( Headers::GetContentLength(res.headers), 10ull );
         EXPECT_STREQ( res.body.c_str(), "1234567890" );
     }
@@ -197,10 +197,10 @@ TEST(Http_Request_Reader, Header_Override) {
     ResponseReader res_rdr;
 
     res_rdr.Read("Http/1.1 200 OK\r\n");
-    res_rdr.Read("HeaDer: I'am cool\r\n");
-    res_rdr.Read("hEaDer: Bee Movie  \r\n");
-    res_rdr.Read("header: What is Happening  \r\n");
-    res_rdr.Read("HEADER: No case matters  \r\n");
+    res_rdr.Read("HeaDer: a\r\n");
+    res_rdr.Read("hEaDer: b  \r\n");
+    res_rdr.Read("header: C  \r\n");
+    res_rdr.Read("HEADER: d  \r\n");
     res_rdr.Read("\n");
     res_rdr.Process();
 
@@ -209,14 +209,14 @@ TEST(Http_Request_Reader, Header_Override) {
 
     Headers hdrs(res_rdr.GetMessage().headers);
 
-    EXPECT_STREQ(hdrs.__map["header"].c_str(), "No case matters");
-    EXPECT_STREQ(hdrs.__map["Header"].c_str(), "No case matters");
-    EXPECT_STREQ(hdrs.__map["hEader"].c_str(), "No case matters");
-    EXPECT_STREQ(hdrs.__map["heAder"].c_str(), "No case matters");
-    EXPECT_STREQ(hdrs.__map["heaDer"].c_str(), "No case matters");
-    EXPECT_STREQ(hdrs.__map["headEr"].c_str(), "No case matters");
-    EXPECT_STREQ(hdrs.__map["headeR"].c_str(), "No case matters");
-    EXPECT_STREQ(hdrs.__map["HEADER"].c_str(), "No case matters");
+    EXPECT_STREQ(hdrs.Get("header").c_str(), "a, b, C, d");
+    EXPECT_STREQ(hdrs.Get("Header").c_str(), "a, b, C, d");
+    EXPECT_STREQ(hdrs.Get("hEader").c_str(), "a, b, C, d");
+    EXPECT_STREQ(hdrs.Get("heAder").c_str(), "a, b, C, d");
+    EXPECT_STREQ(hdrs.Get("heaDer").c_str(), "a, b, C, d");
+    EXPECT_STREQ(hdrs.Get("headEr").c_str(), "a, b, C, d");
+    EXPECT_STREQ(hdrs.Get("headeR").c_str(), "a, b, C, d");
+    EXPECT_STREQ(hdrs.Get("HEADER").c_str(), "a, b, C, d");
 
     EXPECT_EQ(hdrs.__map.size(), 1ull);
 

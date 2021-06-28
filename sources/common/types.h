@@ -21,4 +21,11 @@ typedef ssize_t     isize;
 typedef int             fd_t;
 typedef struct timeval  timeval_t;
 
+template<typename Typo>
+inline void safe_pointer_assign(Typo* pointer, const Typo& val) {
+    if (pointer != NULL) {
+        *pointer = val;
+    }
+}
+
 #endif  // COMMON_TYPES_H_

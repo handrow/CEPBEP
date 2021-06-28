@@ -23,10 +23,11 @@ add_library(logger
 
 add_library(http_parser
     "sources/http/uri.h"
-    "sources/http/uri.cc"
     "sources/http/http.h"
-    "sources/http/http.cc"
     "sources/http/reader.h"
+    "sources/http/uri.cc"
+    "sources/http/http.cc"
+    "sources/http/headers.cc"
     "sources/http/reader_request.cc"
     "sources/http/reader_response.cc"
     "sources/http/reader_common.cc"
@@ -102,8 +103,6 @@ if (ENABLE_UNIT_TESTS)
     ADD_UNIT_GTEST(socket_test "tests/sock_test.cc")
     ADD_UNIT_GTEST(request_reader_test "tests/request_reader_test.cc")
     ADD_UNIT_GTEST(response_reader_test "tests/response_reader_test.cc")
-    ADD_UNIT_GTEST(res_req_to_string_test "tests/res_req_to_string_test.cc")
-    ADD_UNIT_GTEST(res_req_chunked_message_test "tests/res_req_chunked_message_test.cc")
     ADD_UNIT_GTEST(config_ini_test "tests/config_ini_test.cc")
 
 endif()

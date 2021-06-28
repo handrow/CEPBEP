@@ -63,10 +63,10 @@ TEST(Http_Request_Reader, One_Byte_Input_Processing) {
     EXPECT_EQ( req.method, METHOD_POST );
     EXPECT_EQ( req.version, HTTP_1_0 );
     EXPECT_STREQ( req.uri.path.c_str(), "/example" );
-    EXPECT_STREQ( req.headers.__map["H1"].c_str(), "V1" );
-    EXPECT_STREQ( req.headers.__map["h2"].c_str(), "v2" );
-    EXPECT_STREQ( req.headers.__map["H3"].c_str(), "v3" );
-    EXPECT_STREQ( req.headers.__map["Content-Length"].c_str(), "5" );
+    EXPECT_STREQ( req.headers.Get("H1").c_str(), "V1" );
+    EXPECT_STREQ( req.headers.Get("h2").c_str(), "v2" );
+    EXPECT_STREQ( req.headers.Get("H3").c_str(), "v3" );
+    EXPECT_STREQ( req.headers.Get("Content-Length").c_str(), "5" );
     EXPECT_EQ( Headers::GetContentLength(req.headers), 5ull );
     EXPECT_STREQ( req.body.c_str(), "ABCDE" );
 
@@ -102,10 +102,10 @@ TEST(Http_Request_Reader, Full_Input_Processing) {
     EXPECT_EQ( req.method, METHOD_POST );
     EXPECT_EQ( req.version, HTTP_1_0 );
     EXPECT_STREQ( req.uri.path.c_str(), "/example" );
-    EXPECT_STREQ( req.headers.__map["H1"].c_str(), "V1" );
-    EXPECT_STREQ( req.headers.__map["h2"].c_str(), "v2" );
-    EXPECT_STREQ( req.headers.__map["H3"].c_str(), "v3" );
-    EXPECT_STREQ( req.headers.__map["Content-Length"].c_str(), "7" );
+    EXPECT_STREQ( req.headers.Get("H1").c_str(), "V1" );
+    EXPECT_STREQ( req.headers.Get("h2").c_str(), "v2" );
+    EXPECT_STREQ( req.headers.Get("H3").c_str(), "v3" );
+    EXPECT_STREQ( req.headers.Get("Content-Length").c_str(), "7" );
     EXPECT_EQ( Headers::GetContentLength(req.headers), 7ull );
     EXPECT_STREQ( req.body.c_str(), "ABCDEFG" );
 
@@ -147,7 +147,7 @@ TEST(Http_Request_Reader, Few_Messages_Input_Processing) {
         EXPECT_EQ( req.version, HTTP_1_0 );
         EXPECT_STREQ( req.uri.path.c_str(), "/r1" );
 
-        EXPECT_STREQ( req.headers.__map["Content-Length"].c_str(), "10" );
+        EXPECT_STREQ( req.headers.Get("Content-Length").c_str(), "10" );
         EXPECT_EQ( Headers::GetContentLength(req.headers), 10ull );
         EXPECT_STREQ( req.body.c_str(), "1234567890" );
     }
@@ -198,7 +198,7 @@ TEST(Http_Request_Reader, Few_Messages_Input_Processing) {
         EXPECT_STREQ( req.uri.path.c_str(), "/r4" );
 
         EXPECT_EQ( req.headers.__map.size(), 1ull );
-        EXPECT_STREQ( req.headers.__map["host"].c_str(), "buba.net" );
+        EXPECT_STREQ( req.headers.Get("host").c_str(), "buba.net" );
         EXPECT_EQ( Headers::GetContentLength(req.headers), 0ull );
         EXPECT_STREQ( req.body.c_str(), "" );
 
@@ -224,10 +224,10 @@ TEST(Http_Request_Reader, Header_Override) {
     RequestReader req_rdr;
 
     req_rdr.Read("get / http/1.1\r\n");
-    req_rdr.Read("HeaDer: I'am cool\r\n");
-    req_rdr.Read("hEaDer: Bee Movie  \r\n");
-    req_rdr.Read("header: What is Happening  \r\n");
-    req_rdr.Read("HEADER: No case matters  \r\n");
+    req_rdr.Read("HeaDer: a\r\n");
+    req_rdr.Read("hEaDer: B  \r\n");
+    req_rdr.Read("header: c  \r\n");
+    req_rdr.Read("HEADER: D  \r\n");
     req_rdr.Read("\n");
     req_rdr.Process();
 
@@ -236,14 +236,14 @@ TEST(Http_Request_Reader, Header_Override) {
 
     Headers hdrs(req_rdr.GetMessage().headers);
 
-    EXPECT_STREQ(hdrs.__map["header"].c_str(), "No case matters");
-    EXPECT_STREQ(hdrs.__map["Header"].c_str(), "No case matters");
-    EXPECT_STREQ(hdrs.__map["hEader"].c_str(), "No case matters");
-    EXPECT_STREQ(hdrs.__map["heAder"].c_str(), "No case matters");
-    EXPECT_STREQ(hdrs.__map["heaDer"].c_str(), "No case matters");
-    EXPECT_STREQ(hdrs.__map["headEr"].c_str(), "No case matters");
-    EXPECT_STREQ(hdrs.__map["headeR"].c_str(), "No case matters");
-    EXPECT_STREQ(hdrs.__map["HEADER"].c_str(), "No case matters");
+    EXPECT_STREQ(hdrs.Get("header").c_str(), "a, B, c, D");
+    EXPECT_STREQ(hdrs.Get("Header").c_str(), "a, B, c, D");
+    EXPECT_STREQ(hdrs.Get("hEader").c_str(), "a, B, c, D");
+    EXPECT_STREQ(hdrs.Get("heAder").c_str(), "a, B, c, D");
+    EXPECT_STREQ(hdrs.Get("heaDer").c_str(), "a, B, c, D");
+    EXPECT_STREQ(hdrs.Get("headEr").c_str(), "a, B, c, D");
+    EXPECT_STREQ(hdrs.Get("headeR").c_str(), "a, B, c, D");
+    EXPECT_STREQ(hdrs.Get("HEADER").c_str(), "a, B, c, D");
 
     EXPECT_EQ(hdrs.__map.size(), 1ull);
 

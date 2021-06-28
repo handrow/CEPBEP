@@ -216,7 +216,7 @@ Error  ParseHeaderPair(const std::string& pair_str, Headers* hdrs) {
             return Error(HTTP_READER_BAD_HEADER_VALUE, "Bad header value");
     }
 
-    hdrs->__map[key] = val;
+    hdrs->Add(key, val);
 
     return Error(0);
 }
