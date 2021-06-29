@@ -1,5 +1,5 @@
-#ifndef SOURCES_CONFIG_CONFIG_H_
-#define SOURCES_CONFIG_CONFIG_H_
+#ifndef CONFIG_CONFIG_H_
+#define CONFIG_CONFIG_H_
 
 #include <string>
 #include <map>
@@ -78,4 +78,4 @@ class Category {
 }  // namespace Config
 
 
-#endif  // SOURCES_CONFIG_CONFIG_H_
+#endif  // CONFIG_CONFIG_H_

@@ -11,7 +11,7 @@ class IEvent {
  public:
     inline u64 GetTimeToHandleMs() const {
         u64 now = now_ms();
-        
+
         if (__handle_time_ms <= now)
             return 0;
         return __handle_time_ms - now;
@@ -21,7 +21,7 @@ class IEvent {
         return __handle_time_ms;
     }
 
-    IEvent(u64 timepoint_ms = 0) : __handle_time_ms(timepoint_ms) {
+    explicit IEvent(u64 timepoint_ms = 0) : __handle_time_ms(timepoint_ms) {
     }
 
     virtual ~IEvent() {

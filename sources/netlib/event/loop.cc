@@ -33,4 +33,4 @@ namespace Event {
                 __default_ev->Handle();
         }
     }
-}
+}  // namespace Event

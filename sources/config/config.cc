@@ -115,7 +115,7 @@ Category* Category::ParseLine(const std::string& str, Category* root_category, C
 
 Category* Category::SwitchCurrentCategory(const std::string& str, Category* root_category) {
     Category* sub_cat = root_category;
-    std::string rmdr = str.substr(1, str.size() - 2); // deleting '[' and ']' from the beginning and end of the line("[server]" -> "server")
+    std::string rmdr = str.substr(1, str.size() - 2);  // deleting '[' and ']' from the beginning and end of the line("[server]" -> "server")
 
     for (usize i = rmdr.find(*CAT_PATH_DELIM_SYM);
                i != std::string::npos;
