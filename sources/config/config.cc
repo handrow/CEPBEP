@@ -86,12 +86,48 @@ static const char* ASSGINATION_SYM = "=";
 
 }  // namespace
 
+bool Category::IsCategory(const std::string& str) {
+    usize tok_begin = str.find_first_of(CAT_OPEN_SYM);
+    usize tok_end = str.find_last_of(CAT_CLOSE_SYM);
+
+    if (tok_begin == std::string::npos || tok_end == std::string::npos)
+        return false;
+
+    tok_begin += 1;
+
+    std::string raw_name = Trim(Trim(str.substr(tok_begin, tok_end - tok_begin), ' '), '\t');
+
+    if (raw_name.empty())
+        return false;
+
+    const std::string restricted_syms = "[]";
+
+    for (std::string::iterator it = raw_name.begin();
+                               it != raw_name.end(); ++it) {
+        if (restricted_syms.find_first_of(*it) != std::string::npos)
+            return false;
+    }
+
+    return true;
+}
+
 bool Category::IsField(const std::string& str) {
-    if (str[0] != *CAT_OPEN_SYM)
-        return 1;
-    if (str[str.size() - 1] != *CAT_CLOSE_SYM)
-        return 1;
-    return 0;
+    std::string trimmed = Trim(Trim(str, ' '), '\t');
+    usize assign_sym_pos = trimmed.find_first_of(ASSGINATION_SYM);
+
+    if (assign_sym_pos == std::string::npos || assign_sym_pos == 0)
+        return false;
+
+    const std::string restricted_syms = "[]";
+
+    for (std::string::iterator it = trimmed.begin(),
+                               end = trimmed.begin() + assign_sym_pos;
+                               it != end; ++it) {
+        if (restricted_syms.find_first_of(*it) != std::string::npos)
+            return false;
+    }
+
+    return true;
 }
 
 void Category::ParseField(const std::string& str, Category* cat) {
@@ -100,12 +136,14 @@ void Category::ParseField(const std::string& str, Category* cat) {
                   Trim(str.substr(delim_pos + 1), ' '));
 }
 
-Category* Category::ParseLine(const std::string& str, Category* root_category, Category* current_category_level) {
-    if (str.size() != 0) {
-        if (IsField(str)) {
-            ParseField(str, current_category_level);
-        } else {
+Category* Category::ParseLine(const std::string& str, Category* root_category, Category* current_category_level, bool is_empty_line) {
+    if (!is_empty_line) {
+        if (IsCategory(str)) {
             return SwitchCurrentCategory(str, root_category);
+        } else if (IsField(str)) {
+            ParseField(str, current_category_level);
+        } else if (!str.empty()) {
+            // TODO: Undefiend line, throw error
         }
     } else {
         current_category_level = root_category;
@@ -142,10 +180,21 @@ Category       Category::ParseFromINI(const std::string& filepath, Error *err) {
         return root_category;
     }
     while (true) {
-        std::string str;
-        if (!getline(file, str))
+        std::string line;
+        if (!getline(file, line))
             return root_category;
-        current_category_level = ParseLine(str.substr(0, str.find(*COMMENT_SYM)/*remove comment*/), &root_category, current_category_level);
+        
+        line = Trim(Trim(line, ' '), '\t');
+
+        bool is_empty = line.empty();
+
+        line = line.substr(0, line.find(*COMMENT_SYM));
+        line = Trim(Trim(line, ' '), '\t');
+
+        current_category_level = ParseLine(line,
+                                           &root_category,
+                                           current_category_level,
+                                           is_empty);
     }
 }
 

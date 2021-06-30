@@ -7,17 +7,29 @@
 #include <iostream>
 #include <string>
 
+void print_subcategories(const Config::Category& c) {
+    Config::Category::SubcategoryConstRange srange = c.GetSubcatoryIterRange();
+    while (srange.first != srange.second) {
+        std::cout << "[" << srange.first->first << "]" << std::endl;
+        ++srange.first;
+    }
+}
 
+void print_fields(const Config::Category& c) {
+    Config::Category::FieldsConstRange frange = c.GetFieldsIterRange();
+    while (frange.first != frange.second) {
+        std::cout << frange.first->first << ": " << frange.first->second << std::endl;
+        ++frange.first;
+    }
+}
 
-int main(int, char**) {
-    printf("%d\n", Match("a**********b", "ab"));
-    printf("%d\n", Match("a**********b", "a1234124b"));
-    printf("%d\n", Match("a*b", "a1234124b"));
-    printf("%d\n", Match("a*b", "*ab"));
-    printf("%d\n", Match("a*b", "a*b"));
-    printf("%d\n", Match("[aaaaa|bng]", "bng"));
-    printf("%d\n", Match("[aaaaa|bng]aa", "bngaa"));
-    printf("%d\n", Match("[aaaaa|b*g]aa", "b*gaa"));
-    printf("%d\n", Match("[aa|b*g]aa", "aaaa"));
-    printf("%d\n", Match("[aa|b*g]aa", "aaaaa"));
-}  
+int main(void) {
+    Config::Category c;
+
+    Error err;
+    c = Config::Category::ParseFromINI("../full_config.ini", &err);
+
+    print_fields(c);
+    print_subcategories(c);
+    print_fields(c.GetSubcategoryRef("default"));
+}

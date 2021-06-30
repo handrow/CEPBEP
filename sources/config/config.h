@@ -18,6 +18,7 @@ enum ConfigErrorCode {
 
 class Category {
  private:
+    // TODO: use list
     typedef std::map<std::string, Category>     CategoryMap;
     typedef std::map<std::string, std::string>  FieldMap;
 
@@ -42,8 +43,9 @@ class Category {
  private:
     static void           WriteToFile(const Category& subcat, std::ofstream* out, const std::string& catprefix = "");
     static bool           IsField(const std::string& str);
+    static bool           IsCategory(const std::string& str);
     static void           ParseField(const std::string& str, Category* cat);
-    static Category*      ParseLine(const std::string& str, Category* root_category, Category* current_category_level);
+    static Category*      ParseLine(const std::string& str, Category* root_category, Category* current_category_level, bool is_empty_line);
     static Category*      SwitchCurrentCategory(const std::string& str, Category* root_category);
 
  public:
