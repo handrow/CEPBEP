@@ -49,8 +49,8 @@ SockInfo::SockInfo(IpAddrV4 ip, Port port)
 }
 
 SockInfo::SockInfo(const sockaddr_in& sin)
-: addr_BE(sin.sin_addr.s_addr)
-, port_BE(sin.sin_port) {
+: addr_BE(ntohl(sin.sin_addr.s_addr))
+, port_BE(ntohs(sin.sin_port)) {
 }
 
 SockInfo::operator sockaddr_in() const {
@@ -86,6 +86,10 @@ Socket Socket::CreateListenSocket(const SockInfo& sinfo, Error* err) {
         return *err = SystemError(errno), sock;
 
     return sock;
+}
+
+SockInfo Socket::GetSockInfo() const {
+    return __info;
 }
 
 Socket Socket::AcceptNewConnection(Socket* listen_sock, Error* err) {

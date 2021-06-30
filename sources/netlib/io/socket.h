@@ -58,9 +58,11 @@ class Socket : public File {
 
  public:
     explicit Socket(const SockInfo& sinfo = SockInfo(), fd_t fd = -1);
+    SockInfo GetSockInfo() const;
 
     static Socket CreateListenSocket(const SockInfo& info, Error* err);
     static Socket AcceptNewConnection(Socket* listen_sock, Error* err);
+
 };
 
 }  // namespace IO

@@ -48,6 +48,11 @@ add_library(netlib
     "sources/netlib/event/loop.h"
     "sources/netlib/event/queue.h"
     "sources/netlib/event/loop.cc"
+
+    "sources/netlib/webserver/webserver.h"
+    "sources/netlib/webserver/webserver.cc"
+    "sources/netlib/webserver/webserver_poll.cc"
+    "sources/netlib/webserver/webserver_listener_event.cc"
 )
 
 add_library(config_parser

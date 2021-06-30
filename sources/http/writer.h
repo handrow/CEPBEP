@@ -7,7 +7,7 @@
 namespace Http {
 
 class ResponseWriter {
- private:
+ protected:
     void            __Reset();
 
  public:
@@ -30,7 +30,7 @@ class ResponseWriter {
      */
     std::string     SendToString(int code, ProtocolVersion ver = HTTP_1_1);
 
- private:
+ protected:
     Headers         __hdrs;
     std::string     __body;
 };

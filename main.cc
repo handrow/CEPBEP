@@ -2,26 +2,23 @@
 #include "common/error.h"
 #include "http/writer.h"
 
+#include "netlib/webserver/webserver.h"
+
 #include <cstdio>
 #include <iostream>
 #include <string>
 
 int main(void) {
-    Http::ResponseWriter wr;
+    Webserver::HttpServer  server;
+    IO::SockInfo  saddr;
+    ft::Logger  logger(ft::Logger::DEBUG);
 
-    wr.Header().Add("Connection", "keep-alive");
-    wr.Header().Add("Server", "nginx/2.15");
-
-    wr.Write("Hello Amsterdam\n");
-    wr.Write("My name is Philichipano\n");
-    wr.Write("Bidirective shooting\n");
-    std::cout << wr.SendToString(200) << std::endl;
-
-    wr.Header().Add("Connection", "keep-alive");
-    wr.Header().Add("Server", "nginx/2.15");
-
-    wr.Write("Hello Amsterdam\n");
-    wr.Write("My name is Philichipano\n");
-    wr.Write("Bidirective shooting\n");
-    std::cout << wr.SendToString(200) << std::endl;
+    try {
+        server.SetLogger(&logger);
+        server.AddListener(IO::SockInfo(std::string("192.168.24.34"), 9090));
+        server.AddListener(IO::SockInfo(std::string("127.0.0.1"), 9090));
+        server.ServeForever();
+    } catch (std::exception& e) {
+        critical(&logger, "Fatal error: ``%s''", e.what());
+    }
 }
