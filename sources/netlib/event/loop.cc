@@ -2,6 +2,13 @@
 
 namespace Event {
 
+    Loop::~Loop() {
+        while (!__hooks.empty()) {
+            delete __hooks.back();
+            __hooks.pop_back();
+        }
+    }
+
     u64  Loop::GetTimeToNextEventMS() const {
         if (__q.empty())
             return INFINITE_TIME;
@@ -12,15 +19,15 @@ namespace Event {
         __q.push(ev);
     }
 
-    void Loop::SetDefaultEvent(IEventPtr ev) {
-        __default_ev = ev;
+    void Loop::AddDefaultEvent(IEventPtr ev) {
+        __hooks.push_front(ev);
     }
 
     void Loop::Stop() {
         __run = false;
     }
 
-     void Loop::Run() {
+    void Loop::Run() {
         while (__run) {
             // Release all ready events
             while (GetTimeToNextEventMS() == 0) {
@@ -29,8 +36,12 @@ namespace Event {
                 __q.pop();
             }
 
-            if (__default_ev != NULL)
-                __default_ev->Handle();
+            // Proccess all hooks
+            for (HookList::iterator hook_it =  __hooks.begin();
+                                    hook_it != __hooks.end();
+                                    ++hook_it) {
+                (*hook_it)->Handle();
+            }
         }
     }
 }  // namespace Event

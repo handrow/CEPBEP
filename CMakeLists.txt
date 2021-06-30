@@ -24,6 +24,7 @@ add_library(logger
 add_library(http_parser
     "sources/http/uri.h"
     "sources/http/http.h"
+    "sources/http/writer.h"
     "sources/http/reader.h"
     "sources/http/uri.cc"
     "sources/http/http.cc"
@@ -31,6 +32,7 @@ add_library(http_parser
     "sources/http/reader_request.cc"
     "sources/http/reader_response.cc"
     "sources/http/reader_common.cc"
+    "sources/http/writer.cc"
 )
 
 add_library(netlib

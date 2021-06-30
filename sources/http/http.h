@@ -49,6 +49,7 @@ struct Headers {
     static usize    GetContentLength(const Headers& hdrs);
     static bool     IsContentLengthed(const Headers& hdrs);
     static bool     IsChunkedEncoding(const Headers& hdrs);
+    static std::string CurrentDate();
 
     void            SetMap(const HeaderMap& hmap);
     HeaderMap       GetMap() const;

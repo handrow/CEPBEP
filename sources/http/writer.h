@@ -7,11 +7,32 @@
 namespace Http {
 
 class ResponseWriter {
- public:
-    Headers& Header();
-    void     Write(const std::string& body_portion);
+ private:
+    void            __Reset();
 
-    std::string Result() const;
+ public:
+    /**
+     * Returns reference to current response Headers class.
+     */
+    Headers&        Header();
+    const Headers&  Header() const;
+
+    /**
+     * Adds more bytes to entity-body
+     */
+    void            Write(const std::string& body_appendix);
+
+    /**
+     * Flushes inner buffers and returns raw represetation of a response.
+     * Headers to set:
+     * - Set Content-Length as size of the entity-body (ALWAYS)
+     * - Set Date header as time when it was stringified (ALWAYS)
+     */
+    std::string     SendToString(int code, ProtocolVersion ver = HTTP_1_1);
+
+ private:
+    Headers         __hdrs;
+    std::string     __body;
 };
 
 }  // namespace Http
