@@ -13,7 +13,7 @@ std::string     Headers::CurrentDate() {
     std::string buff;
 
     buff.resize(255);
-    
+
     size_t len = strftime(const_cast<char *>(buff.data()), 255,
                           "%a, %d %b %Y %H:%M:%S GMT", &tm);
 
@@ -82,6 +82,10 @@ void         Headers::Add(const std::string& hname, const std::string& hval
     } else {
         it->second += delimiter + hval;
     }
+}
+
+void  Headers::Rm(const std::string& hname) {
+    __map.erase(hname);
 }
 
 std::string  Headers::Get(const std::string& hname, bool* isset) const {

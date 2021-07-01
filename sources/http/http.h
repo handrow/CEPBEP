@@ -55,6 +55,7 @@ struct Headers {
     HeaderMap       GetMap() const;
 
     std::string     Get(const std::string& hname, bool* isset = NULL) const;
+    void            Rm(const std::string& hname);
     void            Set(const std::string& hname, const std::string& hval);
     void            Add(const std::string& hname, const std::string& hval
                                                 , const std::string& delimiter = ", ");

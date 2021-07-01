@@ -270,6 +270,31 @@ Error  ParseChunkSize(const std::string& buff, usize* chunk_size) {
     return Error(Error::ERR_OK);  // no error
 }
 
+Error  ParseCgiStatus(const Headers& hdrs, ProtocolVersion* ver, int* rcode, std::string* phrase) {
+    bool isset = true;
+    std::string status_val = hdrs.Get("Status", &isset);
+    if (isset) {
+        usize tok_begin = 0;
+        usize tok_end = 0;
+
+        tok_end = status_val.find_first_of(' ');
+        if (NOT_FOUND(tok_end))
+            return Error(HTTP_READER_BAD_CODE, "Bad cgi code");
+        *rcode = Convert<int>(GET_TOKEN(status_val, tok_begin, tok_end));
+        tok_begin = tok_end;
+
+        tok_begin = tok_end;
+        tok_end = status_val.length();
+        *phrase = Trim(GET_TOKEN(status_val, tok_begin, tok_end), ' ');
+    } else {
+        *rcode = 200;
+        *phrase = "OK";
+    }
+    *ver = HTTP_1_1;
+
+    return Error(Error::ERR_OK);
+}
+
 }  // namespace __CommonParsers
 
 }  // namespace Http

@@ -26,6 +26,7 @@ add_library(http_parser
     "sources/http/http.h"
     "sources/http/writer.h"
     "sources/http/reader.h"
+    "sources/http/cgi_response_reader.h"
     "sources/http/uri.cc"
     "sources/http/http.cc"
     "sources/http/headers.cc"
@@ -33,6 +34,7 @@ add_library(http_parser
     "sources/http/reader_response.cc"
     "sources/http/reader_common.cc"
     "sources/http/writer.cc"
+    "sources/http/cgi_response_reader.cc"
 )
 
 add_library(netlib

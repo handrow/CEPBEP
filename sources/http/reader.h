@@ -42,6 +42,7 @@ Error  ParseHeaders(const std::string& buff, Headers* hdrs);
 
 // VALID: *(HEX) (CRLF)
 Error  ParseChunkSize(const std::string& buff, usize* chunk_size);
+Error  ParseCgiStatus(const Headers& hdrs, ProtocolVersion* ver, int* rcode, std::string* phrase);
 
 }  // namespace __CommonParsers
 
