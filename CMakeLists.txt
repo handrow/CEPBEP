@@ -8,9 +8,8 @@ set(CMAKE_CXX_FLAGS                 "-Wall -Wextra -Werror")
 set(CMAKE_CXX_STANDARD              98)
 set(TEST_DIR                        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
-set(OUR_LIBRARIES                   logger http_parser netlib config_parser ft)
+set(OUR_LIBRARIES                   logger http cgi netlib config_parser ft)
 set(OUR_INCLUDES                    sources/)
-
 
 
 include_directories(PUBLIC ${OUR_INCLUDES})
@@ -21,12 +20,18 @@ add_library(logger
     "sources/logger/logger.h"
 )
 
-add_library(http_parser
+add_library(cgi
+    "sources/cgi/cgi.h"
+    "sources/cgi/metavars.cc"
+    "sources/cgi/response_reader.h"
+    "sources/cgi/response_reader.cc"
+)
+
+add_library(http
     "sources/http/uri.h"
     "sources/http/http.h"
     "sources/http/writer.h"
     "sources/http/reader.h"
-    "sources/http/cgi_response_reader.h"
     "sources/http/uri.cc"
     "sources/http/http.cc"
     "sources/http/headers.cc"
@@ -34,7 +39,6 @@ add_library(http_parser
     "sources/http/reader_response.cc"
     "sources/http/reader_common.cc"
     "sources/http/writer.cc"
-    "sources/http/cgi_response_reader.cc"
 )
 
 add_library(netlib

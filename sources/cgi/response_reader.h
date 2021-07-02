@@ -1,11 +1,11 @@
-#ifndef HTTP_CGI_RESPONSE_READER_H_
-#define HTTP_CGI_RESPONSE_READER_H_
+#ifndef CGI_RESPONSE_READER_H_
+#define CGI_RESPONSE_READER_H_
 
 #include "http/reader.h"
 
-namespace Http {
+namespace Cgi {
 
-class CgiResponseReader {
+class ResponseReader {
  private:
     enum   State {
         STT_SKIP_EMPTY_LINES,  // input needed
@@ -25,7 +25,7 @@ class CgiResponseReader {
     usize           __i;
     Error           __err;
     State           __state;
-    Response        __res_data;
+    Http::Response  __res_data;
     usize           __end_read_i;
     std::string     __buffer;
 
@@ -49,7 +49,7 @@ class CgiResponseReader {
     State   STT_ErrorOccured(bool* run);
 
  public:
-    CgiResponseReader() { Reset(); }
+    ResponseReader() { Reset(); }
 
     void    Read(const std::string& bytes);
     void    EndRead();
@@ -60,10 +60,10 @@ class CgiResponseReader {
     bool    HasMessage() const;
     bool    HasError() const;
 
-    Error    GetError() const;
-    Response GetMessage() const;
+    Error          GetError() const;
+    Http::Response GetMessage() const;
 };
 
-}  // namespace Http
+}  // namespace Cgi
 
-#endif  // HTTP_CGI_RESPONSE_READER_H_
+#endif  // CGI_RESPONSE_READER_H_
