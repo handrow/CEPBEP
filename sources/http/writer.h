@@ -7,10 +7,9 @@
 namespace Http {
 
 class ResponseWriter {
- protected:
-    void            __Reset();
-
  public:
+    void            Reset();
+
     /**
      * Returns reference to current response Headers class.
      */

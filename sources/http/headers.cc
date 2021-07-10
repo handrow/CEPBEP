@@ -88,6 +88,17 @@ void  Headers::Rm(const std::string& hname) {
     __map.erase(hname);
 }
 
+bool         Headers::Has(const std::string& hname) const {
+    return __map.count(hname) > 0;
+}
+
+std::string  Headers::Get(const std::string& hname) const {
+    HeaderMap::const_iterator it = __map.find(hname);
+
+    return (it != __map.end()) ? it->second
+                               : "";
+}
+
 std::string  Headers::Get(const std::string& hname, bool* isset) const {
     HeaderMap::const_iterator it = __map.find(hname);
 

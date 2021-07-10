@@ -75,7 +75,7 @@ std::string SearchCodeMap(int code) {
 }  // namespace
 
 
-void        ResponseWriter::__Reset() {
+void        ResponseWriter::Reset() {
     __hdrs = Headers();
     __body = std::string();
 }
@@ -104,7 +104,7 @@ std::string     ResponseWriter::SendToString(int code, ProtocolVersion ver) {
     res.version = ver;
     res.body = __body;
 
-    __Reset();
+    Reset();
 
     return res.ToString();
 }
