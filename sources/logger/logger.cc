@@ -1,6 +1,6 @@
 #include "logger/logger.h"
 
-namespace ft {
+namespace Log {
 
 const char* Logger::LVL_TO_STR[] = {
     "DEBUG",
@@ -71,4 +71,4 @@ void Logger::Send(Logger::LogLvl lvl, const char* message, ...) {
     }
 }
 
-}  // namespace ft
+}  // namespace Log

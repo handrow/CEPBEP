@@ -11,25 +11,25 @@
 # include <string>
 # include <fstream>
 
-namespace ft {
+namespace Log {
 
 # define log(self, log_level, message, ...) \
         (self)->Send((log_level), "%s:%d | " message , __FILE__, __LINE__, ##__VA_ARGS__ )
 
 # define debug(self, message, ...) \
-        log(self, ft::Logger::DEBUG, message, ##__VA_ARGS__ )
+        log(self, Log::Logger::DEBUG, message, ##__VA_ARGS__ )
 
 # define info(self, message, ...) \
-        log(self, ft::Logger::INFO, message, ##__VA_ARGS__ )
+        log(self, Log::Logger::INFO, message, ##__VA_ARGS__ )
 
 # define warning(self, message, ...) \
-        log(self, ft::Logger::WARNING, message, ##__VA_ARGS__ )
+        log(self, Log::Logger::WARNING, message, ##__VA_ARGS__ )
 
 # define error(self, message, ...) \
-        log(self, ft::Logger::ERROR, message, ##__VA_ARGS__ )
+        log(self, Log::Logger::ERROR, message, ##__VA_ARGS__ )
 
 # define critical(self, message, ...) \
-        log(self, ft::Logger::CRITICAL, message, ##__VA_ARGS__ )
+        log(self, Log::Logger::CRITICAL, message, ##__VA_ARGS__ )
 
 class Logger {
  public:

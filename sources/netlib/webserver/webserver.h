@@ -20,7 +20,7 @@ namespace Webserver {
 
 class HttpServer {
  public:
-    static void PrintDebugInfo(IO::Poller::PollEvent p, fd_t fd, ft::Logger* l) {
+    static void PrintDebugInfo(IO::Poller::PollEvent p, fd_t fd, Log::Logger* l) {
         const char* poll_ev_str;
         switch (p) {
             case IO::Poller::POLL_CLOSE:        poll_ev_str = "POLL_CLOSE"; break;
@@ -35,11 +35,11 @@ class HttpServer {
     }
 
     struct DebugEvent : public Event::IEvent {
-        ft::Logger*           logger;
+        Log::Logger*           logger;
         IO::Poller::PollEvent pe;
         fd_t                  fd;
 
-             DebugEvent(ft::Logger* l, IO::Poller::PollEvent p, fd_t f) : logger(l), pe(p), fd(f) {}
+             DebugEvent(Log::Logger* l, IO::Poller::PollEvent p, fd_t f) : logger(l), pe(p), fd(f) {}
         void Handle() { HttpServer::PrintDebugInfo(pe, fd, logger); }
     };
 
@@ -49,7 +49,7 @@ class HttpServer {
     typedef std::map<fd_t, IO::Socket>  SocketFdMap;
 
  private:
-    ft::Logger*     __logger;
+    Log::Logger*     __logger;
 
     IO::Poller      __poller;
     Event::Loop     __evloop;
@@ -72,7 +72,7 @@ class HttpServer {
     Event::IEventPtr    __SpawnListenerEvent(IO::Poller::PollEvent ev, IO::Socket* sock);
 
  public:
-    void  SetLogger(ft::Logger* l);
+    void  SetLogger(Log::Logger* l);
     void  AddListener(const IO::SockInfo& si);
     void  ServeForever();
 };

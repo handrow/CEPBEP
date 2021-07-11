@@ -2,7 +2,7 @@
 
 namespace Webserver {
 
-void HttpServer::SetLogger(ft::Logger* l) {
+void HttpServer::SetLogger(Log::Logger* l) {
     __logger = l;
 }
 

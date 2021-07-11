@@ -10,7 +10,7 @@
 
 int main(int, Cgi::Envs, Cgi::Envs) {
     IO::SockInfo            saddr;
-    ft::Logger              logger(ft::Logger::DEBUG);
+    Log::Logger              logger(Log::Logger::DEBUG);
     Webserver::HttpServer   server;
 
     try {
