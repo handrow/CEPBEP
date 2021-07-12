@@ -58,6 +58,11 @@ Event::IEventPtr HttpServer::__ChooseAndSpawnEvent(IO::Poller::PollEvent pev, fd
         return __SpawnSessionEvent(pev, session_it->second);
     }
 
+    StaticFileFdMap::iterator  static_file_it = __static_files_map.find(fd);
+    if (static_file_it != __static_files_map.end()) {
+        return __SpawnStaticFileEvent(pev, static_file_it->second.file, static_file_it->second.session);
+    }
+
     return new DebugEvent(__system_log, pev, fd);
 }
 

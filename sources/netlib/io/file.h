@@ -23,6 +23,8 @@ class File {
     fd_t        GetFd();
     std::string Read(usize nbytes, Error* err = NULL);
     isize       Write(const std::string& s, Error* err = NULL);
+
+    static File  OpenFile(const std::string& path, int oflags, Error* err);
 };
 
 }  // namespace IO

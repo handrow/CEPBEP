@@ -32,6 +32,8 @@ add_library(http
     "sources/http/http.h"
     "sources/http/writer.h"
     "sources/http/reader.h"
+    "sources/http/mime.h"
+    "sources/http/mime.cc"
     "sources/http/uri.cc"
     "sources/http/http.cc"
     "sources/http/headers.cc"
@@ -60,6 +62,7 @@ add_library(netlib
     "sources/netlib/webserver/webserver_poll.cc"
     "sources/netlib/webserver/webserver_listener_event.cc"
     "sources/netlib/webserver/webserver_sessions.cc"
+    "sources/netlib/webserver/webserver_static.cc"
 )
 
 add_library(config_parser

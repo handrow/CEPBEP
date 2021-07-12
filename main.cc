@@ -15,7 +15,7 @@ int main(int, Cgi::Envs, Cgi::Envs) {
 
     try {
         server.SetLogger(&logger, &logger, &logger);
-        server.AddListener(IO::SockInfo(std::string("0.0.0.0"), 9001));
+        server.AddListener(IO::SockInfo(std::string("0.0.0.0"), 9002));
         server.ServeForever();
     } catch (std::exception& e) {
         critical(&logger, "Fatal error: ``%s''", e.what());

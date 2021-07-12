@@ -43,4 +43,14 @@ isize   File::Write(const std::string& s, Error* err) {
     return rc;
 }
 
+IO::File  File::OpenFile(const std::string& path, int oflags, Error* err) {
+    IO::File    file;
+
+    file.__fd = open(path.c_str(), oflags, 0644);
+    if (file.__fd < 0) {
+        *err = SystemError(errno);
+    }
+    return file;
+}
+
 }  // namespace IO

@@ -1,7 +1,5 @@
 #include "netlib/webserver/webserver.h"
 
-#include "logger/logger.h"
-
 namespace Webserver {
 
 /// Basics
@@ -50,10 +48,34 @@ void  HttpServer::__OnHttpRequest(SessionCtx* ss) {
                            Http::ProtocolVersionToString(ss->http_req.version).c_str(),
                            ss->http_req.uri.ToString().c_str());
     
-    ss->http_writer.Write("Hello guys, it is text/plain.\n");
-    ss->http_writer.Write("But I think it's not bad at all!!!\n");
-    ss->http_writer.Write("It's better then an error :)\n");
-    __OnHttpResponse(ss);
+    if (ss->http_req.method == Http::METHOD_GET) {
+        const std::string  relative_file_path = "./" + ss->http_req.uri.path;
+
+        info(ss->access_log, "Http GET static resource:\n"
+                             ">     SESSION_FD: %d\n"
+                             ">  RESOURCE_PATH: %s\n",
+                               ss->conn_sock.GetFd(),
+                               relative_file_path.c_str());
+
+        Error err;
+        IO::File file = IO::File::OpenFile(relative_file_path, O_RDONLY, &err);
+
+        if (err.IsError()) {
+
+            if (err.errcode == ENOENT)
+                ss->res_code = 404;
+            else
+                ss->res_code = 500;
+
+            return __OnHttpError(ss);
+        }
+
+        // ss->http_writer.Header().Set("Content-Type", Mime::MapType() )
+        __AddStaticFileCtx(file, ss);
+        // Then wait for StaticFileEnd event :)
+    } else {
+        return ss->res_code = 405, __OnHttpError(ss);
+    }
 }
 
 void  HttpServer::__OnHttpError(SessionCtx* ss) {
@@ -215,7 +237,7 @@ Event::IEventPtr  HttpServer::__SpawnSessionEvent(IO::Poller::PollEvent pev, Ses
     } else if (pev == IO::Poller::POLL_CLOSE) {
         return new EvSessionHup(this, ss);
     } else {
-        throw std::runtime_error("Unsupported poller event type for SessionEventSpawner");
+        throw std::runtime_error("Unsupported poller event type for SessionEventSpawner: " + Convert<std::string>(pev));
     }
 }
 

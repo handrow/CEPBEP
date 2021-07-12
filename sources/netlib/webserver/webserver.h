@@ -6,6 +6,7 @@
 #include "http/http.h"
 #include "http/reader.h"
 #include "http/writer.h"
+#include "http/mime.h"
 
 #include "netlib/io/socket.h"
 
@@ -59,13 +60,22 @@ class HttpServer {
         int                   res_code;
     };
 
-    typedef std::map< fd_t, IO::Socket >   SocketFdMap;
-    typedef std::map< fd_t, SessionCtx* >  SessionFdMap;
+    struct StaticFileEntry {
+        IO::File    file;
+        SessionCtx* session;
+    };
+
+    typedef std::map< fd_t, IO::Socket >      SocketFdMap;
+    typedef std::map< fd_t, SessionCtx* >     SessionFdMap;
+    typedef std::map< fd_t, StaticFileEntry > StaticFileFdMap;
 
  private:
     SessionCtx*         __NewSessionCtx(const IO::Socket& sock, Log::Logger* accessl, Log::Logger* errorl);
     void                __AddSessionCtx(SessionCtx* ss);
     void                __RemoveSessionCtx(SessionCtx* ss);
+
+    void                __AddStaticFileCtx(IO::File file, SessionCtx* ss);
+    void                __RemoveStaticFileCtx(IO::File file);
 
     /// EVENTS POLLING
     void                __EvaluateIoEvents();
@@ -88,10 +98,17 @@ class HttpServer {
     void                __OnSessionWrite(SessionCtx* ss);
     void                __OnSessionError(SessionCtx* ss);
     void                __OnSessionHup(SessionCtx* ss);
-
     void                __OnHttpRequest(SessionCtx* ss);
     void                __OnHttpResponse(SessionCtx* ss);
     void                __OnHttpError(SessionCtx* ss);
+
+    Event::IEventPtr    __SpawnStaticFileEvent(IO::Poller::PollEvent ev, IO::File file, SessionCtx* ss);
+    class  EvStaticFileRead;
+    class  EvStaticFileClose;
+    class  EvStaticFileError;
+    void                __OnStaticFileRead(IO::File file, SessionCtx* ss);
+    void                __OnStaticFileError(IO::File file, SessionCtx* ss);
+    void                __OnStaticFileEnd(SessionCtx* ss);
 
  public:
     void  SetLogger(Log::Logger* a, Log::Logger* e, Log::Logger* s);
@@ -108,6 +125,7 @@ class HttpServer {
 
     SocketFdMap      __listeners_map;
     SessionFdMap     __sessions_map;
+    StaticFileFdMap  __static_files_map;
 };
 
 }
