@@ -2,8 +2,10 @@
 
 namespace Webserver {
 
-void HttpServer::SetLogger(Log::Logger* l) {
-    __logger = l;
+void HttpServer::SetLogger(Log::Logger* a, Log::Logger* e, Log::Logger* s) {
+    __access_log = a;
+    __error_log = e;
+    __system_log = s;
 }
 
 void HttpServer::AddListener(const IO::SockInfo& si) {
@@ -13,7 +15,7 @@ void HttpServer::AddListener(const IO::SockInfo& si) {
     if (err.IsError())
         throw std::runtime_error("Socket creation failed: " + err.message);
 
-    __lstn_sockets[sock.GetFd()] = sock;
+    __listeners_map[sock.GetFd()] = sock;
     __poller.AddFd(sock.GetFd(), IO::Poller::POLL_READ);
 }
 

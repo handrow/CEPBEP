@@ -4,15 +4,6 @@
 
 namespace Webserver {
 
-Event::IEventPtr  HttpServer::__SpawnEvent(IO::Poller::PollEvent pev, fd_t fd) {
-    // if listener then call spawner for listeners
-    SocketFdMap::iterator sock_map_it = __lstn_sockets.find(fd);
-    if (sock_map_it != __lstn_sockets.end()) {
-        return __SpawnListenerEvent(pev, &(sock_map_it->second));
-    }
-    return new DebugEvent(__logger, pev, fd);
-}
-
 class HttpServer::EvLoopHook: public Event::IEvent {
  private:
     HttpServer*     __http_server;
@@ -26,7 +17,8 @@ Event::IEventPtr  HttpServer::__SpawnLoopHook() {
     return new EvLoopHook(this);
 }
 
-IO::Poller::PollEvent  HttpServer::__MostWantedPollEvent(IO::Poller::EventSet eset) {
+namespace {
+IO::Poller::PollEvent  __MostWantedPollEvent(IO::Poller::EventSet eset) {
     if (eset & IO::Poller::POLL_ERROR)
         return IO::Poller::POLL_ERROR;
 
@@ -41,19 +33,42 @@ IO::Poller::PollEvent  HttpServer::__MostWantedPollEvent(IO::Poller::EventSet es
 
     return IO::Poller::POLL_NONE;
 }
+}  // namespace
 
-void HttpServer::__EvaluateIoEvents() {
-    __poller.SetPollTimeout(__evloop.GetTimeToNextEventMS());
-
+IO::Poller::Result   HttpServer::__PollEvent() {
     Error err;
     IO::Poller::Result res = __poller.Poll(&err);
 
     if (err.IsError())
         throw std::runtime_error("Poll failed: " + err.message);
 
-    IO::Poller::PollEvent most_wanted_pev = __MostWantedPollEvent(res.ev);
+    res.ev = __MostWantedPollEvent(res.ev);
 
-    Event::IEventPtr ev = __SpawnEvent(most_wanted_pev, res.fd);
+    return res;
+}
+
+Event::IEventPtr HttpServer::__ChooseAndSpawnEvent(IO::Poller::PollEvent pev, fd_t fd) {
+    SocketFdMap::iterator  lstn_sock_it = __listeners_map.find(fd);
+    if (lstn_sock_it != __listeners_map.end()) {
+        return __SpawnListenerEvent(pev, &lstn_sock_it->second);
+    }
+
+    SessionFdMap::iterator  session_it = __sessions_map.find(fd);
+    if (session_it != __sessions_map.end()) {
+        return __SpawnSessionEvent(pev, session_it->second);
+    }
+
+    return new DebugEvent(__system_log, pev, fd);
+}
+
+void HttpServer::__EvaluateIoEvents() {
+    __poller.SetPollTimeout(__evloop.GetTimeToNextEventMS());
+
+    IO::Poller::Result res = __PollEvent();
+
+    Event::IEventPtr ev = __ChooseAndSpawnEvent(IO::Poller::PollEvent(res.ev),
+                                                res.fd);
+
     __evloop.PushEvent(ev);
 }
 

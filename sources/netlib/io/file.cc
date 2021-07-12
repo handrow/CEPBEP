@@ -29,7 +29,7 @@ std::string File::Read(usize nbytes, Error* err) {
 
     rc = read(__fd, const_cast<char*>(s.data()), nbytes);
     if (rc < 0)
-        *err = Error(NET_SYSTEM_ERR, "Syscall error: read");
+        safe_pointer_assign(err, Error(NET_SYSTEM_ERR, "Syscall error: read"));
     else
         s.resize(rc);
     return s;
@@ -39,7 +39,7 @@ isize   File::Write(const std::string& s, Error* err) {
     isize rc = write(__fd, const_cast<char*>(s.data()), s.size());
 
     if (rc < 0)
-        *err = Error(NET_SYSTEM_ERR, "Syscall error: write");
+        safe_pointer_assign(err, Error(NET_SYSTEM_ERR, "Syscall error: write"));
     return rc;
 }
 

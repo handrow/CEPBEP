@@ -10,13 +10,12 @@
 
 int main(int, Cgi::Envs, Cgi::Envs) {
     IO::SockInfo            saddr;
-    Log::Logger              logger(Log::Logger::DEBUG);
+    Log::Logger             logger(Log::Logger::DEBUG);
     Webserver::HttpServer   server;
 
     try {
-        server.SetLogger(&logger);
-        server.AddListener(IO::SockInfo(std::string("0.0.0.0"), 9091));
-        server.AddListener(IO::SockInfo(std::string("127.0.0.1"), 9090));
+        server.SetLogger(&logger, &logger, &logger);
+        server.AddListener(IO::SockInfo(std::string("0.0.0.0"), 9001));
         server.ServeForever();
     } catch (std::exception& e) {
         critical(&logger, "Fatal error: ``%s''", e.what());

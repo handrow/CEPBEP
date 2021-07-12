@@ -21,8 +21,8 @@ class File {
     void        AddFileFlag(int flag, Error* err);
     void        Close();
     fd_t        GetFd();
-    std::string Read(usize nbytes, Error* err);
-    isize       Write(const std::string& s, Error* err);
+    std::string Read(usize nbytes, Error* err = NULL);
+    isize       Write(const std::string& s, Error* err = NULL);
 };
 
 }  // namespace IO

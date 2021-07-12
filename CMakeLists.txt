@@ -59,6 +59,7 @@ add_library(netlib
     "sources/netlib/webserver/webserver.cc"
     "sources/netlib/webserver/webserver_poll.cc"
     "sources/netlib/webserver/webserver_listener_event.cc"
+    "sources/netlib/webserver/webserver_sessions.cc"
 )
 
 add_library(config_parser
