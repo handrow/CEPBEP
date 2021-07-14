@@ -111,7 +111,6 @@ void  HttpServer::__OnHttpRequest(SessionCtx* ss) {
 }
 
 void  HttpServer::__OnHttpError(SessionCtx* ss) {
-    // TODO
     ss->http_writer.Reset();
     ss->http_writer.Write("Error occured: " + Convert<std::string>(ss->res_code) + ".\n");
     ss->http_writer.Write("Good luck with it!\n");

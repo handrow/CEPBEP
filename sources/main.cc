@@ -10,43 +10,41 @@
 
 int main(int ac, Cgi::Envs av, Cgi::Envs) {
     IO::SockInfo            saddr;
-    Log::Logger             logger(Log::Logger::DEBUG);
+    Log::Logger             logger(Log::Logger::ERROR);
     Webserver::HttpServer   server;
 
     Webserver::HttpServer::MethodSet ms;
     ms.insert(Http::METHOD_GET);
 
     Webserver::HttpServer::WebRoute route1 = {
-        .pattern = "/hello/1/*",
-        .root_directory = "/Users/hgranule/Desktop/webserv/bin/r1/",
-        .index_page = "",
-        .allowed_methods = ms
-    };
-
-    Webserver::HttpServer::WebRoute route2 = {
-        .pattern = "/hello/2/*",
-        .root_directory = "/Users/hgranule/Desktop/webserv/bin/r2/",
+        .pattern = "/gallery/*.[jpg|jpeg|gif|png|svg]",
+        .root_directory = "../www/images",
         .index_page = "index.html",
         .allowed_methods = ms
     };
 
-    Webserver::HttpServer::WebRoute route3 = {
-        .pattern = "*",
-        .root_directory = "/Users/hgranule/Desktop/webserv/bin/all/",
-        .index_page = "abc.htm",
+    Webserver::HttpServer::WebRoute route2 = {
+        .pattern = "/*",
+        .root_directory = "../www/pages",
+        .index_page = "index.html",
         .allowed_methods = ms
     };
 
     Mime::MimeTypesMap mimes;
     mimes["jpg"] = "image/jpeg";
     mimes["jpeg"] = "image/jpeg";
+    mimes["png"] = "image/png";
+    mimes["gif"] = "image/gif";
+    mimes["svg"] = "image/svg";
     mimes["html"] = "text/html";
     mimes["htm"] = "text/html";
+    mimes["css"] = "text/css";
+    mimes["js"] = "text/javascript";
+    mimes["webp"] = "image/webp";
 
     try {
         server.AddWebRoute(route1);
         server.AddWebRoute(route2);
-        server.AddWebRoute(route3);
 
         server.SetMimes(mimes);
 
