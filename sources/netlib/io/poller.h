@@ -23,7 +23,7 @@ class Poller {
         POLL_ERROR      = POLLERR,
         POLL_CLOSE      = POLLHUP,
         POLL_NOT_OPEN   = POLLNVAL,
-        POLL_PRIO       = POLL_PRI,
+        POLL_PRIO       = POLLPRI,
     };
 
     struct Result {

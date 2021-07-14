@@ -1,3 +1,4 @@
+#include "common/string_utils.h"
 #include "logger/logger.h"
 
 namespace Log {
@@ -29,7 +30,7 @@ Logger::~Logger() {
 }
 
 std::string Logger::USToString(int usec) {
-    std::string numstr = std::to_string(usec);
+    std::string numstr = Convert<std::string>(usec);
     const size_t MAX_US_DIGITS = 6;
 
     return std::string("+") + std::string(MAX_US_DIGITS - numstr.size(), '0') + numstr;

@@ -172,7 +172,7 @@ Category* Category::SwitchCurrentCategory(const std::string& str, Category* root
 }
 
 Category       Category::ParseFromINI(const std::string& filepath, Error *err) {
-    std::ifstream file(filepath);
+    std::ifstream file(filepath.c_str());
     Category root_category;
     Category* current_category_level = &root_category;
     if (!file.is_open()) {
@@ -228,7 +228,7 @@ void Category::WriteToFile(const Category& subcat, std::ofstream* out, const std
 }
 
 void           Category::DumpToINI(const Category& config_obj, const std::string& filepath, Error *err) {
-    std::ofstream out(filepath);
+    std::ofstream out(filepath.c_str());
 
     if (!out.is_open()) {
         *err = Error(CONF_FILE_NOT_FOUND_ERR, "File creation error");

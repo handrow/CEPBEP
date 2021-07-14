@@ -8,7 +8,7 @@ set(CMAKE_CXX_FLAGS                 "-Wall -Wextra -Werror")
 set(CMAKE_CXX_STANDARD              98)
 set(TEST_DIR                        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
-set(OUR_LIBRARIES                   logger http cgi netlib config_parser ft)
+set(OUR_LIBRARIES                   netlib config_parser cgi http logger ft)
 set(OUR_INCLUDES                    sources/)
 
 include_directories(PUBLIC ${OUR_INCLUDES})

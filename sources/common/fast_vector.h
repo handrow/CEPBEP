@@ -2,6 +2,7 @@
 #define COMMON_FAST_VECTOR_H_
 
 #include <vector>
+#include <cstring>
 
 namespace mut_std {
 

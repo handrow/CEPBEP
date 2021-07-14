@@ -2,8 +2,13 @@
 #define COMMON_TYPES_H_
 
 #include <sys/types.h>
-#include <cstdint>
 #include <unistd.h>
+
+#ifdef __linux__
+#include <bits/stdint-uintn.h>
+#elif
+#include <cstdint>
+#endif
 
 typedef uint64_t    u64;
 typedef uint32_t    u32;

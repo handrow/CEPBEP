@@ -1,3 +1,4 @@
+#include "common/string_utils.h"
 #include "netlib/io/socket.h"
 
 namespace IO {
@@ -29,12 +30,12 @@ Port::Port(u16 addr) {
 }
 
 Port::Port(const std::string& str) {
-    u16 i = atoi(str.c_str());
+    u16 i = Convert<u16>(str);
     __val.raw = htons(i);
 }
 
 Port::operator std::string() const {
-    return std::to_string(ntohs(__val.raw));
+    return Convert<std::string>(ntohs(__val.raw));
 }
 
 Port::operator u16() const {

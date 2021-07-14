@@ -195,7 +195,7 @@ Error  ParseHeaderPair(const std::string& pair_str, Headers* hdrs) {
         return Error(HTTP_READER_BAD_HEADER_KEY, "Bad header key");
 
     key = GET_TOKEN(pair_str, 0, delimiter);
-    if (key.empty() || key.back() == ' ')
+    if (key.empty() || Back(key) == ' ')
         return Error(HTTP_READER_BAD_HEADER_KEY, "Bad header key");
 
     /// Key validation
@@ -259,10 +259,10 @@ usize HexNumFromString(const std::string& hex_str) {
 Error  ParseChunkSize(const std::string& buff, usize* chunk_size) {
     std::string str = buff;
 
-    if (str.back() == '\n') {
+    if (Back(str) == '\n') {
         str.resize(str.size() - 1);
     }
-    if (str.back() == '\r') {
+    if (Back(str) == '\r') {
         str.resize(str.size() - 1);
     }
 

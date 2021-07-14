@@ -3,6 +3,9 @@
 
 #include <string>
 #include <sstream>
+#include <cstring>
+
+#include "common/platform.h"
 #include "common/types.h"
 
 inline std::string StrToLower(const std::string& str) {
@@ -37,6 +40,11 @@ inline std::string Trim(const std::string& str, char sym) {
     }
 
     return str.substr(begin, end - begin);
+}
+
+inline char Back(const std::string& str) {
+    const usize last_idx = str.length() - usize(str.length() != 0);
+    return str[last_idx];
 }
 
 struct CaseInsensitiveLess {

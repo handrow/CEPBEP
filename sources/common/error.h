@@ -4,6 +4,7 @@
 #include <cerrno>
 #include <string>
 
+#include "common/platform.h"
 #include "common/types.h"
 
 struct Error {

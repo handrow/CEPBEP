@@ -1,3 +1,4 @@
+#include "common/platform.h"
 #include "common/fsm.h"
 #include "http/uri.h"
 
