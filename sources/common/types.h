@@ -6,7 +6,7 @@
 
 #ifdef __linux__
 #include <bits/stdint-uintn.h>
-#elif
+#else
 #include <cstdint>
 #endif
 
