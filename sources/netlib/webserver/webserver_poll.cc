@@ -4,17 +4,17 @@
 
 namespace Webserver {
 
-class HttpServer::EvLoopHook: public Event::IEvent {
+class HttpServer::EvPollerHook: public Event::IEvent {
  private:
     HttpServer*     __http_server;
 
  public:
-    explicit EvLoopHook(HttpServer* serv) : __http_server(serv) { }
+    explicit EvPollerHook(HttpServer* serv) : __http_server(serv) { }
     void     Handle() { __http_server->__EvaluateIoEvents(); }
 };
 
-Event::IEventPtr  HttpServer::__SpawnLoopHook() {
-    return new EvLoopHook(this);
+Event::IEventPtr  HttpServer::__SpawnPollerHook() {
+    return new EvPollerHook(this);
 }
 
 namespace {
@@ -39,6 +39,21 @@ IO::Poller::Result   HttpServer::__PollEvent() {
     Error err;
     IO::Poller::Result res = __poller.Poll(&err);
 
+    debug(__system_log, "Poller gained event_set 0x%.6x on fd %d:\n"
+                        ">    POLL_NOT_OPEN: %d\n"
+                        ">        POLL_READ: %d\n"
+                        ">       POLL_WRITE: %d\n"
+                        ">       POLL_ERROR: %d\n"
+                        ">       POLL_CLOSE: %d\n"
+                        ">        POLL_PRIO: %d",
+                          res.ev, res.fd,
+                          bool(res.ev & IO::Poller::POLL_NOT_OPEN),
+                          bool(res.ev & IO::Poller::POLL_READ),
+                          bool(res.ev & IO::Poller::POLL_WRITE),
+                          bool(res.ev & IO::Poller::POLL_ERROR),
+                          bool(res.ev & IO::Poller::POLL_CLOSE),
+                          bool(res.ev & IO::Poller::POLL_PRIO));
+
     if (err.IsError())
         throw std::runtime_error("Poll failed: " + err.message);
 
@@ -47,7 +62,7 @@ IO::Poller::Result   HttpServer::__PollEvent() {
     return res;
 }
 
-Event::IEventPtr HttpServer::__ChooseAndSpawnEvent(IO::Poller::PollEvent pev, fd_t fd) {
+Event::IEventPtr HttpServer::__SwitchEventSpawners(IO::Poller::PollEvent pev, fd_t fd) {
     SocketFdMap::iterator  lstn_sock_it = __listeners_map.find(fd);
     if (lstn_sock_it != __listeners_map.end()) {
         return __SpawnListenerEvent(pev, &lstn_sock_it->second);
@@ -58,9 +73,9 @@ Event::IEventPtr HttpServer::__ChooseAndSpawnEvent(IO::Poller::PollEvent pev, fd
         return __SpawnSessionEvent(pev, session_it->second);
     }
 
-    StaticFileFdMap::iterator  static_file_it = __static_files_map.find(fd);
-    if (static_file_it != __static_files_map.end()) {
-        return __SpawnStaticFileEvent(pev, static_file_it->second.file, static_file_it->second.session);
+    StaticFileFdMap::iterator  stat_file_rd_it = __stat_files_read_map.find(fd);
+    if (stat_file_rd_it != __stat_files_read_map.end()) {
+        return __SpawnStaticFileReadEvent(pev, stat_file_rd_it->second.file, stat_file_rd_it->second.session);
     }
 
     return new DebugEvent(__system_log, pev, fd);
@@ -71,8 +86,7 @@ void HttpServer::__EvaluateIoEvents() {
 
     IO::Poller::Result res = __PollEvent();
 
-    Event::IEventPtr ev = __ChooseAndSpawnEvent(IO::Poller::PollEvent(res.ev),
-                                                res.fd);
+    Event::IEventPtr ev = __SwitchEventSpawners(IO::Poller::PollEvent(res.ev), res.fd);
 
     __evloop.PushEvent(ev);
 }

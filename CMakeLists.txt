@@ -63,6 +63,7 @@ add_library(netlib
     "sources/netlib/webserver/webserver_listener_event.cc"
     "sources/netlib/webserver/webserver_sessions.cc"
     "sources/netlib/webserver/webserver_static.cc"
+    "sources/netlib/webserver/webserver_http.cc"
 )
 
 add_library(config_parser
@@ -78,13 +79,15 @@ add_library(ft
     "sources/common/tests.h"
     "sources/common/time.h"
     "sources/common/types.h"
+    "sources/common/file.h"
 
     "sources/common/match.cc"
     "sources/common/tokenizer.cc"
+    "sources/common/file.cc"
 )
 
 # Main executable
-add_executable(CEPBEP main.cc)
+add_executable(CEPBEP sources/main.cc)
 target_link_libraries(CEPBEP ${OUR_LIBRARIES})
 
 # Google Test Framework

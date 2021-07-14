@@ -10,11 +10,13 @@ std::string MapType(const MimeTypesMap& tmap, const std::string& filename,
     usize  dot_position = filename.find_last_of('.');
 
     if (dot_position != std::string::npos) {
-        std::string file_extension = filename.substr(dot_position);
+        std::string file_extension = filename.substr(dot_position + 1);
 
-        MimeTypesMap::const_iterator mime_it = tmap.find(file_extension);
-        if (mime_it != tmap.end()) {
-            mime_type = mime_it->second;
+        if (!file_extension.empty()) {
+            MimeTypesMap::const_iterator mime_it = tmap.find(file_extension);
+            if (mime_it != tmap.end()) {
+                mime_type = mime_it->second;
+            }
         }
     }
 

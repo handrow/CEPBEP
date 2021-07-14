@@ -2,6 +2,27 @@
 
 namespace Webserver {
 
+void  HttpServer::__OnListenerAccept(IO::Socket* lstn_sock) {
+    Error err;
+    IO::Socket conn = IO::Socket::AcceptNewConnection(lstn_sock, &err);
+
+    info(__system_log, "ServerSock[%d]: accepted new connection:\n"
+                       ">  connection_info: (%s:%u)\n"
+                       ">      server_info: (%s:%u)",
+                            lstn_sock->GetFd(),
+                            std::string(conn.GetSockInfo().addr_BE).c_str(),
+                            u16(conn.GetSockInfo().port_BE),
+                            std::string(lstn_sock->GetSockInfo().addr_BE).c_str(),
+                            u16(lstn_sock->GetSockInfo().port_BE));
+
+    SessionCtx* session = __NewSessionCtx(conn, __access_log, __error_log);
+    info(__system_log, "ServerSock[%d]: session (fd: %d) created",
+                            lstn_sock->GetFd(),
+                            session->conn_sock.GetFd());
+
+    __StartSessionCtx(session);
+}
+
 class HttpServer::EvListenerNewConnection : public Event::IEvent {
  private:
     HttpServer* __http_server;
@@ -11,20 +32,9 @@ class HttpServer::EvListenerNewConnection : public Event::IEvent {
     : __http_server(server)
     , __sock(sock) {
     }
-    
-    void Handle() {
-        Error err;
-        IO::Socket conn = IO::Socket::AcceptNewConnection(__sock, &err);
-        info(__http_server->__system_log, "Accepted new connection: client_socket: (%s:%u), server_socket (%s:%u)",
-                                            std::string(conn.GetSockInfo().addr_BE).c_str(),
-                                            u16(conn.GetSockInfo().port_BE),
-                                            std::string(__sock->GetSockInfo().addr_BE).c_str(),
-                                            u16(__sock->GetSockInfo().port_BE));
 
-        __http_server->__AddSessionCtx(
-            __http_server->__NewSessionCtx(conn,
-                                           __http_server->__access_log,
-                                           __http_server->__error_log));
+    void Handle() {
+        __http_server->__OnListenerAccept(__sock);
     }
 };
 

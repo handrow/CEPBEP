@@ -3,6 +3,10 @@
 
 #include <exception>
 
+#include <list>
+#include <map>
+#include <set>
+
 #include "http/http.h"
 #include "http/reader.h"
 #include "http/writer.h"
@@ -44,7 +48,7 @@ class HttpServer {
         void Handle() { HttpServer::PrintDebugInfo(pe, fd, logger); }
     };
 
- private:
+ public:
     struct SessionCtx {
         IO::Socket           conn_sock;
         std::string          res_buff;
@@ -65,30 +69,56 @@ class HttpServer {
         SessionCtx* session;
     };
 
+    typedef std::set<Http::Method> MethodSet;
+
+    struct WebRoute {
+        std::string            pattern;
+        std::string            root_directory;
+        std::string            index_page;
+        MethodSet              allowed_methods;
+    };
+
+private:
+    /*                 route                                     */
+    typedef std::list< WebRoute >             WebRouteList;
+    /*                fd    listen_sock                          */
     typedef std::map< fd_t, IO::Socket >      SocketFdMap;
+    /*                fd    session_ctx                          */
     typedef std::map< fd_t, SessionCtx* >     SessionFdMap;
+    /*                fd    file and session_ctx                 */
     typedef std::map< fd_t, StaticFileEntry > StaticFileFdMap;
 
  private:
-    SessionCtx*         __NewSessionCtx(const IO::Socket& sock, Log::Logger* accessl, Log::Logger* errorl);
-    void                __AddSessionCtx(SessionCtx* ss);
-    void                __RemoveSessionCtx(SessionCtx* ss);
-
-    void                __AddStaticFileCtx(IO::File file, SessionCtx* ss);
-    void                __RemoveStaticFileCtx(IO::File file);
-
-    /// EVENTS POLLING
+    /// Event basics logic
     void                __EvaluateIoEvents();
     IO::Poller::Result  __PollEvent();
-    Event::IEventPtr    __ChooseAndSpawnEvent(IO::Poller::PollEvent pev, fd_t fd);
+    Event::IEventPtr    __SwitchEventSpawners(IO::Poller::PollEvent pev, fd_t fd);
 
-    /// EVENTS
-    class  EvLoopHook;
-    Event::IEventPtr    __SpawnLoopHook();
+    Event::IEventPtr    __SpawnPollerHook();
+    class  EvPollerHook;
  
+    /// Listener I/O
     Event::IEventPtr    __SpawnListenerEvent(IO::Poller::PollEvent ev, IO::Socket* sock);
     class  EvListenerNewConnection;
+    void                __OnListenerAccept(IO::Socket* listener_sock);
 
+    /// Http logic
+    void                __OnHttpRequest(SessionCtx* ss);
+    void                __OnHttpResponse(SessionCtx* ss);
+    void                __OnHttpError(SessionCtx* ss);
+
+    const WebRoute*     __FindWebRoute(const Http::Request& req, const WebRouteList& routes_list);
+    bool                __FindWebFile(const Http::Request& req, const WebRoute& route,
+                                                                std::string* res_path);
+
+    void                __OnStaticFileRequest(SessionCtx* ss, const WebRoute& route);
+
+    /// Sessions Logic
+    SessionCtx*         __NewSessionCtx(const IO::Socket& sock, Log::Logger* accessl, Log::Logger* errorl);
+    void                __StartSessionCtx(SessionCtx* ss);
+    void                __DeleteSessionCtx(SessionCtx* ss);
+
+    /// Sessions I/O handling
     Event::IEventPtr    __SpawnSessionEvent(IO::Poller::PollEvent ev, SessionCtx* ss);
     class  EvSessionRead;
     class  EvSessionWrite;
@@ -98,34 +128,39 @@ class HttpServer {
     void                __OnSessionWrite(SessionCtx* ss);
     void                __OnSessionError(SessionCtx* ss);
     void                __OnSessionHup(SessionCtx* ss);
-    void                __OnHttpRequest(SessionCtx* ss);
-    void                __OnHttpResponse(SessionCtx* ss);
-    void                __OnHttpError(SessionCtx* ss);
 
-    Event::IEventPtr    __SpawnStaticFileEvent(IO::Poller::PollEvent ev, IO::File file, SessionCtx* ss);
+    /// For responsnses with static files
+    void                __SendStaticFileResponse(IO::File file, SessionCtx* ss);
+    void                __RemoveStaticFileCtx(IO::File file);
+
+    Event::IEventPtr    __SpawnStaticFileReadEvent(IO::Poller::PollEvent ev, IO::File file, SessionCtx* ss);
     class  EvStaticFileRead;
-    class  EvStaticFileClose;
-    class  EvStaticFileError;
+    class  EvStaticFileReadError;
     void                __OnStaticFileRead(IO::File file, SessionCtx* ss);
-    void                __OnStaticFileError(IO::File file, SessionCtx* ss);
-    void                __OnStaticFileEnd(SessionCtx* ss);
+    void                __OnStaticFileReadError(IO::File file, SessionCtx* ss);
+    void                __OnStaticFileReadEnd(IO::File file, SessionCtx* ss);
 
  public:
-    void  SetLogger(Log::Logger* a, Log::Logger* e, Log::Logger* s);
     void  AddListener(const IO::SockInfo& si);
+    void  AddWebRoute(const WebRoute& entry);
+    void  SetMimes(const Mime::MimeTypesMap& map);
+    void  SetLogger(Log::Logger* a, Log::Logger* e, Log::Logger* s);
     void  ServeForever();
 
  private:
-    Log::Logger*     __access_log;
-    Log::Logger*     __system_log;
-    Log::Logger*     __error_log;
+    Log::Logger*        __access_log;
+    Log::Logger*        __system_log;
+    Log::Logger*        __error_log;
 
-    IO::Poller       __poller;
-    Event::Loop      __evloop;
+    IO::Poller          __poller;
+    Event::Loop         __evloop;
 
-    SocketFdMap      __listeners_map;
-    SessionFdMap     __sessions_map;
-    StaticFileFdMap  __static_files_map;
+    SocketFdMap         __listeners_map;
+    SessionFdMap        __sessions_map;
+    StaticFileFdMap     __stat_files_read_map;
+
+    WebRouteList        __routes;
+    Mime::MimeTypesMap  __mime_map;
 };
 
 }

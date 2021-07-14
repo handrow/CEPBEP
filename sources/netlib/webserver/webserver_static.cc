@@ -3,8 +3,8 @@
 namespace Webserver {
 
 /// Basics
-void  HttpServer::__AddStaticFileCtx(IO::File file, SessionCtx* ss) {
-    __static_files_map[file.GetFd()] = (StaticFileEntry){
+void  HttpServer::__SendStaticFileResponse(IO::File file, SessionCtx* ss) {
+    __stat_files_read_map[file.GetFd()] = (StaticFileEntry){
         .file = file,
         .session = ss
     };
@@ -14,8 +14,9 @@ void  HttpServer::__AddStaticFileCtx(IO::File file, SessionCtx* ss) {
 }
 
 void  HttpServer::__RemoveStaticFileCtx(IO::File file) {
+    __poller.RmFd(file.GetFd());
+    __stat_files_read_map.erase(file.GetFd());
     file.Close();
-    __static_files_map.erase(file.GetFd());
 }
 
 /// Handlers
@@ -23,26 +24,33 @@ void  HttpServer::__OnStaticFileRead(IO::File file, SessionCtx* ss) {
     const static usize READ_FILE_BUF_SZ = 512;
 
     std::string file_part = file.Read(READ_FILE_BUF_SZ);
-    info(ss->error_log, "Read from static file (fd: %d) %zu bytes",
-                         file.GetFd(), file_part.size());
+
+    info(ss->error_log, "StaticFile[%d][%d]: read %zu bytes",
+                         ss->conn_sock.GetFd(), file.GetFd(), file_part.size());
+
+    debug(ss->error_log, "StaticFile[%d][%d]: read content:\n"
+                         "```\n%s\n```",
+                          ss->conn_sock.GetFd(), file.GetFd(), file_part.c_str());
 
     if (file_part.empty()) {
-        __RemoveStaticFileCtx(file);
-        info(ss->error_log, "Stopped reading, file (fd: %d) has ended", file.GetFd());
-        __OnStaticFileEnd(ss);
+        __OnStaticFileReadEnd(file, ss);
     } else {
         ss->http_writer.Write(file_part);
     }
 }
 
-void  HttpServer::__OnStaticFileError(IO::File file, SessionCtx* ss) {
-    error(ss->error_log, "File IO error, sending 500: (fd: %d)", file.GetFd());
+void  HttpServer::__OnStaticFileReadError(IO::File file, SessionCtx* ss) {
     __RemoveStaticFileCtx(file);
+    error(ss->error_log, "StaticFile[%d][%d]: file IO error, sending response 500",
+                          ss->conn_sock.GetFd(), file.GetFd());
     ss->res_code = 500;
     __OnHttpError(ss);
 }
 
-void  HttpServer::__OnStaticFileEnd(SessionCtx* ss) {
+void  HttpServer::__OnStaticFileReadEnd(IO::File file, SessionCtx* ss) {
+    __RemoveStaticFileCtx(file);
+    info(ss->error_log, "StaticFile[%d][%d]: nothing to read, file closed, preparing HTTP response",
+                        ss->conn_sock.GetFd(), file.GetFd());
     __OnHttpResponse(ss);
 }
 
@@ -66,29 +74,29 @@ class HttpServer::EvStaticFileRead : public Event::IEvent {
     }
 };
 
-class HttpServer::EvStaticFileError : public Event::IEvent {
+class HttpServer::EvStaticFileReadError : public Event::IEvent {
  private:
     HttpServer* __server;
     SessionCtx* __session;
     IO::File    __file;
 
  public:
-    EvStaticFileError(HttpServer *srv, SessionCtx* ss, IO::File file)
+    EvStaticFileReadError(HttpServer *srv, SessionCtx* ss, IO::File file)
     : __server(srv)
     , __session(ss)
     , __file(file) {
     }
 
     void  Handle() {
-        __server->__OnStaticFileError(__file, __session);
+        __server->__OnStaticFileReadError(__file, __session);
     }
 };
 
-Event::IEventPtr  HttpServer::__SpawnStaticFileEvent(IO::Poller::PollEvent pev, IO::File file, SessionCtx* ss) {
+Event::IEventPtr  HttpServer::__SpawnStaticFileReadEvent(IO::Poller::PollEvent pev, IO::File file, SessionCtx* ss) {
     if (pev == IO::Poller::POLL_READ) {
         return new EvStaticFileRead(this, ss, file);
     } else if (pev == IO::Poller::POLL_ERROR) {
-        return new EvStaticFileError(this, ss, file);
+        return new EvStaticFileReadError(this, ss, file);
     } else {
         throw std::runtime_error("Unsupported event type for StaticFileEvent: " + Convert<std::string>(pev));
     }
