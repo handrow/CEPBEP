@@ -11,7 +11,6 @@ set(TEST_DIR                        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 set(OUR_LIBRARIES                   logger http cgi netlib config_parser ft)
 set(OUR_INCLUDES                    sources/)
 
-
 include_directories(PUBLIC ${OUR_INCLUDES})
 
 # logger target
