@@ -69,11 +69,15 @@ void  HttpServer::__OnStaticFileRequest(SessionCtx* ss, const WebRoute& route) {
         return ss->res_code = 404, __OnHttpError(ss);
 
     if (IsDirectory(resource_path)) {
-        if (!route.index_page.empty()) {
-            resource_path += "/" + route.index_page;
-            if (!IsExist(resource_path) || IsDirectory(resource_path)) {
-                return ss->res_code = 404, __OnHttpResponse(ss);
-            }
+
+        if (Back(resource_path) != '/')
+            resource_path += "/";
+        std::string index_route = resource_path + route.index_page;
+
+        if (!route.index_page.empty() && IsExist(index_route) && !IsDirectory(resource_path)) {
+            resource_path = index_route;
+        } else if (route.listing_enabled) {
+            return __SendDirectoryListing(resource_path, ss);
         } else {
             return ss->res_code = 404, __OnHttpError(ss);
         }
@@ -102,11 +106,10 @@ void  HttpServer::__OnHttpRequest(SessionCtx* ss) {
                             Http::MethodToString(ss->http_req.method).c_str(),
                             Http::ProtocolVersionToString(ss->http_req.version).c_str(),
                             ss->http_req.uri.ToString().c_str());
-    
+
     const WebRoute*  route = __FindWebRoute(ss->http_req, __routes);
     if (route == NULL)
         return ss->res_code = 404, __OnHttpError(ss);
-
     return __OnStaticFileRequest(ss, *route);
 }
 

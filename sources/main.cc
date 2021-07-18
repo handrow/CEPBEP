@@ -17,17 +17,19 @@ int main(int ac, Cgi::Envs av, Cgi::Envs) {
     ms.insert(Http::METHOD_GET);
 
     Webserver::HttpServer::WebRoute route1 = {
-        .pattern = "/gallery/*.[jpg|jpeg|gif|png|svg]",
+        .pattern = "/gallery/*",
         .root_directory = "../www/images",
-        .index_page = "index.html",
-        .allowed_methods = ms
+        .index_page = "",
+        .allowed_methods = ms,
+        .listing_enabled = true
     };
 
     Webserver::HttpServer::WebRoute route2 = {
         .pattern = "/*",
         .root_directory = "../www/pages",
         .index_page = "index.html",
-        .allowed_methods = ms
+        .allowed_methods = ms,
+        .listing_enabled = true
     };
 
     Mime::MimeTypesMap mimes;

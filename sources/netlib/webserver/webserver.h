@@ -76,6 +76,7 @@ class HttpServer {
         std::string            root_directory;
         std::string            index_page;
         MethodSet              allowed_methods;
+        bool                   listing_enabled;
     };
 
 private:
@@ -130,6 +131,7 @@ private:
     void                __OnSessionHup(SessionCtx* ss);
 
     /// For responsnses with static files
+    void                __SendDirectoryListing(const std::string& resource_path, SessionCtx* ss);
     void                __SendStaticFileResponse(IO::File file, SessionCtx* ss);
     void                __RemoveStaticFileCtx(IO::File file);
 
