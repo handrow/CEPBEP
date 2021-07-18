@@ -5,7 +5,6 @@ namespace Webserver {
 void  HttpServer::__OnListenerAccept(IO::Socket* lstn_sock) {
     Error err;
     IO::Socket conn = IO::Socket::AcceptNewConnection(lstn_sock, &err);
-
     info(__system_log, "ServerSock[%d]: accepted new connection:\n"
                        ">  connection_info: (%s:%u)\n"
                        ">      server_info: (%s:%u)",

@@ -22,6 +22,8 @@
 #include "config/config.h"
 
 #include "logger/logger.h"
+#include "cgi/cgi.h"
+#include "cgi/response_reader.h"
 
 namespace Webserver {
 
@@ -71,6 +73,7 @@ class HttpServer {
 
         Http::ResponseWriter  http_writer;
         Http::Request         http_req;
+        Cgi::ResponseReader   resp_reader;
 
         bool                  conn_close;
         int                   res_code;
@@ -80,6 +83,15 @@ class HttpServer {
         u64                   __timeout_ms;
 
         void  UpdateTimeout(u64 timeout_ms) { __timeout_ms = tv_to_msec(GetTimeOfDay()) + timeout_ms; }
+    };
+
+    struct CgiEntry {
+        fd_t        fd_in[2];
+        fd_t        fd_out[2];
+        SessionCtx* session;
+        u32         status;
+        u32         pid;
+        std::string in_buf;
     };
 
     typedef std::set<Http::Method> MethodSet;
@@ -124,6 +136,10 @@ public:
 private:
     /*                    listen_fd   server                     */
     typedef std::multimap< fd_t,     VirtualServer > VirtualServerMap;
+
+    typedef std::map< fd_t, CgiEntry >        CgiInFdMap;
+
+    typedef std::map< fd_t, CgiEntry* >       CgiOutFdMap;
 
  private:
     /// Event basics logic
@@ -192,6 +208,24 @@ private:
     IO::File            __GetErrPage(int errcode, SessionCtx* ss);
     void                __SendDefaultErrPage(SessionCtx* ss);
 
+//CGI
+    void                __OnCgiRequest(SessionCtx* ss, const WebRoute& route);
+    // Event::IEventPtr    __SpawnCgiWriteEvent(IO::Poller::PollEvent ev, IO::File file, SessionCtx* ss);
+    // Event::IEventPtr    __SpawnCgiReadEvent(IO::Poller::PollEvent ev, IO::File file, SessionCtx* ss);
+    // class  EvCgiWriteError;
+    void                __OnCgiFdRead(fd_t file, CgiEntry* ss);
+    void                __OnCgiFdError(fd_t file, CgiEntry* ss);
+    void                __OnCgiFdWrite(fd_t file, CgiEntry* ss);
+    // void                __OnCgiFdReadEnd(IO::File file, CgiEntry* ss);
+    bool                CgiAcivation(CgiEntry& cgi, bool has_body);
+    Event::IEventPtr    __SpawnCgiReadEvent(IO::Poller::PollEvent ev, CgiEntry* ss, fd_t fd);
+    Event::IEventPtr    __SpawnCgiWriteEvent(IO::Poller::PollEvent ev, CgiEntry* ss, fd_t fd);
+    class  EvCgiRead;
+    class  EvCgiFdError;
+    class  EvCgiWrite;
+    // void                __OnCgiFdWriteError(IO::File file, SessionCtx* ss);
+    // void                __OnCgiFdWriteEnd(IO::File file, SessionCtx* ss);
+///-----
  public:
     void  SetTimeout(u64 msec);
     void  SetSystemLogger(Log::Logger* s);
@@ -200,6 +234,7 @@ private:
     void  Config(const Config::Category& cat);
 
     void  ServeForever();
+    Cgi::Metavars       __env;
 
  private:
     Log::Logger*        __system_log;
@@ -211,6 +246,8 @@ private:
     SocketFdMap         __listeners_map;
     SessionFdMap        __sessions_map;
     SessionFdMap        __stat_files_read_map;
+    CgiInFdMap          __cgi_in_map;
+    CgiOutFdMap         __cgi_out_map;
 
     u64                 __session_timeout;
 };

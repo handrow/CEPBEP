@@ -81,6 +81,15 @@ Event::IEventPtr HttpServer::__SwitchEventSpawners(IO::Poller::PollEvent pev, fd
         return __SpawnStaticFileReadEvent(pev, stat_file_rd_it->second);
     }
 
+    CgiInFdMap::iterator  cgi_in_fd = __cgi_in_map.find(fd);
+    if (cgi_in_fd != __cgi_in_map.end()) {
+        return __SpawnCgiWriteEvent(pev, &(cgi_in_fd->second), fd);
+    }
+
+    CgiOutFdMap::iterator  cgi_out_fd = __cgi_out_map.find(fd);
+    if (cgi_out_fd != __cgi_out_map.end()) {
+        return __SpawnCgiReadEvent(pev, cgi_out_fd->second, fd);
+    }
     return new DebugEvent(__system_log, pev, fd);
 }
 

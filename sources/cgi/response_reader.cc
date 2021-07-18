@@ -1,4 +1,6 @@
 #include "cgi/response_reader.h"
+#include <iostream>
+#include <stdio.h>
 
 namespace Cgi {
 

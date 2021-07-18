@@ -14,7 +14,7 @@ class string {
     char* __data;
 
  public:
-    ~string() { delete __data; }
+    ~string() { delete[] __data; }
 
     string& operator=(const string& source) {
         if (&source != this) {

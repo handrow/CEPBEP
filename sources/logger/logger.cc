@@ -47,7 +47,6 @@ std::string Logger::FormatMessage(const char* message, Logger::LogLvl lvl) {
     // const size_t LOG_LVL_MAX_LEN = 8;
     // const size_t log_level_len = strlen(LVL_TO_STR[lvl]);
     // const size_t log_level_padding = LOG_LVL_MAX_LEN - log_level_len;
-
     std::string fmt_string = "[" + GetCurrentTime() + "] (" + std::string(LVL_TO_STR[lvl]) + ")\n" + message + "\n\n";
     return fmt_string;
 }
