@@ -55,7 +55,8 @@ void  HttpServer::__OnSessionRead(SessionCtx* ss) {
                             ss->req_rdr.GetError().message.c_str());
         ss->res_code = 400;
         __OnHttpError(ss);
-    }
+    } else if(portion.empty())
+        __OnSessionHup(ss);
 }
 
 void  HttpServer::__OnSessionWrite(SessionCtx* ss) {

@@ -8,11 +8,12 @@
 #include <iostream>
 #include <string>
 
-int main(int ac, Cgi::Envs av, Cgi::Envs) {
+int main(int ac, Cgi::Envs av, Cgi::Envs env) {
     IO::SockInfo            saddr;
-    Log::Logger             logger(Log::Logger::ERROR);
+    Log::Logger             logger(Log::Logger::INFO);
     Webserver::HttpServer   server;
-
+    
+    server.__env.AddEnvs(env);
     Webserver::HttpServer::MethodSet ms;
     ms.insert(Http::METHOD_GET);
 
@@ -20,13 +21,15 @@ int main(int ac, Cgi::Envs av, Cgi::Envs) {
         .pattern = "/gallery/*.[jpg|jpeg|gif|png|svg]",
         .root_directory = "../www/images",
         .index_page = "index.html",
+        .exectr = "",
         .allowed_methods = ms
     };
 
     Webserver::HttpServer::WebRoute route2 = {
         .pattern = "/*",
-        .root_directory = "../www/pages",
-        .index_page = "index.html",
+        .root_directory = "../www/cgi",
+        .index_page = "p.py",
+        .exectr = "/usr/bin/python",
         .allowed_methods = ms
     };
 

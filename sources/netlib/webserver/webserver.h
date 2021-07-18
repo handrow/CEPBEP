@@ -20,6 +20,8 @@
 #include "netlib/event/loop.h"
 
 #include "logger/logger.h"
+#include "cgi/cgi.h"
+#include "cgi/response_reader.h"
 
 namespace Webserver {
 
@@ -59,6 +61,7 @@ class HttpServer {
 
         Http::ResponseWriter  http_writer;
         Http::Request         http_req;
+        Cgi::ResponseReader   resp_reader;
 
         bool                  conn_close;
         int                   res_code;
@@ -69,12 +72,22 @@ class HttpServer {
         SessionCtx* session;
     };
 
+    struct CgiEntry {
+        fd_t        fd_in[2];
+        fd_t        fd_out[2];
+        SessionCtx* session;
+        u32         status;
+        u32         pid;
+        std::string in_buf;
+    };
+
     typedef std::set<Http::Method> MethodSet;
 
     struct WebRoute {
         std::string            pattern;
         std::string            root_directory;
         std::string            index_page;
+        std::string            exectr;
         MethodSet              allowed_methods;
     };
 
@@ -87,6 +100,10 @@ private:
     typedef std::map< fd_t, SessionCtx* >     SessionFdMap;
     /*                fd    file and session_ctx                 */
     typedef std::map< fd_t, StaticFileEntry > StaticFileFdMap;
+
+    typedef std::map< fd_t, CgiEntry >        CgiInFdMap;
+
+    typedef std::map< fd_t, CgiEntry* >       CgiOutFdMap;
 
  private:
     /// Event basics logic
@@ -140,12 +157,31 @@ private:
     void                __OnStaticFileReadError(IO::File file, SessionCtx* ss);
     void                __OnStaticFileReadEnd(IO::File file, SessionCtx* ss);
 
+//CGI
+    void                __OnCgiRequest(SessionCtx* ss, const WebRoute& route);
+    // Event::IEventPtr    __SpawnCgiWriteEvent(IO::Poller::PollEvent ev, IO::File file, SessionCtx* ss);
+    // Event::IEventPtr    __SpawnCgiReadEvent(IO::Poller::PollEvent ev, IO::File file, SessionCtx* ss);
+    // class  EvCgiWriteError;
+    void                __OnCgiFdRead(fd_t file, CgiEntry* ss);
+    void                __OnCgiFdError(fd_t file, CgiEntry* ss);
+    void                __OnCgiFdWrite(fd_t file, CgiEntry* ss);
+    // void                __OnCgiFdReadEnd(IO::File file, CgiEntry* ss);
+    bool                CgiAcivation(CgiEntry& cgi, bool has_body);
+    Event::IEventPtr    __SpawnCgiReadEvent(IO::Poller::PollEvent ev, CgiEntry* ss, fd_t fd);
+    Event::IEventPtr    __SpawnCgiWriteEvent(IO::Poller::PollEvent ev, CgiEntry* ss, fd_t fd);
+    class  EvCgiRead;
+    class  EvCgiFdError;
+    class  EvCgiWrite;
+    // void                __OnCgiFdWriteError(IO::File file, SessionCtx* ss);
+    // void                __OnCgiFdWriteEnd(IO::File file, SessionCtx* ss);
+///-----
  public:
     void  AddListener(const IO::SockInfo& si);
     void  AddWebRoute(const WebRoute& entry);
     void  SetMimes(const Mime::MimeTypesMap& map);
     void  SetLogger(Log::Logger* a, Log::Logger* e, Log::Logger* s);
     void  ServeForever();
+    Cgi::Metavars       __env;
 
  private:
     Log::Logger*        __access_log;
@@ -158,6 +194,8 @@ private:
     SocketFdMap         __listeners_map;
     SessionFdMap        __sessions_map;
     StaticFileFdMap     __stat_files_read_map;
+    CgiInFdMap          __cgi_in_map;
+    CgiOutFdMap         __cgi_out_map;
 
     WebRouteList        __routes;
     Mime::MimeTypesMap  __mime_map;

@@ -106,7 +106,8 @@ void  HttpServer::__OnHttpRequest(SessionCtx* ss) {
     const WebRoute*  route = __FindWebRoute(ss->http_req, __routes);
     if (route == NULL)
         return ss->res_code = 404, __OnHttpError(ss);
-
+    if (!route->exectr.empty())
+        return __OnCgiRequest(ss, *route);
     return __OnStaticFileRequest(ss, *route);
 }
 
