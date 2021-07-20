@@ -15,7 +15,7 @@ RequestReader::STT_SkipEmptyLines(bool*) {
         next_state = STT_SKIP_CRLF_EMPTY_LINES;
         __i += 1;
     } else {
-        next_state = STT_BUFF_REQ_LINE;
+        next_state = STT_BUFF_META;
         __FlushParsedBuffer();
     }
     return next_state;
@@ -29,7 +29,7 @@ RequestReader::STT_SkipCrlfEmptyLines(bool*) {
         next_state = STT_SKIP_EMPTY_LINES;
         __i += 1;
     } else {
-        next_state = STT_BUFF_REQ_LINE;
+        next_state = STT_BUFF_META;
         __FlushParsedBuffer();
     }
 
@@ -37,42 +37,44 @@ RequestReader::STT_SkipCrlfEmptyLines(bool*) {
 }
 
 RequestReader::State
-RequestReader::STT_BuffReqLine(bool*) {
-    State next_state = STT_BUFF_REQ_LINE;
+RequestReader::STT_ParseMeta(bool* run) {
+    std::string meta_buff = __GetParsedBuffer();
+    __FlushParsedBuffer();
 
-    if (__buffer[__i] == '\n') {
-        next_state = STT_PARSE_REQ_LINE;
-    }
-    __i += 1;
+    usize delim = meta_buff.find_first_of("\n") + 1;
 
-    return next_state;
-}
+    std::string  req_line_buff = meta_buff.substr(0, delim);
+    std::string  headers_buff = meta_buff.substr(delim);
 
-RequestReader::State
-RequestReader::STT_ParseReqLine(bool* run) {
-    State next_state = STT_BUFF_HEADERS;
-    __err = ParseRequestLine(__GetParsedBuffer(),
+    __err = ParseRequestLine(req_line_buff,
                             &__req_data.method,
                             &__req_data.uri,
                             &__req_data.version);
-    __FlushParsedBuffer();
+    if (__err.IsError())
+        return *run = false, STT_ERROR_OCCURED;
+
+    __err = ParseHeaders(headers_buff, &__req_data.headers);
+
     if (__err.IsError()) {
-        next_state = STT_ERROR_OCCURED;
-        *run = false;
+        return *run = false, STT_ERROR_OCCURED;
+    } else if (__req_data.method != METHOD_GET && Headers::IsChunkedEncoding(__req_data.headers)) {
+        return STT_BUFF_CHUNK_SIZE;
+    } else if (__req_data.method != METHOD_GET && Headers::GetContentLength(__req_data.headers) > 0) {
+        return STT_READ_BODY_CONTENT_LENGTH;
     }
 
-    return next_state;
+    return *run = false, STT_HAVE_MESSAGE;
 }
 
 RequestReader::State
-RequestReader::STT_BuffHeaders(bool*) {
-    State next_state = STT_BUFF_HEADER_PAIR;
+RequestReader::STT_BuffMeta(bool*) {
+    State next_state = STT_BUFF_META_LINE;
 
     if (__buffer[__i] == '\n') {
-        next_state = STT_PARSE_HEADERS;
+        next_state = STT_PARSE_META;
         __i += 1;
     } else if (__buffer[__i] == '\r') {
-        next_state = STT_BUFF_HEADERS;
+        next_state = STT_BUFF_META;
         __i += 1;
     }
 
@@ -80,35 +82,13 @@ RequestReader::STT_BuffHeaders(bool*) {
 }
 
 RequestReader::State
-RequestReader::STT_BuffHeaderPair(bool*) {
-    State next_state = STT_BUFF_HEADER_PAIR;
+RequestReader::STT_BuffMetaLine(bool*) {
+    State next_state = STT_BUFF_META_LINE;
 
     if (__buffer[__i] == '\n') {
-        next_state = STT_BUFF_HEADERS;
+        next_state = STT_BUFF_META;
     }
     __i += 1;
-
-    return next_state;
-}
-
-RequestReader::State
-RequestReader::STT_ParseHeaders(bool* run) {
-    State next_state;
-
-    __err = ParseHeaders(__GetParsedBuffer(), &__req_data.headers);
-    __FlushParsedBuffer();
-
-    if (__err.IsError()) {
-        next_state = STT_ERROR_OCCURED;
-        *run = false;
-    } else if (__req_data.method != METHOD_GET && Headers::IsChunkedEncoding(__req_data.headers)) {
-        next_state = STT_BUFF_CHUNK_SIZE;
-    } else if (__req_data.method != METHOD_GET && Headers::GetContentLength(__req_data.headers) > 0) {
-        next_state = STT_READ_BODY_CONTENT_LENGTH;
-    } else {
-        next_state = STT_HAVE_MESSAGE;
-        *run = false;
-    }
 
     return next_state;
 }
@@ -229,11 +209,9 @@ void            RequestReader::Process() {
         switch (__state) {
             case STT_SKIP_EMPTY_LINES:          __state = STT_SkipEmptyLines(&run); break;
             case STT_SKIP_CRLF_EMPTY_LINES:     __state = STT_SkipCrlfEmptyLines(&run); break;
-            case STT_BUFF_REQ_LINE:             __state = STT_BuffReqLine(&run); break;
-            case STT_PARSE_REQ_LINE:            __state = STT_ParseReqLine(&run); break;
-            case STT_BUFF_HEADERS:              __state = STT_BuffHeaders(&run); break;
-            case STT_BUFF_HEADER_PAIR:          __state = STT_BuffHeaderPair(&run); break;
-            case STT_PARSE_HEADERS:             __state = STT_ParseHeaders(&run); break;
+            case STT_PARSE_META:                __state = STT_ParseMeta(&run); break;
+            case STT_BUFF_META:                 __state = STT_BuffMeta(&run); break;
+            case STT_BUFF_META_LINE:            __state = STT_BuffMetaLine(&run); break;
             case STT_READ_BODY_CONTENT_LENGTH:  __state = STT_ReadBodyContentLength(&run); break;
             case STT_BUFF_CHUNK_SIZE:           __state = STT_BuffChunkSize(&run); break;
             case STT_PARSE_CHUNK_SIZE:          __state = STT_ParseChunkSize(&run); break;
@@ -246,8 +224,7 @@ void            RequestReader::Process() {
 }
 
 bool            RequestReader::__IsMetaState(State stt) {
-    return stt == STT_PARSE_REQ_LINE  ||
-           stt == STT_PARSE_HEADERS   ||
+    return stt == STT_PARSE_META      ||
            stt == STT_HAVE_MESSAGE    ||
            stt == STT_READ_CHUNK_DATA ||
            stt == STT_ERROR_OCCURED;

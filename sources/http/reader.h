@@ -52,12 +52,9 @@ class RequestReader {
         STT_SKIP_EMPTY_LINES,  // input needed
         STT_SKIP_CRLF_EMPTY_LINES,  // input needed
 
-        STT_BUFF_REQ_LINE,  // input needed
-        STT_PARSE_REQ_LINE,
-
-        STT_BUFF_HEADERS,  // input needed
-        STT_BUFF_HEADER_PAIR,  // input needed
-        STT_PARSE_HEADERS,
+        STT_BUFF_META,  // input needed
+        STT_BUFF_META_LINE,  // input needed
+        STT_PARSE_META,
 
         STT_READ_BODY_CONTENT_LENGTH,  // input needed
         STT_BUFF_CHUNK_SIZE,           // input needed
@@ -85,11 +82,9 @@ class RequestReader {
 
     State   STT_SkipEmptyLines(bool* run);
     State   STT_SkipCrlfEmptyLines(bool* run);
-    State   STT_BuffReqLine(bool* run);
-    State   STT_ParseReqLine(bool* run);
-    State   STT_BuffHeaders(bool* run);
-    State   STT_BuffHeaderPair(bool* run);
-    State   STT_ParseHeaders(bool* run);
+    State   STT_BuffMeta(bool* run);
+    State   STT_BuffMetaLine(bool* run);
+    State   STT_ParseMeta(bool* run);
     State   STT_ReadBodyContentLength(bool* run);
     State   STT_BuffChunkSize(bool* run);
     State   STT_ParseChunkSize(bool* run);
