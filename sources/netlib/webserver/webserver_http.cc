@@ -41,113 +41,98 @@ std::string  GetRelativePathFromPattern(const std::string& pattern, const std::s
 
     return full_path.substr(last_path_sep_pos);
 }
-}  // namespace
 
-bool  HttpServer::__FindWebFile(const Http::Request& req,
-                                const WebRoute& route,
-                                std::string* res_path) {
-    std::string relative_path = GetRelativePathFromPattern(route.pattern, req.uri.path);
-    std::string root_path = (!route.root_directory.empty()) ? route.root_directory
-                                                            : ".";
+std::string AppendPath(const std::string& dirname, const std::string& basename) {
+    std::string normalized_dirname = (Back(dirname) == '/')
+                                     ? dirname
+                                     : dirname + "/";
 
-    if (Match("*/../*", req.uri.path) || Match("*/..", req.uri.path))
-        return false;
+    const usize last_sep_pos = normalized_dirname.find_last_not_of("/") + 1;
 
-    *res_path = root_path + "/" + relative_path;
-
-    return IsExist(*res_path);
-}
-
-namespace {
-std::string  RelativeRedirect(std::string path, const std::string& relative) {
-    if (Back(path) != '/')
-        path += '/';
-    return path + relative;
+    return normalized_dirname.substr(0, last_sep_pos + 1) + basename;
 }
 }  // namespace
 
-void  HttpServer::__OnStaticFileRequest(SessionCtx* ss, const WebRoute& route) {
-    std::string  resource_path;
-    bool         resource_found;
-    resource_found = __FindWebFile(ss->http_req, route, &resource_path);
+void  HttpServer::__HandleBadMethod(SessionCtx* ss, const WebRoute& route) {
+    debug(ss->access_log, "Session[%d]: request method (%s) isn't allowed",
+                           ss->conn_sock.GetFd(),
+                           Http::MethodToString(ss->http_req.method).c_str());
 
-    if (route.allowed_methods.count(ss->http_req.method) <= 0) {
-        debug(__access_log, "Session[%d]: request method (%s) isn't allowed",
-                             ss->conn_sock.GetFd(),
-                             Http::MethodToString(ss->http_req.method).c_str());
-
-        ss->http_writer.Reset();
-        for (MethodSet::iterator it = route.allowed_methods.begin();
-                                 it != route.allowed_methods.end();
-                                 ++it) {
-            ss->http_writer.Header().Add("Allow", Http::MethodToString(*it));
-        }
-        return ss->res_code = 405, __OnHttpError(ss, false);
+    ss->http_writer.Reset();
+    for (MethodSet::iterator it = route.allowed_methods.begin();
+                                it != route.allowed_methods.end();
+                                ++it) {
+        ss->http_writer.Header().Add("Allow", Http::MethodToString(*it));
     }
+    return ss->res_code = 405, __OnHttpError(ss, false);
+}
 
-    if (!resource_found) {
-        debug(__access_log, "Session[%d]: resource (%s) not found",
-                             ss->conn_sock.GetFd(),
-                             resource_path.c_str());
-        return ss->res_code = 404, __OnHttpError(ss);
-    }
+void  HttpServer::__HandleDirectoryResource(SessionCtx* ss,
+                                            const WebRoute& route,
+                                            const std::string& filepath) {
 
-    if (IsDirectory(resource_path)) {
-        debug(__access_log, "Session[%d]: resource (%s) found, it's a directory",
-                             ss->conn_sock.GetFd(),
-                             resource_path.c_str());
+    debug(ss->access_log, "Session[%d]: resource (%s) found, it's a directory",
+                          ss->conn_sock.GetFd(),
+                          filepath.c_str());
 
-        if (!route.index_page.empty()) {
-            std::string index_route = resource_path + "/" + route.index_page;
-            if (!IsDirectory(index_route) && IsExist(index_route)) {
-                std::string redirect_link = RelativeRedirect(ss->http_req.uri.path, route.index_page);
-
-                debug(__access_log, "Session[%d]: Found index page (%s), redirecting to (%s)",
+    if (!route.index_page.empty()) {
+        std::string indexpath = AppendPath(filepath, route.index_page);
+        if (!IsDirectory(indexpath) && IsExist(indexpath)) {
+            std::string redirect_link = AppendPath(ss->http_req.uri.path, route.index_page);
+            debug(ss->access_log, "Session[%d]: Found index page (%s), redirecting to (%s)",
                                     ss->conn_sock.GetFd(),
-                                    index_route.c_str(),
+                                    indexpath.c_str(),
                                     redirect_link.c_str());
-                return __OnHttpRedirect(ss, redirect_link, 302);
-            } else {
-                return ss->res_code = 404, __OnHttpError(ss);
-            }
-
-        } else if (Back(resource_path) != '/') {
-            return __OnHttpRedirect(ss, RelativeRedirect(ss->http_req.uri.path, route.index_page), 302);
-        } else if (route.listing_enabled) {
-            debug(__access_log, "Session[%d]: sending directory listing (%s)",
-                             ss->conn_sock.GetFd(),
-                             resource_path.c_str());
-            return __SendDirectoryListing(resource_path, ss);
-
+            return __OnHttpRedirect(ss, redirect_link, 302);
         } else {
-            debug(__access_log, "Session[%d]: directory (%s) can't be indexed (index_page: %s, listing: %s)",
-                             ss->conn_sock.GetFd(),
-                             resource_path.c_str(),
-                             (route.index_page.empty() ? "NO" : "YES"),
-                             (route.listing_enabled ? "YES" : "NO"));
             return ss->res_code = 404, __OnHttpError(ss);
-
         }
+
+    } else if (Back(filepath) != '/') {
+        std::string full_dir_redirect = AppendPath(ss->http_req.uri.path, route.index_page);
+        debug(ss->access_log, "Session[%d]: Found directory (%s), redirecting to (%s)",
+                                ss->conn_sock.GetFd(),
+                                filepath.c_str(),
+                                full_dir_redirect.c_str());
+        return __OnHttpRedirect(ss, full_dir_redirect, 302);
+
+    } else if (route.listing_enabled) {
+        debug(ss->access_log, "Session[%d]: Found directory (%s), sending directory listing",
+                                ss->conn_sock.GetFd(),
+                                filepath.c_str());
+        return __SendDirectoryListing(filepath, ss);
     }
 
+    debug(ss->access_log, "Session[%d]: Found directory (%s), unable to resolve: (index_page: %s, listing: %s)",
+                        ss->conn_sock.GetFd(),
+                        filepath.c_str(),
+                        (route.index_page.empty() ? "NO" : "YES"),
+                        (route.listing_enabled ? "YES" : "NO"));
+    return ss->res_code = 404, __OnHttpError(ss);
+}
+
+void  HttpServer::__HandleStaticFile(SessionCtx* ss, const std::string& file_path) {
     Error err;
-    IO::File  resource = IO::File::OpenFile(resource_path, O_RDONLY, &err);
+    IO::File  file = IO::File::OpenFile(file_path, O_RDONLY, &err);
 
     if (err.IsError()) {
-        error(__error_log, "Session[%d]: resource file couldn't be open: ``%s''",
-                           ss->conn_sock.GetFd(),
-                           err.message.c_str());
+        error(ss->error_log, "Session[%d]: static file \"%s\" couldn't be open: ``%s''",
+                              ss->conn_sock.GetFd(),
+                              file_path.c_str(),
+                              err.message.c_str());
         return ss->res_code = 500, __OnHttpError(ss);
     }
 
-    std::string mime_type = Mime::MapType(__mime_map, resource_path);
-    info(__access_log, "Session[%d]: sending static file (%s) with type \"%s\"",
-                        ss->conn_sock.GetFd(),
-                        resource_path.c_str(),
-                        mime_type.c_str());
+    std::string mime_type = Mime::MapType(__mime_map, file_path);
+
+    info(ss->access_log, "Session[%d]: sending static file (%s) with type \"%s\"",
+                          ss->conn_sock.GetFd(),
+                          file_path.c_str(),
+                          mime_type.c_str());
+
     return ss->res_code = 200,
            ss->http_writer.Header().Set("Content-type", mime_type),
-           __SendStaticFileResponse(resource, ss);
+           __SendStaticFileResponse(file, ss);
 }
 
 void  HttpServer::__OnHttpRedirect(SessionCtx* ss, const std::string& location, int code) {
@@ -168,19 +153,49 @@ void  HttpServer::__OnHttpRequest(SessionCtx* ss) {
                             Http::ProtocolVersionToString(ss->http_req.version).c_str(),
                             ss->http_req.uri.ToString().c_str());
 
+    /// Resolving Web Route
     const WebRoute*  route = __FindWebRoute(ss->http_req, __routes);
     if (route == NULL) {
-        debug(__access_log, "Session[%d]: no web route", ss->conn_sock.GetFd());
+        debug(ss->access_log, "Session[%d]: no web route", ss->conn_sock.GetFd());
         return ss->res_code = 404, __OnHttpError(ss);
-    } else if (route->reditect.enabled) {
-        return __OnHttpRedirect(ss, route->reditect.location, route->reditect.code);
-    } else {
-        debug(__access_log, "Session[%d]: choosen web route with pattern ``%s''"
-                            " with type: STATIC_FILE_REQ",
-                              ss->conn_sock.GetFd(),
-                              route->pattern.c_str());
-        return __OnStaticFileRequest(ss, *route);
     }
+
+    debug(ss->access_log, "Session[%d]: choosen web route with pattern \"%s\"",
+                            ss->conn_sock.GetFd(),
+                            route->pattern.c_str());
+
+    /// Resolving redirections
+    if (route->reditect.enabled) {
+        debug(ss->access_log, "Session[%d]: redirection is enabled, redirecting to \"%s\"",
+                                ss->conn_sock.GetFd(),
+                                route->reditect.location.c_str());
+        return __OnHttpRedirect(ss, route->reditect.location, route->reditect.code);
+    }
+
+    /// Check HTTP method is allowed
+    if (route->allowed_methods.count(ss->http_req.method) <= 0) {
+        return __HandleBadMethod(ss, *route);
+    }
+
+    /// Getting pathes
+    std::string  relpath = GetRelativePathFromPattern(route->pattern, ss->http_req.uri.path);
+    std::string  filepath = AppendPath(route->root_directory, relpath);
+
+    /// Check for existent
+    if (!IsExist(filepath)) {
+        debug(ss->access_log, "Session[%d]: resource (\"%s\") not found",
+                              ss->conn_sock.GetFd(),
+                              filepath.c_str());
+        return ss->res_code = 404, __OnHttpError(ss);
+    }
+
+    /// Handle directory accesses
+    if (IsDirectory(filepath)) {
+        return __HandleDirectoryResource(ss, *route, filepath);
+    }
+
+    /// Handle Static file request
+    return __HandleStaticFile(ss, filepath);
 }
 
 void  HttpServer::__OnHttpError(SessionCtx* ss, bool reset) {

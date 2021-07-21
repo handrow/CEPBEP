@@ -113,14 +113,16 @@ private:
     /// Http logic
     void                __OnHttpRequest(SessionCtx* ss);
     void                __OnHttpResponse(SessionCtx* ss);
+    void                __OnHttpRedirect(SessionCtx* ss, const std::string& location, int code = 302);
     void                __OnHttpError(SessionCtx* ss, bool reset = true);
 
     const WebRoute*     __FindWebRoute(const Http::Request& req, const WebRouteList& routes_list);
-    bool                __FindWebFile(const Http::Request& req, const WebRoute& route,
-                                                                std::string* res_path);
 
-    void                __OnStaticFileRequest(SessionCtx* ss, const WebRoute& route);
-    void                __OnHttpRedirect(SessionCtx* ss, const std::string& location, int code = 302);
+    void                __HandleStaticFile(SessionCtx* ss, const std::string& file_path);
+    void                __HandleBadMethod(SessionCtx* ss, const WebRoute& route);
+    void                __HandleDirectoryResource(SessionCtx* ss, const WebRoute& route,
+                                                                  const std::string& fpath);
+    
 
     /// Sessions Logic
     SessionCtx*         __NewSessionCtx(const IO::Socket& sock, Log::Logger* accessl, Log::Logger* errorl);
