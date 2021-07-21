@@ -1,24 +1,14 @@
 #include <ctime>
 
+#include "common/time.h"
 #include "common/string_utils.h"
+
 #include "http/http.h"
 
 namespace Http {
 
 std::string     Headers::CurrentDate() {
-    time_t  t = std::time(NULL);
-    std::tm tm;
-
-    gmtime_r(&t, &tm);
-    std::string buff;
-
-    buff.resize(255);
-
-    size_t len = strftime(const_cast<char *>(buff.data()), 255,
-                          "%a, %d %b %Y %H:%M:%S GMT", &tm);
-
-    buff.resize(len);
-    return buff;
+    return FormatTimeToStr("%a, %d %b %Y %H:%M:%S GMT", std::time(NULL));
 }
 
 usize           Headers::GetContentLength(const Headers& hdrs) {

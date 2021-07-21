@@ -1,4 +1,6 @@
 #include "common/string_utils.h"
+#include "common/time.h"
+
 #include "logger/logger.h"
 
 namespace Log {
@@ -37,15 +39,8 @@ std::string Logger::USToString(int usec) {
 }
 
 std::string Logger::GetCurrentTime() {
-    struct timeval tv;
-    struct tm timeinfo;
-    std::string str_time(SIZE_OF_DATE_STR, '\0');
-
-    if (gettimeofday(&tv, NULL))
-        throw std::runtime_error("Can't get time");
-    localtime_r(&(tv.tv_sec), &timeinfo);
-    strftime(const_cast<char*>(str_time.data()), SIZE_OF_DATE_STR, "%F %T ", &timeinfo);
-    return str_time + USToString(tv.tv_usec);
+    timeval tv = GetTimeOfDay();
+    return FormatTimeToStr("%F %T ", tv.tv_sec) + USToString(tv.tv_usec);
 }
 
 std::string Logger::FormatMessage(const char* message, Logger::LogLvl lvl) {

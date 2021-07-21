@@ -25,10 +25,10 @@ void  HttpServer::__OnStaticFileRead(IO::File file, SessionCtx* ss) {
 
     std::string file_part = file.Read(READ_FILE_BUF_SZ);
 
-    info(ss->error_log, "StaticFile[%d][%d]: read %zu bytes",
+    info(__system_log, "StaticFile[%d][%d]: read %zu bytes",
                          ss->conn_sock.GetFd(), file.GetFd(), file_part.size());
 
-    debug(ss->error_log, "StaticFile[%d][%d]: read content:\n"
+    debug(__system_log, "StaticFile[%d][%d]: read content:\n"
                          "```\n%s\n```",
                           ss->conn_sock.GetFd(), file.GetFd(), file_part.c_str());
 
@@ -41,7 +41,7 @@ void  HttpServer::__OnStaticFileRead(IO::File file, SessionCtx* ss) {
 
 void  HttpServer::__OnStaticFileReadError(IO::File file, SessionCtx* ss) {
     __RemoveStaticFileCtx(file);
-    error(ss->error_log, "StaticFile[%d][%d]: file IO error, sending response 500",
+    error(__system_log, "StaticFile[%d][%d]: file IO error, sending response 500",
                           ss->conn_sock.GetFd(), file.GetFd());
     ss->res_code = 500;
     __OnHttpError(ss);
@@ -49,7 +49,7 @@ void  HttpServer::__OnStaticFileReadError(IO::File file, SessionCtx* ss) {
 
 void  HttpServer::__OnStaticFileReadEnd(IO::File file, SessionCtx* ss) {
     __RemoveStaticFileCtx(file);
-    info(ss->error_log, "StaticFile[%d][%d]: nothing to read, file closed, preparing HTTP response",
+    info(__system_log, "StaticFile[%d][%d]: nothing to read, file closed, preparing HTTP response",
                         ss->conn_sock.GetFd(), file.GetFd());
     __OnHttpResponse(ss);
 }
