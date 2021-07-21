@@ -9,8 +9,9 @@
 #include <string>
 
 int main(int ac, Cgi::Envs av, Cgi::Envs) {
+    Log::Logger             logger_stdout(Log::Logger::DEBUG);
+    Log::Logger             logger_null(Log::Logger::DEBUG, "/dev/null");
     IO::SockInfo            saddr;
-    Log::Logger             logger(Log::Logger::ERROR);
     Webserver::HttpServer   server;
 
     Webserver::HttpServer::MethodSet ms;
@@ -50,7 +51,7 @@ int main(int ac, Cgi::Envs av, Cgi::Envs) {
 
         server.SetMimes(mimes);
 
-        server.SetLogger(&logger, &logger, &logger);
+        server.SetLogger(&logger_stdout, &logger_stdout, &logger_null);
 
         u16 port = (ac != 2) ? 9090
                              : Convert<u16>(av[1]);
@@ -58,6 +59,6 @@ int main(int ac, Cgi::Envs av, Cgi::Envs) {
         server.AddListener(IO::SockInfo(std::string("0.0.0.0"), port));
         server.ServeForever();
     } catch (std::exception& e) {
-        critical(&logger, "Fatal error: ``%s''", e.what());
+        critical(&logger_stdout, "Fatal error: ``%s''", e.what());
     }
 }

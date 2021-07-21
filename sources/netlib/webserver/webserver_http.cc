@@ -65,20 +65,38 @@ void  HttpServer::__OnStaticFileRequest(SessionCtx* ss, const WebRoute& route) {
     bool         resource_found;
     resource_found = __FindWebFile(ss->http_req, route, &resource_path);
 
-    if (!resource_found)
+    if (!resource_found) {
+        debug(__access_log, "Session[%d]: resource (%s) not found",
+                             ss->conn_sock.GetFd(),
+                             resource_path.c_str());
         return ss->res_code = 404, __OnHttpError(ss);
+    }
 
     if (IsDirectory(resource_path)) {
+        debug(__access_log, "Session[%d]: resource (%s) found, it's a directory",
+                             ss->conn_sock.GetFd(),
+                             resource_path.c_str());
 
         if (Back(resource_path) != '/')
             resource_path += "/";
         std::string index_route = resource_path + route.index_page;
 
         if (!route.index_page.empty() && IsExist(index_route) && !IsDirectory(resource_path)) {
+            debug(__access_log, "Session[%d]: choosed index page (%s)",
+                             ss->conn_sock.GetFd(),
+                             index_route.c_str());
             resource_path = index_route;
         } else if (route.listing_enabled) {
+            debug(__access_log, "Session[%d]: sending directory listing (%s)",
+                             ss->conn_sock.GetFd(),
+                             resource_path.c_str());
             return __SendDirectoryListing(resource_path, ss);
         } else {
+            debug(__access_log, "Session[%d]: directory (%s) can't be indexed (index_page: %s, listing: %s)",
+                             ss->conn_sock.GetFd(),
+                             resource_path.c_str(),
+                             (route.index_page.empty() ? "NO" : "YES"),
+                             (route.listing_enabled ? "YES" : "NO"));
             return ss->res_code = 404, __OnHttpError(ss);
         }
     }
@@ -86,34 +104,53 @@ void  HttpServer::__OnStaticFileRequest(SessionCtx* ss, const WebRoute& route) {
     Error err;
     IO::File  resource = IO::File::OpenFile(resource_path, O_RDONLY, &err);
 
-    if (err.IsError())
+    if (err.IsError()) {
+        error(__error_log, "Session[%d]: resource file couldn't be open: ``%s''",
+                           ss->conn_sock.GetFd(),
+                           err.message.c_str());
         return ss->res_code = 500, __OnHttpError(ss);
+    }
 
+    std::string mime_type = Mime::MapType(__mime_map, resource_path);
+    info(__access_log, "Session[%d]: sending static file (%s) with type \"%s\"",
+                        ss->conn_sock.GetFd(),
+                        resource_path.c_str(),
+                        mime_type.c_str());
     return ss->res_code = 200,
-           ss->http_writer.Header().Set("Content-type", Mime::MapType(__mime_map, resource_path)),
+           ss->http_writer.Header().Set("Content-type", mime_type),
            __SendStaticFileResponse(resource, ss);
 }
 
 void  HttpServer::__OnHttpRequest(SessionCtx* ss) {
     ss->http_req = ss->req_rdr.GetMessage();
 
-    info(ss->access_log, "HTTP request:\n"
-                         ">  session_fd: %d\n"
-                         ">      method: %s\n"
-                         ">     version: %s\n"
-                         ">         uri: %s",
+    info(ss->access_log, "Session[%d]: new HTTP request:\n"
+                         ">   http_method: %s\n"
+                         ">  http_version: %s\n"
+                         ">           uri: %s",
                             ss->conn_sock.GetFd(),
                             Http::MethodToString(ss->http_req.method).c_str(),
                             Http::ProtocolVersionToString(ss->http_req.version).c_str(),
                             ss->http_req.uri.ToString().c_str());
 
     const WebRoute*  route = __FindWebRoute(ss->http_req, __routes);
-    if (route == NULL)
+    if (route == NULL) {
+        debug(__access_log, "Session[%d]: no web route", ss->conn_sock.GetFd());
         return ss->res_code = 404, __OnHttpError(ss);
-    return __OnStaticFileRequest(ss, *route);
+    } else {
+        debug(__access_log, "Session[%d]: choosen web route with pattern ``%s''"
+                            " with type: STATIC_FILE_REQ",
+                              ss->conn_sock.GetFd(),
+                              route->pattern.c_str());
+        return __OnStaticFileRequest(ss, *route);
+    }
 }
 
 void  HttpServer::__OnHttpError(SessionCtx* ss) {
+    info(__access_log, "Session[%d]: sending HTTP error",
+                         ss->conn_sock.GetFd(),
+                         ss->res_code);
+
     ss->http_writer.Reset();
     ss->http_writer.Write("Error occured: " + Convert<std::string>(ss->res_code) + ".\n");
     ss->http_writer.Write("Good luck with it!\n");
@@ -143,6 +180,10 @@ void  HttpServer::__OnHttpResponse(SessionCtx* ss) {
     // Append to response buffer and enable writing in poller
     ss->res_buff += ss->http_writer.SendToString(ss->res_code, ss->http_req.version);
     ss->http_writer.Reset();
+
+    info(__access_log, "Session[%d]: sending HTTP response (code: %d)",
+                         ss->conn_sock.GetFd(),
+                         ss->res_code);
 
     __poller.AddEvMask(ss->conn_sock.GetFd(), IO::Poller::POLL_WRITE);
 }

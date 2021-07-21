@@ -76,7 +76,7 @@ std::string  GenerateHtmlListing(const std::string& title, const DirEntriesList&
         << "td.size_item { text-align: right; width: 10%; } </style>"
         << "</head><body>"
         << "<div class=wrapper>"
-        << "<h1>Index of /" << title << "</h1><table>";
+        << "<h1>Index of " << title << "</h1><table>";
 
     for (DirEntriesList::const_iterator it = entries.begin();
                                         it != entries.end();
