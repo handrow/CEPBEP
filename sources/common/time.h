@@ -1,8 +1,11 @@
 #ifndef COMMON_TIME_H_
 #define COMMON_TIME_H_
 
-#include "types.h"
 #include <sys/time.h>
+#include <ctime>
+#include <string>
+
+#include "common/types.h"
 
 inline timeval_t
 usec_to_tv(u64 usec) {
@@ -34,6 +37,46 @@ inline u64 now_ms() {
     timeval_t tv;
     gettimeofday(&tv, NULL);
     return tv_to_msec(tv);
+}
+
+inline struct timeval
+GetTimeOfDay() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return tv;
+}
+
+inline std::string
+FormatTimeToStr(const std::string& format, const std::tm& tm, usize buff_size = 512) {
+    std::string buff;
+    usize len;
+
+    do {
+        buff.resize(buff_size);
+        len = strftime(const_cast<char *>(buff.data()),
+                       buff_size,
+                       format.c_str(),
+                       &tm);
+        buff_size <<= 1;
+    } while (len == 0);
+
+    buff.resize(len);
+
+    return buff;
+}
+
+inline std::string
+FormatTimeToStr(const std::string& format, time_t sec, usize BUFF_SZ = 512) {
+    std::tm tm;
+    localtime_r(&sec, &tm);
+    return FormatTimeToStr(format, tm, BUFF_SZ);
+}
+
+inline std::string
+FormatTimeToStr(const std::string& format, const timeval_t& tv, usize BUFF_SZ = 512) {
+    std::tm tm;
+    localtime_r(&(tv.tv_sec), &tm);
+    return FormatTimeToStr(format, tm, BUFF_SZ);
 }
 
 #endif  // COMMON_TIME_H_
