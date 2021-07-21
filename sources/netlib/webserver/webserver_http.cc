@@ -13,8 +13,6 @@ HttpServer::__FindWebRoute(const Http::Request& req, const WebRouteList& routes)
         const WebRoute& try_route = *route_it;
         if (Match(try_route.pattern, req.uri.path) == false)
             continue;
-        if (try_route.allowed_methods.count(req.method) <= 0)
-            continue;
         return &try_route;
     }
 
@@ -60,10 +58,32 @@ bool  HttpServer::__FindWebFile(const Http::Request& req,
     return IsExist(*res_path);
 }
 
+namespace {
+std::string  RelativeRedirect(std::string path, const std::string& relative) {
+    if (Back(path) != '/')
+        path += '/';
+    return path + relative;
+}
+}  // namespace
+
 void  HttpServer::__OnStaticFileRequest(SessionCtx* ss, const WebRoute& route) {
     std::string  resource_path;
     bool         resource_found;
     resource_found = __FindWebFile(ss->http_req, route, &resource_path);
+
+    if (route.allowed_methods.count(ss->http_req.method) <= 0) {
+        debug(__access_log, "Session[%d]: request method (%s) isn't allowed",
+                             ss->conn_sock.GetFd(),
+                             Http::MethodToString(ss->http_req.method).c_str());
+
+        ss->http_writer.Reset();
+        for (MethodSet::iterator it = route.allowed_methods.begin();
+                                 it != route.allowed_methods.end();
+                                 ++it) {
+            ss->http_writer.Header().Add("Allow", Http::MethodToString(*it));
+        }
+        return ss->res_code = 405, __OnHttpError(ss, false);
+    }
 
     if (!resource_found) {
         debug(__access_log, "Session[%d]: resource (%s) not found",
@@ -77,20 +97,28 @@ void  HttpServer::__OnStaticFileRequest(SessionCtx* ss, const WebRoute& route) {
                              ss->conn_sock.GetFd(),
                              resource_path.c_str());
 
-        if (Back(resource_path) != '/')
-            resource_path += "/";
-        std::string index_route = resource_path + route.index_page;
+        if (!route.index_page.empty()) {
+            std::string index_route = resource_path + "/" + route.index_page;
+            if (!IsDirectory(index_route) && IsExist(index_route)) {
+                std::string redirect_link = RelativeRedirect(ss->http_req.uri.path, route.index_page);
 
-        if (!route.index_page.empty() && IsExist(index_route) && !IsDirectory(resource_path)) {
-            debug(__access_log, "Session[%d]: choosed index page (%s)",
-                             ss->conn_sock.GetFd(),
-                             index_route.c_str());
-            resource_path = index_route;
+                debug(__access_log, "Session[%d]: Found index page (%s), redirecting to (%s)",
+                                    ss->conn_sock.GetFd(),
+                                    index_route.c_str(),
+                                    redirect_link.c_str());
+                return __OnHttpRedirect(ss, redirect_link, 302);
+            } else {
+                return ss->res_code = 404, __OnHttpError(ss);
+            }
+
+        } else if (Back(resource_path) != '/') {
+            return __OnHttpRedirect(ss, RelativeRedirect(ss->http_req.uri.path, route.index_page), 302);
         } else if (route.listing_enabled) {
             debug(__access_log, "Session[%d]: sending directory listing (%s)",
                              ss->conn_sock.GetFd(),
                              resource_path.c_str());
             return __SendDirectoryListing(resource_path, ss);
+
         } else {
             debug(__access_log, "Session[%d]: directory (%s) can't be indexed (index_page: %s, listing: %s)",
                              ss->conn_sock.GetFd(),
@@ -98,6 +126,7 @@ void  HttpServer::__OnStaticFileRequest(SessionCtx* ss, const WebRoute& route) {
                              (route.index_page.empty() ? "NO" : "YES"),
                              (route.listing_enabled ? "YES" : "NO"));
             return ss->res_code = 404, __OnHttpError(ss);
+
         }
     }
 
@@ -121,6 +150,12 @@ void  HttpServer::__OnStaticFileRequest(SessionCtx* ss, const WebRoute& route) {
            __SendStaticFileResponse(resource, ss);
 }
 
+void  HttpServer::__OnHttpRedirect(SessionCtx* ss, const std::string& location, int code) {
+    ss->http_writer.Header().Set("Location", location);
+    ss->res_code = code;
+    return __OnHttpResponse(ss);
+}
+
 void  HttpServer::__OnHttpRequest(SessionCtx* ss) {
     ss->http_req = ss->req_rdr.GetMessage();
 
@@ -137,6 +172,8 @@ void  HttpServer::__OnHttpRequest(SessionCtx* ss) {
     if (route == NULL) {
         debug(__access_log, "Session[%d]: no web route", ss->conn_sock.GetFd());
         return ss->res_code = 404, __OnHttpError(ss);
+    } else if (route->reditect.enabled) {
+        return __OnHttpRedirect(ss, route->reditect.location, route->reditect.code);
     } else {
         debug(__access_log, "Session[%d]: choosen web route with pattern ``%s''"
                             " with type: STATIC_FILE_REQ",
@@ -146,12 +183,13 @@ void  HttpServer::__OnHttpRequest(SessionCtx* ss) {
     }
 }
 
-void  HttpServer::__OnHttpError(SessionCtx* ss) {
+void  HttpServer::__OnHttpError(SessionCtx* ss, bool reset) {
     info(__access_log, "Session[%d]: sending HTTP error",
                          ss->conn_sock.GetFd(),
                          ss->res_code);
 
-    ss->http_writer.Reset();
+    if (reset)
+        ss->http_writer.Reset();
     ss->http_writer.Write("Error occured: " + Convert<std::string>(ss->res_code) + ".\n");
     ss->http_writer.Write("Good luck with it!\n");
     __OnHttpResponse(ss);
@@ -170,7 +208,7 @@ void  HttpServer::__OnHttpResponse(SessionCtx* ss) {
     }
 
     // Set default Content-Type
-    if (!ss->http_writer.Header().Has("Content-Type")) {
+    if (!ss->http_writer.Header().Has("Content-Type") && ss->http_writer.HasBody()) {
         ss->http_writer.Header().Set("Content-Type", "text/plain");
     }
 

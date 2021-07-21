@@ -71,10 +71,17 @@ class HttpServer {
 
     typedef std::set<Http::Method> MethodSet;
 
+    struct WebRedirect {
+        bool                enabled;
+        std::string         location;
+        int                 code;
+    };
+
     struct WebRoute {
         std::string            pattern;
         std::string            root_directory;
-        std::string            index_page;
+        std::string            index_page;          // if empty, index page is disabled
+        WebRedirect            reditect;            // if empty, redirection is disabled
         MethodSet              allowed_methods;
         bool                   listing_enabled;
     };
@@ -106,13 +113,14 @@ private:
     /// Http logic
     void                __OnHttpRequest(SessionCtx* ss);
     void                __OnHttpResponse(SessionCtx* ss);
-    void                __OnHttpError(SessionCtx* ss);
+    void                __OnHttpError(SessionCtx* ss, bool reset = true);
 
     const WebRoute*     __FindWebRoute(const Http::Request& req, const WebRouteList& routes_list);
     bool                __FindWebFile(const Http::Request& req, const WebRoute& route,
                                                                 std::string* res_path);
 
     void                __OnStaticFileRequest(SessionCtx* ss, const WebRoute& route);
+    void                __OnHttpRedirect(SessionCtx* ss, const std::string& location, int code = 302);
 
     /// Sessions Logic
     SessionCtx*         __NewSessionCtx(const IO::Socket& sock, Log::Logger* accessl, Log::Logger* errorl);

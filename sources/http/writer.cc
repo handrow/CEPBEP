@@ -88,6 +88,10 @@ const Headers&  ResponseWriter::Header() const {
     return __hdrs;
 }
 
+bool  ResponseWriter::HasBody() const {
+    return !__body.empty();
+}
+
 void            ResponseWriter::Write(const std::string& body_appendix) {
     __body += body_appendix;
 }

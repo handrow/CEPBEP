@@ -29,6 +29,8 @@ class ResponseWriter {
      */
     std::string     SendToString(int code, ProtocolVersion ver = HTTP_1_1);
 
+    bool            HasBody() const; 
+
  protected:
     Headers         __hdrs;
     std::string     __body;

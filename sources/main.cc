@@ -14,22 +14,35 @@ int main(int ac, Cgi::Envs av, Cgi::Envs) {
     IO::SockInfo            saddr;
     Webserver::HttpServer   server;
 
-    Webserver::HttpServer::MethodSet ms;
-    ms.insert(Http::METHOD_GET);
+    Webserver::HttpServer::MethodSet ms_get;
+    {
+        ms_get.insert(Http::METHOD_GET);
+    }
 
     Webserver::HttpServer::WebRoute route1 = {
         .pattern = "/gallery/*",
         .root_directory = "../www/images",
         .index_page = "",
-        .allowed_methods = ms,
+        .reditect = { .enabled = false },
+        .allowed_methods = ms_get,
         .listing_enabled = true
     };
 
     Webserver::HttpServer::WebRoute route2 = {
+        .pattern = "/images/*",
+        .reditect = {
+            .enabled = true,
+            .location = "/gallery/",
+            .code = 301
+        }
+    };
+
+    Webserver::HttpServer::WebRoute route_other = {
         .pattern = "/*",
         .root_directory = "../www/pages",
         .index_page = "index.html",
-        .allowed_methods = ms,
+        .reditect = { .enabled = false },
+        .allowed_methods = ms_get,
         .listing_enabled = true
     };
 
@@ -48,6 +61,7 @@ int main(int ac, Cgi::Envs av, Cgi::Envs) {
     try {
         server.AddWebRoute(route1);
         server.AddWebRoute(route2);
+        server.AddWebRoute(route_other);
 
         server.SetMimes(mimes);
 
