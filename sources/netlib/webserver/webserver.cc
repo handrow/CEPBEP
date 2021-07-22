@@ -21,7 +21,6 @@ void  HttpServer::AddVritualServer(const IO::SockInfo& si, const VirtualServer& 
     // create new listener
     Error err;
     IO::Socket sock = IO::Socket::CreateListenSocket(si, &err);
-
     if (err.IsError())
         throw std::runtime_error("Socket creation failed: " + err.message);
 
@@ -37,6 +36,7 @@ void  HttpServer::SetTimeout(u64 msec) {
 void  HttpServer::ServeForever() {
     __evloop.AddDefaultEvent(__SpawnPollerHook());
     __evloop.AddDefaultEvent(__SpawnTimeoutHook());
+    __evloop.AddDefaultEvent(__SpawnCgiPidCheckHook());
     __evloop.Run();
 }
 

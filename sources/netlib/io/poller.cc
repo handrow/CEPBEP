@@ -4,7 +4,6 @@ namespace IO {
 
 Poller::Result Poller::Poll(Error* err) {
     Result result = {.fd = -1, .ev = POLL_NONE};
-
     int rc = poll(__pfds.data(), __pfds.size(), __timeout_ms);
 
     if (rc > 0) {

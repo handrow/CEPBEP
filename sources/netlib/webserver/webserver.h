@@ -61,6 +61,7 @@ class HttpServer {
     };
 
     struct VirtualServer;
+    struct CgiEntry;
 
     struct SessionCtx {
         VirtualServer*       server;
@@ -73,7 +74,8 @@ class HttpServer {
 
         Http::ResponseWriter  http_writer;
         Http::Request         http_req;
-        Cgi::ResponseReader   resp_reader;
+
+        CgiEntry*             cgi;
 
         bool                  conn_close;
         int                   res_code;
@@ -86,12 +88,12 @@ class HttpServer {
     };
 
     struct CgiEntry {
-        fd_t        fd_in[2];
-        fd_t        fd_out[2];
-        SessionCtx* session;
-        u32         status;
-        u32         pid;
-        std::string in_buf;
+        IO::File              fd_in;
+        IO::File              fd_out;
+        u32                   pid;
+        SessionCtx*           session;
+        std::string           in_buf;
+        Cgi::ResponseReader   cgi_rdr;
     };
 
     typedef std::set<Http::Method> MethodSet;
@@ -102,11 +104,16 @@ class HttpServer {
         int                 code;
     };
 
+    struct CgiOptions {
+        std::string path_to_driver;
+    };
+
     struct WebRoute {
         std::string            pattern;
         std::string            root_directory;
         std::string            index_page;          // if empty, index page is disabled
         WebRedirect            reditect;            // if empty, redirection is disabled
+        bool                   cgi_enabled;
         MethodSet              allowed_methods;
         bool                   listing_enabled;
     };
@@ -137,9 +144,9 @@ private:
     /*                    listen_fd   server                     */
     typedef std::multimap< fd_t,     VirtualServer > VirtualServerMap;
 
-    typedef std::map< fd_t, CgiEntry >        CgiInFdMap;
+    typedef std::map< fd_t, CgiEntry* >       CgiFdMap;
 
-    typedef std::map< fd_t, CgiEntry* >       CgiOutFdMap;
+    typedef std::list< CgiEntry >       CgiList;
 
  private:
     /// Event basics logic
@@ -213,16 +220,21 @@ private:
     // Event::IEventPtr    __SpawnCgiWriteEvent(IO::Poller::PollEvent ev, IO::File file, SessionCtx* ss);
     // Event::IEventPtr    __SpawnCgiReadEvent(IO::Poller::PollEvent ev, IO::File file, SessionCtx* ss);
     // class  EvCgiWriteError;
-    void                __OnCgiFdRead(fd_t file, CgiEntry* ss);
-    void                __OnCgiFdError(fd_t file, CgiEntry* ss);
-    void                __OnCgiFdWrite(fd_t file, CgiEntry* ss);
+    void                __OnCgiFdRead(CgiEntry* cgi);
+    void                __OnCgiFdError(CgiEntry* cgi, fd_t fd);
+    void                __OnCgiFdWrite(CgiEntry* cgi);
+    void                CgiCheckPid();
+    void                __RmCgiFd(IO::File& fd);
     // void                __OnCgiFdReadEnd(IO::File file, CgiEntry* ss);
-    bool                CgiAcivation(CgiEntry& cgi, bool has_body);
-    Event::IEventPtr    __SpawnCgiReadEvent(IO::Poller::PollEvent ev, CgiEntry* ss, fd_t fd);
-    Event::IEventPtr    __SpawnCgiWriteEvent(IO::Poller::PollEvent ev, CgiEntry* ss, fd_t fd);
+    void                __CgiIOStart(CgiEntry* cgi, const std::string& resource_path, const WebRoute& route);
+    void                __CgiOutStart(CgiEntry* cgi, const std::string& resource_path, const WebRoute& route);
+    Event::IEventPtr    __SpawnCgiEvent(IO::Poller::PollEvent ev, CgiEntry* cgi, fd_t fd);
+    Event::IEventPtr    __SpawnCgiPidCheckHook();
+    Cgi::Envs           __FillEnv(SessionCtx* ss);
     class  EvCgiRead;
     class  EvCgiFdError;
     class  EvCgiWrite;
+    class  EvCgiCheckPid;
     // void                __OnCgiFdWriteError(IO::File file, SessionCtx* ss);
     // void                __OnCgiFdWriteEnd(IO::File file, SessionCtx* ss);
 ///-----
@@ -234,7 +246,6 @@ private:
     void  Config(const Config::Category& cat);
 
     void  ServeForever();
-    Cgi::Metavars       __env;
 
  private:
     Log::Logger*        __system_log;

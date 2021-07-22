@@ -9,9 +9,8 @@ HttpServer::__FindWebRoute(const Http::Request& req, const WebRouteList& routes)
     for (WebRouteList::const_iterator route_it  = routes.begin();
                                       route_it != routes.end();
                                       ++route_it) {
-
         const WebRoute& try_route = *route_it;
-        if (Match(try_route.pattern, req.uri.path) == false)
+        if (Match(try_route.pattern, req.uri.path) == false) {
             continue;
         return &try_route;
     }
