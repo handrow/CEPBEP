@@ -18,6 +18,8 @@ HttpServer::SessionCtx*  HttpServer::__NewSessionCtx(const IO::Socket& sock,
 
     ss->__link_stfile.closed = true;
 
+    ss->UpdateTimeout(__session_timeout);
+
     return ss;
 }
 
@@ -41,6 +43,8 @@ void  HttpServer::__DeleteSessionCtx(SessionCtx* ss) {
 void  HttpServer::__OnSessionRead(SessionCtx* ss) {
     static const usize  READ_SESSION_BUFF_SZ = 10000;
     const std::string  portion = ss->conn_sock.Read(READ_SESSION_BUFF_SZ);
+
+    ss->UpdateTimeout(__session_timeout);
 
     if (portion.empty()) {
         return __OnSessionHup(ss);
@@ -68,6 +72,8 @@ void  HttpServer::__OnSessionRead(SessionCtx* ss) {
 
 void  HttpServer::__OnSessionWrite(SessionCtx* ss) {
     static const usize  WRITE_SESSION_BUFF_SZ = 10000;
+
+    ss->UpdateTimeout(__session_timeout);
 
     if (ss->res_buff.empty()) {
         info(__system_log, "Session[%d]: nothing to transmit, transmittion stopped",

@@ -27,8 +27,13 @@ void  HttpServer::SetMimes(const Mime::MimeTypesMap& map) {
     __mime_map = map;
 }
 
+void  HttpServer::SetTimeout(u64 msec) {
+    __session_timeout = msec;
+}
+
 void  HttpServer::ServeForever() {
     __evloop.AddDefaultEvent(__SpawnPollerHook());
+    __evloop.AddDefaultEvent(__SpawnTimeoutHook());
     __evloop.Run();
 }
 

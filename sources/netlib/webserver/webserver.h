@@ -69,6 +69,10 @@ class HttpServer {
         int                   res_code;
 
         StaticFile            __link_stfile;
+
+        u64                   __timeout_ms;
+
+        void  UpdateTimeout(u64 timeout_ms) { __timeout_ms = tv_to_msec(GetTimeOfDay()) + timeout_ms; }
     };
 
     typedef std::set<Http::Method> MethodSet;
@@ -107,6 +111,13 @@ private:
     Event::IEventPtr    __SpawnPollerHook();
     class  EvPollerHook;
  
+    /// Timeout
+    Event::IEventPtr    __SpawnTimeoutHook();
+    class  EvTimeoutHook;
+
+    void                __EvaluateIoTimeouts();
+    void                __OnSessionTimeout(SessionCtx* ss);
+
     /// Listener I/O
     Event::IEventPtr    __SpawnListenerEvent(IO::Poller::PollEvent ev, IO::Socket* sock);
     class  EvListenerNewConnection;
@@ -155,6 +166,7 @@ private:
     void                __OnStaticFileReadEnd(SessionCtx* ss);
 
  public:
+    void  SetTimeout(u64 msec);
     void  AddListener(const IO::SockInfo& si);
     void  AddWebRoute(const WebRoute& entry);
     void  SetMimes(const Mime::MimeTypesMap& map);
@@ -177,6 +189,8 @@ private:
     WebRouteList        __routes;
     Mime::MimeTypesMap  __mime_map;
     ErrpageMap          __errpages;
+
+    u64                 __session_timeout;
 };
 
 }

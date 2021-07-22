@@ -59,6 +59,8 @@ int main(int ac, Cgi::Envs av, Cgi::Envs) {
     mimes["webp"] = "image/webp";
 
     try {
+        server.SetTimeout(4000);
+
         server.AddWebRoute(route1);
         server.AddWebRoute(route2);
         server.AddWebRoute(route_other);

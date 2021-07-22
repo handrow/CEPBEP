@@ -85,7 +85,10 @@ Event::IEventPtr HttpServer::__SwitchEventSpawners(IO::Poller::PollEvent pev, fd
 }
 
 void HttpServer::__EvaluateIoEvents() {
-    __poller.SetPollTimeout(__evloop.GetTimeToNextEventMS());
+    const u64 MAX_TIMEOUT_MS = 1500;
+    const u64 poller_timeout = std::min(__evloop.GetTimeToNextEventMS(), MAX_TIMEOUT_MS);
+    
+    __poller.SetPollTimeout(poller_timeout);
 
     IO::Poller::Result res = __PollEvent();
 
