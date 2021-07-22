@@ -89,6 +89,8 @@ class HttpServer {
     };
 
 private:
+    /*               errcode   page_path                         */
+    typedef std::map< int,     std::string >  ErrpageMap;
     /*                 route                                     */
     typedef std::list< WebRoute >             WebRouteList;
     /*                fd    listen_sock                          */
@@ -156,6 +158,7 @@ private:
     void  AddListener(const IO::SockInfo& si);
     void  AddWebRoute(const WebRoute& entry);
     void  SetMimes(const Mime::MimeTypesMap& map);
+    void  SetErrorPage(int errcode, const std::string& errpage);
     void  SetLogger(Log::Logger* a, Log::Logger* e, Log::Logger* s);
     void  ServeForever();
 
@@ -173,6 +176,7 @@ private:
 
     WebRouteList        __routes;
     Mime::MimeTypesMap  __mime_map;
+    ErrpageMap          __errpages;
 };
 
 }

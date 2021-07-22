@@ -9,7 +9,7 @@
 #include <string>
 
 int main(int ac, Cgi::Envs av, Cgi::Envs) {
-    Log::Logger             logger_stdout(Log::Logger::ERROR);
+    Log::Logger             logger_stdout(Log::Logger::DEBUG);
     // Log::Logger             logger_null(Log::Logger::DEBUG, "/dev/null");
     IO::SockInfo            saddr;
     Webserver::HttpServer   server;

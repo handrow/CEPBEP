@@ -42,6 +42,10 @@ void  HttpServer::__OnSessionRead(SessionCtx* ss) {
     static const usize  READ_SESSION_BUFF_SZ = 10000;
     const std::string  portion = ss->conn_sock.Read(READ_SESSION_BUFF_SZ);
 
+    if (portion.empty()) {
+        return __OnSessionHup(ss);
+    }
+
     info(__system_log, "Session[%d]: read %zu bytes",
                         ss->conn_sock.GetFd(), portion.size());
     debug(__system_log, "Session[%d]: read content:\n```\n%s\n```",
