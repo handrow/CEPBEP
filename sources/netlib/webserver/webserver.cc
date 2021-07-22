@@ -1,3 +1,4 @@
+#include <csignal>
 #include "netlib/webserver/webserver.h"
 
 namespace Webserver {
@@ -34,9 +35,10 @@ void  HttpServer::SetTimeout(u64 msec) {
 }
 
 void  HttpServer::ServeForever() {
+    signal(SIGPIPE, SIG_IGN);
     __evloop.AddDefaultEvent(__SpawnPollerHook());
     __evloop.AddDefaultEvent(__SpawnTimeoutHook());
-    __evloop.AddDefaultEvent(__SpawnCgiPidCheckHook());
+    __evloop.AddDefaultEvent(__SpawnCgiHook());
     __evloop.Run();
 }
 
@@ -136,7 +138,10 @@ ReadHostnames(const std::string& str) {
 }
 
 
-void  HttpServer::Config(const Config::Category& cat) {
+void  HttpServer::Config(const Config::Category& cat, Cgi::Envs evs) {
+
+    __envs = evs;
+
     /// GLOBAL configs
     usize           GLOBAL_max_body = 10000; // 10 KB
     u64             GLOBAL_timeout = 10000; // 10 seconds
@@ -178,6 +183,24 @@ void  HttpServer::Config(const Config::Category& cat) {
                 MIMES_map[it1->first] = it1->second;
             }
         }
+    }
+
+    /// MIMES configs
+    std::map< std::string, std::string>  CGI_driver_map;
+    {
+        if (cat.HasCategory("CGI")) {
+            const Config::Category& cgi_cat = cat.GetSubcategoryRef("CGI");
+
+            Config::Category::FieldsConstRange itrange = cgi_cat.GetFieldsIterRange();
+            Config::Category::FieldsConstIter it1 = itrange.first;
+            Config::Category::FieldsConstIter it2 = itrange.second;
+
+            for (;it1 != it2; ++it1) {
+                CGI_driver_map[it1->first] = it1->second;
+            }
+        }
+
+        __cgi_drivers = CGI_driver_map;
     }
 
     HttpServer::ErrpageMap ERRORS_map;
@@ -239,8 +262,10 @@ void  HttpServer::Config(const Config::Category& cat) {
                 std::string location;  // required
                 std::string root;  // required
                 // directory handling
+                bool        cgi_enabled = false;
                 bool        listing_enabled = false;
                 std::string index_page = "";
+
                 // redirection handling
                 WebRedirect redirect = {.enabled = false};
 
@@ -257,7 +282,6 @@ void  HttpServer::Config(const Config::Category& cat) {
                 if (route_cat.HasField("redirect")) {
                     redirect = ReadRedirect(route_cat.GetFieldValue("redirect"));
                 } else {
-
                     if (route_cat.HasField("root"))
                         root = route_cat.GetFieldValue("root");
                     else
@@ -270,6 +294,7 @@ void  HttpServer::Config(const Config::Category& cat) {
 
                     if (route_cat.HasField("index_page"))    index_page = route_cat.GetFieldValue("index_page");
                     if (route_cat.HasField("listing"))       listing_enabled = ReadYes(route_cat.GetFieldValue("listing"));
+                    if (route_cat.HasField("cgi"))           cgi_enabled = true;
                 }
 
                 ROUTES_registry[it1->first] = (WebRoute){
@@ -277,8 +302,9 @@ void  HttpServer::Config(const Config::Category& cat) {
                     .root_directory = root,
                     .index_page = index_page,
                     .reditect = redirect,
+                    .cgi_enabled = cgi_enabled,
                     .allowed_methods = allowed_methods,
-                    .listing_enabled = listing_enabled
+                    .listing_enabled = listing_enabled,
                 };
             }
 
@@ -344,7 +370,6 @@ void  HttpServer::Config(const Config::Category& cat) {
 
                 vs.mime_map = MIMES_map;
                 vs.errpages = ERRORS_map;
-
                 AddVritualServer(si, vs);
             }
         }

@@ -81,9 +81,9 @@ Event::IEventPtr HttpServer::__SwitchEventSpawners(IO::Poller::PollEvent pev, fd
         return __SpawnStaticFileReadEvent(pev, stat_file_rd_it->second);
     }
 
-    CgiFdMap::iterator  cgi_fd = __cgi_fd_map.find(fd);
-    if (cgi_fd != __cgi_fd_map.end()) {
-        return __SpawnCgiEvent(pev, cgi_fd->second, fd);
+    SessionFdMap::iterator  cgi_it = __cgi_fd_map.find(fd);
+    if (cgi_it != __cgi_fd_map.end()) {
+        return __SpawnCgiEvent(pev, cgi_it->second);
     }
     return new DebugEvent(__system_log, pev, fd);
 }

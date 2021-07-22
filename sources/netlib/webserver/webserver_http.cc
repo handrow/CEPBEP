@@ -10,7 +10,7 @@ HttpServer::__FindWebRoute(const Http::Request& req, const WebRouteList& routes)
                                       route_it != routes.end();
                                       ++route_it) {
         const WebRoute& try_route = *route_it;
-        if (Match(try_route.pattern, req.uri.path) == false) {
+        if (Match(try_route.pattern, req.uri.path) == false)
             continue;
         return &try_route;
     }
@@ -227,6 +227,10 @@ void  HttpServer::__OnHttpRequest(SessionCtx* ss) {
     /// Handle directory accesses
     if (IsDirectory(filepath)) {
         return __HandleDirectoryResource(ss, *route, filepath);
+    }
+
+    if (route->cgi_enabled && __AvaibleCgiDriver(filepath)) {
+        return __HandleCgiRequest(ss, filepath);
     }
 
     /// Handle Static file request

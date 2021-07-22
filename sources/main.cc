@@ -10,7 +10,7 @@
 #include <iostream>
 #include <string>
 
-int main(int ac, Cgi::Envs av, Cgi::Envs) {
+int main(int ac, Cgi::Envs av, Cgi::Envs ev) {
     Webserver::HttpServer   server;
     Config::Category        config;
     try {
@@ -20,7 +20,7 @@ int main(int ac, Cgi::Envs av, Cgi::Envs) {
         config = Config::Category::ParseFromINI(av[1], &err);\
         if (err.IsError())
             throw std::runtime_error("Config file parsing failed: " + err.message);
-        server.Config(config);
+        server.Config(config, ev);
     } catch (std::exception& e) {
         std::cerr << "Fatal error: " << e.what() << "\n";
         exit(1);

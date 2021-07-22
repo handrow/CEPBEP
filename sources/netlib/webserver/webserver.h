@@ -75,11 +75,11 @@ class HttpServer {
         Http::ResponseWriter  http_writer;
         Http::Request         http_req;
 
-        CgiEntry*             cgi;
 
         bool                  conn_close;
         int                   res_code;
 
+        CgiEntry*             __link_cgi;
         StaticFile            __link_stfile;
         fd_t                  __listener_fd;
         u64                   __timeout_ms;
@@ -90,10 +90,10 @@ class HttpServer {
     struct CgiEntry {
         IO::File              fd_in;
         IO::File              fd_out;
-        u32                   pid;
-        SessionCtx*           session;
+        pid_t                 pid;
         std::string           in_buf;
         Cgi::ResponseReader   cgi_rdr;
+        Http::Response        cgi_res;
     };
 
     typedef std::set<Http::Method> MethodSet;
@@ -102,10 +102,6 @@ class HttpServer {
         bool                enabled;
         std::string         location;
         int                 code;
-    };
-
-    struct CgiOptions {
-        std::string path_to_driver;
     };
 
     struct WebRoute {
@@ -128,6 +124,8 @@ public:
     /*               errcode   page_path                         */
     typedef std::map< int,     std::string >  ErrpageMap;
 
+    typedef std::map< std::string, std::string > CgiDriverMap;
+
     struct VirtualServer {
         typedef std::list<std::string> Hostnames;
 
@@ -143,10 +141,7 @@ public:
 private:
     /*                    listen_fd   server                     */
     typedef std::multimap< fd_t,     VirtualServer > VirtualServerMap;
-
-    typedef std::map< fd_t, CgiEntry* >       CgiFdMap;
-
-    typedef std::list< CgiEntry >       CgiList;
+    typedef std::map< pid_t, CgiEntry >              CgiPidMap;
 
  private:
     /// Event basics logic
@@ -163,6 +158,11 @@ private:
 
     void                __EvaluateIoTimeouts();
     void                __OnSessionTimeout(SessionCtx* ss);
+
+    /// CGI hooks
+    Event::IEventPtr    __SpawnCgiHook();
+    class  EvCgiHook;
+    void                __EvaluateCgiWorkers();
 
     /// Listener I/O
     Event::IEventPtr    __SpawnListenerEvent(IO::Poller::PollEvent ev, IO::Socket* sock);
@@ -215,35 +215,32 @@ private:
     IO::File            __GetErrPage(int errcode, SessionCtx* ss);
     void                __SendDefaultErrPage(SessionCtx* ss);
 
-//CGI
-    void                __OnCgiRequest(SessionCtx* ss, const WebRoute& route);
-    // Event::IEventPtr    __SpawnCgiWriteEvent(IO::Poller::PollEvent ev, IO::File file, SessionCtx* ss);
-    // Event::IEventPtr    __SpawnCgiReadEvent(IO::Poller::PollEvent ev, IO::File file, SessionCtx* ss);
-    // class  EvCgiWriteError;
-    void                __OnCgiFdRead(CgiEntry* cgi);
-    void                __OnCgiFdError(CgiEntry* cgi, fd_t fd);
-    void                __OnCgiFdWrite(CgiEntry* cgi);
-    void                CgiCheckPid();
-    void                __RmCgiFd(IO::File& fd);
-    // void                __OnCgiFdReadEnd(IO::File file, CgiEntry* ss);
-    void                __CgiIOStart(CgiEntry* cgi, const std::string& resource_path, const WebRoute& route);
-    void                __CgiOutStart(CgiEntry* cgi, const std::string& resource_path, const WebRoute& route);
-    Event::IEventPtr    __SpawnCgiEvent(IO::Poller::PollEvent ev, CgiEntry* cgi, fd_t fd);
-    Event::IEventPtr    __SpawnCgiPidCheckHook();
-    Cgi::Envs           __FillEnv(SessionCtx* ss);
+    /// CGI
+    Event::IEventPtr    __SpawnCgiEvent(IO::Poller::PollEvent ev, SessionCtx* ss);
     class  EvCgiRead;
-    class  EvCgiFdError;
+    class  EvCgiError;
     class  EvCgiWrite;
-    class  EvCgiCheckPid;
-    // void                __OnCgiFdWriteError(IO::File file, SessionCtx* ss);
-    // void                __OnCgiFdWriteEnd(IO::File file, SessionCtx* ss);
-///-----
+
+    Cgi::CStringVec     __FillCgiMetavars(SessionCtx* ss, const std::string& filepath);
+    bool                __AvaibleCgiDriver(const std::string& filepath);
+    std::string         __GetCgiDriver(const std::string& filepath);
+    void                __HandleCgiRequest(SessionCtx* ss, const std::string& filepath);
+    void                __StopCgiWorker(CgiEntry* ce);
+    void                __StopCgiRead(CgiEntry* ce);
+    void                __StopCgiWrite(CgiEntry* ce);
+    void                __OnCgiResponse(SessionCtx* ss);
+    void                __OnCgiOutput(SessionCtx* ss);
+    void                __OnCgiInput(SessionCtx* ss);
+    void                __OnCgiError(SessionCtx* ss);
+    void                __CgiWorker(fd_t ipip[2], fd_t opip[2],
+                                    SessionCtx* ss, const std::string& filepath);
+
  public:
     void  SetTimeout(u64 msec);
     void  SetSystemLogger(Log::Logger* s);
     void  AddVritualServer(const IO::SockInfo& si, const VirtualServer& vs);
 
-    void  Config(const Config::Category& cat);
+    void  Config(const Config::Category& cat, Cgi::Envs evs);
 
     void  ServeForever();
 
@@ -257,9 +254,11 @@ private:
     SocketFdMap         __listeners_map;
     SessionFdMap        __sessions_map;
     SessionFdMap        __stat_files_read_map;
-    CgiInFdMap          __cgi_in_map;
-    CgiOutFdMap         __cgi_out_map;
+    SessionFdMap        __cgi_fd_map;
+    CgiPidMap           __cgi_pid_map;
 
+    Cgi::Envs           __envs;
+    CgiDriverMap        __cgi_drivers;
     u64                 __session_timeout;
 };
 

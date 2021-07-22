@@ -10,275 +10,277 @@
 
 namespace Webserver {
 
+void HttpServer::__EvaluateCgiWorkers() {
+    for (CgiPidMap::iterator it = __cgi_pid_map.begin();
+                             it != __cgi_pid_map.end();
+                            ++it) {
+        CgiEntry& ce = it->second;
+
+        int rc = waitpid(ce.pid, NULL, WNOHANG);
+        // not dead
+        if (rc == 0)
+            continue;
+        
+        if (rc < 0) {
+            __StopCgiWorker(&ce);
+        }
+
+        // dead
+        __cgi_pid_map.erase(it--);
+    }
+}
+
+Cgi::CStringVec
+HttpServer::__FillCgiMetavars(SessionCtx* ss, const std::string& filepath) {
+    Cgi::Metavars   metavar;    
+    metavar.AddHttpHeaders(ss->http_req.headers);
+    metavar.AddEnvs(__envs);
+    metavar.GetMapRef()["REMOTE_ADDR"] = std::string(ss->conn_sock.GetSockInfo().addr_BE);
+    metavar.GetMapRef()["CONTENT_TYPE"] = ss->http_req.headers.Get("Content-Type");
+    metavar.GetMapRef()["CONTENT_LENGTH"] = ss->http_req.headers.Get("Content-Length");
+    metavar.GetMapRef()["QUERY_STRING"] = ss->http_req.uri.query_str;
+    metavar.GetMapRef()["GATEWAY_INTERFACE"] = "CGI/1.1";
+    metavar.GetMapRef()["SERVER_PORT"] = u16(__listeners_map[ss->__listener_fd].GetSockInfo().port_BE);
+    metavar.GetMapRef()["SERVER_PROTOCOL"] = Http::ProtocolVersionToString(ss->http_req.version);
+    metavar.GetMapRef()["SERVER_SOFTWARE"] = "webserv/1.0.0";
+    metavar.GetMapRef()["REQUEST_METHOD"] = Http::MethodToString(ss->http_req.method);
+    metavar.GetMapRef()["SCRIPT_NAME"] = filepath;
+    metavar.GetMapRef()["SERVER_NAME"] = ss->http_req.headers.Get("Host");
+    return metavar.ToEnvVector();
+}
+
+bool  HttpServer::__AvaibleCgiDriver(const std::string& filepath) {
+    std::string fileext = GetFileExt(filepath);
+    return __cgi_drivers.count(fileext) > 0;
+}
+
+std::string  HttpServer::__GetCgiDriver(const std::string& filepath) {
+    std::string fileext = GetFileExt(filepath);
+
+    if (__cgi_drivers.count(fileext) > 0) {
+        return __cgi_drivers[fileext];
+    }
+
+    return "";
+}
+
+void  HttpServer::__CgiWorker(fd_t ipip[], fd_t opip[], SessionCtx* ss, const std::string& filepath) {
+    if (dup2(ipip[0], STDIN_FILENO) < 0)
+        exit(1);
+    if (dup2(opip[1], STDOUT_FILENO) < 0)
+        exit(1);
+
+    close(ipip[0]);
+    close(ipip[1]);
+    close(opip[0]);
+    close(opip[1]);
+
+    std::string cgi_driver = __GetCgiDriver(filepath);
+
+    Cgi::CStringVec arg_vec;
+    arg_vec.push_back(C::string());
+    arg_vec.push_back(C::string(filepath));
+    arg_vec.push_back(NULL);
+
+    Cgi::CStringVec env_vec = __FillCgiMetavars(ss, filepath);
+
+    execve(cgi_driver.c_str(), Cgi::CastToEnvs(arg_vec), Cgi::CastToEnvs(env_vec));
+    exit(1);
+}
+
+void  HttpServer::__HandleCgiRequest(SessionCtx* ss, const std::string& filepath) {
+    CgiEntry    cgi;
+    debug(__system_log, "BEGIN");
+    cgi.in_buf = ss->http_req.body;
+
+    fd_t ipip[2] = {-1, -1};
+    fd_t opip[2] = {-1, -1};
+
+    if (pipe(ipip) < 0)
+        return ss->res_code = 500, __OnHttpError(ss);
+
+    if (pipe(opip) < 0)
+        return close(ipip[0]), close(ipip[1]),
+               ss->res_code = 500, __OnHttpError(ss);
+
+    cgi.pid = fork();
+    if (cgi.pid == 0) {
+        // cgi worker
+        return __CgiWorker(ipip, opip, ss, filepath);
+    }
+    // cgi watcher
+
+    if (cgi.pid < 0) {
+        close(ipip[0]);
+        close(ipip[1]);
+        close(opip[0]);
+        close(opip[1]);
+        return ss->res_code = 500, __OnHttpError(ss);
+    }
+
+    cgi.fd_in = IO::File(ipip[1]);
+    close(ipip[0]);
+    cgi.fd_out = IO::File(opip[0]);
+    close(opip[1]);
+
+    /// Add cgi to our inner structures
+    __cgi_pid_map[cgi.pid] = cgi;
+    ss->__link_cgi = &__cgi_pid_map[cgi.pid];
+
+    __cgi_fd_map[cgi.fd_in.GetFd()] = ss;
+    __cgi_fd_map[cgi.fd_out.GetFd()] = ss;
+
+    debug(__system_log, "BEGIN");
+
+    if (!cgi.in_buf.empty())
+        __poller.AddFd(cgi.fd_in.GetFd(), IO::Poller::POLL_WRITE);
+    __poller.AddFd(cgi.fd_out.GetFd(), IO::Poller::POLL_READ);
+}
+
+void  HttpServer::__StopCgiWorker(CgiEntry* ce) {
+    kill(ce->pid, SIGKILL);
+}
+
+void  HttpServer::__StopCgiRead(CgiEntry* ce) {
+    __poller.RmFd(ce->fd_out.GetFd());
+    __cgi_fd_map.erase(ce->fd_out.GetFd());
+}
+
+void  HttpServer::__StopCgiWrite(CgiEntry* ce) {
+    __poller.RmFd(ce->fd_in.GetFd());
+    __cgi_fd_map.erase(ce->fd_in.GetFd());
+}
+
+void  HttpServer::__OnCgiResponse(SessionCtx* ss) {
+    CgiEntry& ce = *ss->__link_cgi;
+    __StopCgiRead(&ce);
+    ss->http_writer.Write(ce.cgi_res.body);
+    ss->http_writer.Header().SetMap(ce.cgi_res.headers.GetMap());
+    return ss->res_code = ce.cgi_res.code, __OnHttpResponse(ss);
+}
+
+void  HttpServer::__OnCgiOutput(SessionCtx* ss) {
+    static const usize READ_BUF_SZ = 10000;
+    CgiEntry& ce = *ss->__link_cgi;
+    std::string portion = ce.fd_out.Read(READ_BUF_SZ);
+
+    if (portion.empty()) {
+        ce.cgi_rdr.EndRead();
+    } else {
+        ce.cgi_rdr.Read(portion);
+    }
+
+    ce.cgi_rdr.Process();
+
+    if (ce.cgi_rdr.HasError())
+        return __OnCgiError(ss);
+
+    if (ce.cgi_rdr.HasMessage()) {
+        ce.cgi_res = ce.cgi_rdr.GetMessage();
+        return __OnCgiResponse(ss);
+    }
+}
+
+void  HttpServer::__OnCgiInput(SessionCtx* ss) {
+    CgiEntry& ce = *ss->__link_cgi;
+    static const usize  WRITE_BUFF_SZ = 10000;
+
+    if (ce.in_buf.empty()) {
+        __StopCgiWrite(ss->__link_cgi);
+    } else {
+        std::string  portion = ce.in_buf.substr(0, WRITE_BUFF_SZ);
+        isize trasmitted_bytes = ce.fd_in.Write(portion);
+
+        ce.in_buf = ce.in_buf.substr(trasmitted_bytes);
+    }
+}
+
+void  HttpServer::__OnCgiError(SessionCtx* ss) {
+    __StopCgiWrite(ss->__link_cgi);
+    __StopCgiRead(ss->__link_cgi);
+    __StopCgiWorker(ss->__link_cgi);
+
+    return ss->res_code = 500, __OnHttpError(ss);
+}
+
 class HttpServer::EvCgiRead : public Event::IEvent {
-    private:
-        HttpServer* __server;
-        CgiEntry* __cgi_entry;
+ private:
+    HttpServer* __server;
+    SessionCtx* __session;
 
-    public:
-        EvCgiRead(HttpServer *srv, CgiEntry* cgi)
-        : __server(srv)
-        , __cgi_entry(cgi)
-        {
-        }
+ public:
+    EvCgiRead(HttpServer *srv, SessionCtx* ss)
+    : __server(srv)
+    , __session(ss)
+    {
+    }
 
-        void  Handle() {
-            __server->__OnCgiFdRead(__cgi_entry);
-        }
+    void  Handle() {
+        __server->__OnCgiOutput(__session);
+    }
 };
 
 class HttpServer::EvCgiWrite : public Event::IEvent {
-    private:
-        HttpServer* __server;
-        CgiEntry* __cgi_entry;
+ private:
+    HttpServer* __server;
+    SessionCtx* __session;
 
-    public:
-        EvCgiWrite(HttpServer *srv, CgiEntry* cgi)
-        : __server(srv)
-        , __cgi_entry(cgi)
-        {
-        }
+ public:
+    EvCgiWrite(HttpServer *srv, SessionCtx* ss)
+    : __server(srv)
+    , __session(ss)
+    {
+    }
 
-        void  Handle() {
-            __server->__OnCgiFdWrite(__cgi_entry);
-        }
+    void  Handle() {
+        __server->__OnCgiInput(__session);
+    }
 };
 
-class HttpServer::EvCgiFdError : public Event::IEvent {
-    private:
-        HttpServer* __server;
-        CgiEntry*   __cgi_entry;
-        fd_t        __fd;
+class HttpServer::EvCgiError : public Event::IEvent {
+ private:
+    HttpServer* __server;
+    SessionCtx* __session;
 
-    public:
-        EvCgiFdError(HttpServer *srv, CgiEntry* cgi, fd_t fd)
-        : __server(srv)
-        , __cgi_entry(cgi)
-        , __fd(fd)
-        {
-        }
+ public:
+    EvCgiError(HttpServer *srv, SessionCtx* ss)
+    : __server(srv)
+    , __session(ss)
+    {
+    }
 
-        void  Handle() {
-            __server->__OnCgiFdError(__cgi_entry, __fd);
-        }
+    void  Handle() {
+        __server->__OnCgiError(__session);
+    }
 };
 
-class HttpServer::EvCgiCheckPid : public Event::IEvent {
-    private:
-        HttpServer* __server;
+class HttpServer::EvCgiHook : public Event::IEvent {
+ private:
+    HttpServer* __server;
 
-    public:
-        EvCgiCheckPid(HttpServer *srv)
-        : Event::IEvent(5000)
-        , __server(srv)
-        {
-        }
+ public:
+    EvCgiHook(HttpServer *srv) : __server(srv) {
+    }
 
-        void  Handle() {
-            __server->CgiCheckPid();
-        }
+    void  Handle() {
+        __server->__EvaluateCgiWorkers();
+    }
 };
 
-Event::IEventPtr    HttpServer::__SpawnCgiEvent(IO::Poller::PollEvent ev, CgiEntry* cgi, fd_t fd) {
+Event::IEventPtr    HttpServer::__SpawnCgiEvent(IO::Poller::PollEvent ev, SessionCtx* ss) {
     if (ev == IO::Poller::POLL_READ || ev == IO::Poller::POLL_CLOSE) {
-        return new EvCgiRead(this, cgi);
+        return new EvCgiRead(this, ss);
     } else if (ev == IO::Poller::POLL_WRITE) {
-        return new EvCgiWrite(this, cgi);
+        return new EvCgiWrite(this, ss);
     } else if (ev == IO::Poller::POLL_ERROR) {
-        return new EvCgiFdError(this, cgi, fd);
+        return new EvCgiError(this, ss);
     } else {
         throw std::runtime_error("Unsupported event type for CgiReadEvent: " + Convert<std::string>(ev));
     }
 }
 
-Event::IEventPtr    HttpServer::__SpawnCgiPidCheckHook() {
-    return new EvCgiCheckPid(this);
-}
-
-Cgi::Envs HttpServer::__FillEnv(SessionCtx* ss) {
-    Cgi::Metavars filled;
-    filled.AddEnvs(__env);
-    filled.AddHttpHeaders(ss->http_req.headers);
-    filled.GetMapRef()["AUTH_TYPE"] = ss->http_req.headers.Get("Authorization").substr(0, ' ');
-    filled.GetMapRef()["CONTENT_TYPE"] = ss->http_req.headers.Get("Content-Length");
-    filled.GetMapRef()["CONTENT_TYPE"] = ss->http_req.headers.Get("Content-Type");
-    filled.GetMapRef()["GATEWAY_INTERFACE"] = "1.1";
-    filled.GetMapRef()["PATH_INFO"] = ss->http_req.uri.path;
-    filled.GetMapRef()["PATH_INFO"] = ss->http_req.uri.path;
-    filled.GetMapRef()["QUERY_STRING"] = ss->http_req.uri.query_str;
-    filled.GetMapRef()["REMOTE_ADDR"] = std::string(ss->conn_sock.GetSockInfo().addr_BE);
-    filled.GetMapRef()["REMOTE_HOST"] = "";
-    filled.GetMapRef()["REMOTE_USER"] = "";
-    filled.GetMapRef()["REQUEST_METHOD"] = ss->http_req.method;
-    filled.GetMapRef()["SCRIPT_NAME"] = ss->http_req.uri.path;
-    filled.GetMapRef()["SERVER_NAME"] = "";
-    filled.GetMapRef()["SERVER_PORT"] = "";
-    filled.GetMapRef()["SERVER_PROTOCOL"] = "HTTP/ 1.1";
-    filled.GetMapRef()["SERVER_SOFTWARE"] = "CEPBEP";
-    return Cgi::CastToEnvs(filled.ToEnvVector());
-}
-
-void HttpServer::__RmCgiFd(IO::File& fd) {
-    if (close(fd.GetFd()) != -1) {
-        __poller.RmFd(fd.GetFd());
-        __cgi_fd_map.erase(fd.GetFd());
-    }
-    errno = 0;
-}
-
-void HttpServer::__CgiIOStart(CgiEntry* cgi, const std::string& resource_path, const WebRoute& route) {
-    int pipe_in[2];
-    int pipe_out[2];
-
-    if (pipe(pipe_in) < 0)
-        throw std::runtime_error("pipe(): ");
-    if (pipe(pipe_out) < 0)
-        throw std::runtime_error("pipe(): ");
-    cgi->pid = fork();
-    if (!cgi->pid) {
-        if (dup2(pipe_in[0], STDIN_FILENO) < 0)
-            throw std::runtime_error("dup2(): ");
-        close(pipe_in[0]);
-        close(pipe_in[1]);
-        if (dup2(pipe_out[1], STDOUT_FILENO) < 0)
-            throw std::runtime_error("dup2(): ");
-        close(pipe_out[0]);
-        close(pipe_out[1]);
-        Cgi::CStringVec arg;
-        arg.push_back(C::string(__cgi_options.path_to_driver));
-        arg.push_back(C::string(resource_path + route.index_page));
-        arg.push_back(NULL);
-        execve(__cgi_options.path_to_driver.size() ? __cgi_options.path_to_driver.c_str() : Cgi::CastToEnvs(arg)[0], Cgi::CastToEnvs(arg), __FillEnv(cgi->session));
-        exit(1);
-    }
-    else if (cgi->pid < 0)
-        throw std::runtime_error("fork(): ");
-
-    close(pipe_in[0]);
-    __poller.AddFd(pipe_in[1], IO::Poller::POLL_WRITE);
-    close(pipe_out[1]);
-    __poller.AddFd(pipe_out[0], IO::Poller::POLL_READ);
-
-    cgi->fd_in = IO::File(pipe_in[1]);
-    cgi->fd_out = IO::File(pipe_out[0]);
-    __cgi_fd_map[pipe_in[1]] = cgi;
-    __cgi_fd_map[pipe_out[0]] = cgi;
-}
-
-void HttpServer::__CgiOutStart(CgiEntry* cgi, const std::string& resource_path, const WebRoute& route) {
-    int pipe_out[2];
-
-    if (pipe(pipe_out) < 0)
-        throw std::runtime_error("pipe(): ");
-    cgi->pid = fork();
-    if (!cgi->pid) {
-        if (dup2(pipe_out[1], STDOUT_FILENO) < 0)
-            throw std::runtime_error("dup2(): ");
-        close(pipe_out[0]);
-        close(pipe_out[1]);
-        Cgi::CStringVec arg;
-        arg.push_back(C::string(__cgi_options.path_to_driver));
-        arg.push_back(C::string(resource_path + route.index_page));
-        arg.push_back(NULL);
-        execve(__cgi_options.path_to_driver.size() ? __cgi_options.path_to_driver.c_str() : Cgi::CastToEnvs(arg)[0], Cgi::CastToEnvs(arg), __FillEnv(cgi->session));
-        exit(1);
-    }
-    else if (cgi->pid < 0)
-        throw std::runtime_error("fork(): ");
-    close(pipe_out[1]);
-    __poller.AddFd(pipe_out[0], IO::Poller::POLL_READ);
-
-    cgi->fd_out = IO::File(pipe_out[0]);
-    __cgi_fd_map[pipe_out[0]] = cgi;
-}
-
-void HttpServer::__OnCgiRequest(SessionCtx* ss, const WebRoute& route){
-    std::string  resource_path;
-    bool         resource_found;
-    resource_found = __FindWebFile(ss->http_req, route, &resource_path);
-    if (!resource_found)
-        return ss->res_code = 404, __OnHttpError(ss);
-    signal(SIGPIPE, SIG_IGN);
-
-    __cgi_list.push_back(CgiEntry());
-    __cgi_list.back().session = ss;
-    __cgi_list.back().in_buf = ss->http_req.body;
-    ss->cgi = &__cgi_list.back();
-
-    if (ss->http_req.body.size() != 0)
-        __CgiIOStart(&__cgi_list.back(), resource_path, route);
-    else
-        __CgiOutStart(&__cgi_list.back(), resource_path, route);
-}
-
-void HttpServer::__OnCgiFdRead(CgiEntry* cgi) {
-    std::string str(512, 0);
-    u32 rc = read(cgi->fd_out.GetFd(), const_cast<char*>(str.c_str()), 512);
-    if (!rc) {
-        SessionCtx* ss = cgi->session;
-        cgi->cgi_rdr.EndRead();
-        cgi->cgi_rdr.Process();
-        if (cgi->cgi_rdr.HasError())
-            __OnCgiFdError(cgi, cgi->fd_out.GetFd());
-        Http::Response resp = cgi->cgi_rdr.GetMessage();
-        ss->http_writer.Header().SetMap(resp.headers.GetMap());
-        ss->http_writer.Write(resp.body);
-        __OnHttpResponse(ss);
-        __RmCgiFd(cgi->fd_out);
-    }
-    cgi->cgi_rdr.Read(str);
-    cgi->cgi_rdr.Process();
-    if (cgi->cgi_rdr.HasError())
-        __OnCgiFdError(cgi, cgi->fd_out.GetFd());
-}
-
-void HttpServer::__OnCgiFdWrite(CgiEntry* cgi) {
-    static const usize  WRITE_SESSION_BUFF_SZ = 512;
-
-    if (cgi->in_buf.empty()) {
-        info(__system_log, "Session[%d]Cgi: nothing to transmit, transmittion stopped",
-                            cgi->fd_in.GetFd());
-        __RmCgiFd(cgi->fd_in);
-    } else {
-        std::string  portion = cgi->in_buf.substr(0, WRITE_SESSION_BUFF_SZ);
-        isize trasmitted_bytes = cgi->fd_in.Write(portion);
-
-        info(__system_log, "Session[%d]Cgi: transmitted %zi bytes",
-                            cgi->fd_in.GetFd(), trasmitted_bytes);
-        debug(__system_log, "Session[%d]Cgi: transmitted content:\n"
-                            "```\n%s\n```",
-                            cgi->fd_in.GetFd(), portion.c_str());
-
-        cgi->in_buf = cgi->in_buf.substr(usize(trasmitted_bytes));
-    }
-}
-
-void HttpServer::__OnCgiFdError(CgiEntry* cgi, fd_t fd) {
-    SessionCtx* ss = cgi->session;
-    kill(cgi->pid, SIGKILL);
-    __RmCgiFd(cgi->fd_out);
-    __RmCgiFd(cgi->fd_in);
-    error(ss->error_log, "Session[%d] Cgi[%d] : file IO error, sending response 500",
-                         ss->conn_sock.GetFd(), fd);
-    ss->res_code = 500;
-    __OnHttpError(ss);
-}
-
-void HttpServer::CgiCheckPid() {
-    for (CgiList::iterator  cgi_it = __cgi_list.begin(); cgi_it != __cgi_list.end(); ++cgi_it) {
-        CgiEntry* cgi = &*cgi_it;
-        int rc = waitpid(cgi->pid, NULL, WNOHANG);
-        if (rc) {
-            SessionCtx* ss = cgi->session;
-            debug(__system_log, "Cgi deleted");
-            if (rc < 0)
-                error(ss->error_log, "Session[%d] Cgi: waitpid fail() : %s",
-                                    ss->conn_sock.GetFd()), strerror(errno);
-            __RmCgiFd(cgi->fd_out);
-            __RmCgiFd(cgi->fd_in);
-            cgi_it = __cgi_list.erase(cgi_it);
-        }
-    }
+Event::IEventPtr    HttpServer::__SpawnCgiHook() {
+    return new EvCgiHook(this);
 }
 
 }  // namespace Webserver

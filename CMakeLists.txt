@@ -66,6 +66,7 @@ add_library(netlib
     "sources/netlib/webserver/webserver_http.cc"
     "sources/netlib/webserver/webserver_timeout.cc"
     "sources/netlib/webserver/webserver_err.cc"
+    "sources/netlib/webserver/webserver_cgi.cc"
 )
 
 add_library(config_parser

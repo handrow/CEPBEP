@@ -8,6 +8,22 @@
 #include "common/platform.h"
 #include "common/types.h"
 
+inline std::string GetFileExt(const std::string& str) {
+    std::string basename = str;
+
+    usize dsep = str.find_last_of("/");
+
+    if (dsep != std::string::npos)
+        basename = basename.substr(dsep);
+
+    usize esep = basename.find_last_of(".");
+
+    if (esep != std::string::npos && esep != 0)
+        return basename.substr(esep + 1);
+
+    return "";
+}
+
 inline std::string StrToLower(const std::string& str) {
     std::string lower;
 

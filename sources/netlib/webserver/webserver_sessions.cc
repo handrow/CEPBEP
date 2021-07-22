@@ -18,6 +18,8 @@ HttpServer::SessionCtx*  HttpServer::__NewSessionCtx(const IO::Socket& sock, fd_
 
     ss->__link_stfile.closed = true;
 
+    ss->__link_cgi = NULL;
+
     ss->UpdateTimeout(__session_timeout);
 
     return ss;
@@ -63,6 +65,7 @@ void  HttpServer::__OnSessionRead(SessionCtx* ss) {
         ss->server = NULL;
         ss->access_log = NULL;
         ss->error_log = NULL;
+        ss->__link_cgi = NULL;
         __OnHttpRequest(ss);
     } else if (ss->req_rdr.HasError()) {
         info(__system_log, "Session[%d]: HTTP request is bad (%s), sending error",
