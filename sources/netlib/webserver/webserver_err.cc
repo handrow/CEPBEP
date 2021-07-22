@@ -2,9 +2,7 @@
 
 namespace Webserver {
 
-void            HttpServer::SetErrorPage(int errcode, const std::string& errpage) {
-    __errpages[errcode] = errpage;
-}
+
 
 void            HttpServer::__SendDefaultErrPage(SessionCtx* ss) {
     ss->http_writer.Write(Convert<std::string>(ss->res_code) + " error\n");
@@ -13,10 +11,10 @@ void            HttpServer::__SendDefaultErrPage(SessionCtx* ss) {
 
 IO::File     HttpServer::__GetErrPage(int errcode, SessionCtx* ss) {
     Error err;
-    const std::string&  file_path(__errpages[errcode]);
+    const std::string&  file_path(ss->server->errpages[errcode]);
     IO::File  file = IO::File::OpenFile(file_path, O_RDONLY, &err);
     if (!err.IsError()) {
-        std::string mime_type = Mime::MapType(__mime_map, file_path);
+        std::string mime_type = Mime::MapType(ss->server->mime_map, file_path);
 
         info(ss->access_log, "Session[%d]: sending static error file (%s) with type \"%s\"",
                             ss->conn_sock.GetFd(),

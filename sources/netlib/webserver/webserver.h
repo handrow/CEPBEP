@@ -95,17 +95,16 @@ class HttpServer {
         bool                   listing_enabled;
     };
 
-private:
-    /*               errcode   page_path                         */
-    typedef std::map< int,     std::string >  ErrpageMap;
+public:
     /*                 route                                     */
     typedef std::list< WebRoute >             WebRouteList;
     /*                fd    listen_sock                          */
     typedef std::map< fd_t, IO::Socket >      SocketFdMap;
     /*                fd    session_ctx                          */
     typedef std::map< fd_t, SessionCtx* >     SessionFdMap;
+    /*               errcode   page_path                         */
+    typedef std::map< int,     std::string >  ErrpageMap;
 
-public:
     struct VirtualServer {
         typedef std::list<std::string> Hostnames;
 

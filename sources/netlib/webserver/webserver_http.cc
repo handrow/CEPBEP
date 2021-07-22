@@ -165,6 +165,17 @@ HttpServer::__GetVirtualServer(fd_t lfd, const std::string& hostname) {
 void  HttpServer::__OnHttpRequest(SessionCtx* ss) {
     ss->http_req = ss->req_rdr.GetMessage();
 
+    /// Virtual server resolving
+    VirtualServer* vs = __GetVirtualServer(ss->__listener_fd, ss->http_req.headers.Get("Host"));
+    if (vs == NULL) {
+        info(__system_log, "Session[%d]: can't identify virtual server", ss->conn_sock.GetFd());
+        return ss->res_code = 400, __OnHttpError(ss);
+    }
+
+    ss->server = vs;
+    ss->access_log = vs->access_log;
+    ss->error_log = vs->error_log;
+
     info(ss->access_log, "Session[%d]: new HTTP request:\n"
                          ">   http_method: %s\n"
                          ">  http_version: %s\n"
@@ -174,18 +185,7 @@ void  HttpServer::__OnHttpRequest(SessionCtx* ss) {
                             Http::MethodToString(ss->http_req.method).c_str(),
                             Http::ProtocolVersionToString(ss->http_req.version).c_str(),
                             ss->http_req.uri.ToString().c_str(),
-                            ss->http_req.headers.Get("Host"));
-
-    /// Virtual server resolving
-    VirtualServer* vs = __GetVirtualServer(ss->__listener_fd, ss->http_req.headers.Get("Host"));
-    if (vs == NULL) {
-        info(ss->access_log, "Session[%d]: can't identify virtual server", ss->conn_sock.GetFd());
-        return ss->res_code = 400, __OnHttpError(ss);
-    }
-
-    ss->server = vs;
-    ss->access_log = vs->access_log;
-    ss->error_log = vs->error_log;
+                            ss->http_req.headers.Get("Host").c_str());
 
     info(ss->access_log, "Session[%d]: virtual server identified", ss->conn_sock.GetFd());
 
@@ -235,13 +235,13 @@ void  HttpServer::__OnHttpRequest(SessionCtx* ss) {
 }
 
 void  HttpServer::__OnHttpError(SessionCtx* ss, bool reset) {
-    info(__access_log, "Session[%d]: sending HTTP error",
+    info(ss->access_log, "Session[%d]: sending HTTP error",
                          ss->conn_sock.GetFd(),
                          ss->res_code);
 
     if (reset)
         ss->http_writer.Reset();
-    if (__errpages.find(ss->res_code) != __errpages.end()) {
+    if (ss->server->errpages.find(ss->res_code) != ss->server->errpages.end()) {
         IO::File file = __GetErrPage(ss->res_code, ss);
         if (file.GetFd() != -1) {
             return __SendStaticFileResponse(file, ss);
@@ -274,7 +274,7 @@ void  HttpServer::__OnHttpResponse(SessionCtx* ss) {
     ss->res_buff += ss->http_writer.SendToString(ss->res_code, ss->http_req.version);
     ss->http_writer.Reset();
 
-    info(__access_log, "Session[%d]: sending HTTP response (code: %d)",
+    info(ss->access_log, "Session[%d]: sending HTTP response (code: %d)",
                          ss->conn_sock.GetFd(),
                          ss->res_code);
 
