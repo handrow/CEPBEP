@@ -2,6 +2,8 @@
 
 namespace Webserver {
 
+class  EvCgiCheckPid;
+
 void  HttpServer::SetLogger(Log::Logger* a, Log::Logger* e, Log::Logger* s) {
     __access_log = a;
     __error_log = e;
@@ -12,10 +14,17 @@ void  HttpServer::AddWebRoute(const WebRoute& entry) {
     __routes.push_back(entry);
 }
 
+void  HttpServer::SetEnviromentVariables(Cgi::Envs env) {
+    __env = env;
+}
+
+void  HttpServer::SetCGIOptions(const std::string path) {
+    __cgi_options.path_to_driver = path;
+}
+
 void  HttpServer::AddListener(const IO::SockInfo& si) {
     Error err;
     IO::Socket sock = IO::Socket::CreateListenSocket(si, &err);
-
     if (err.IsError())
         throw std::runtime_error("Socket creation failed: " + err.message);
 
@@ -29,6 +38,7 @@ void  HttpServer::SetMimes(const Mime::MimeTypesMap& map) {
 
 void  HttpServer::ServeForever() {
     __evloop.AddDefaultEvent(__SpawnPollerHook());
+    __evloop.AddDefaultEvent(__SpawnCgiPidCheckHook());
     __evloop.Run();
 }
 

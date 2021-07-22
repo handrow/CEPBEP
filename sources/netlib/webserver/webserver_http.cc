@@ -9,12 +9,13 @@ HttpServer::__FindWebRoute(const Http::Request& req, const WebRouteList& routes)
     for (WebRouteList::const_iterator route_it  = routes.begin();
                                       route_it != routes.end();
                                       ++route_it) {
-
         const WebRoute& try_route = *route_it;
-        if (Match(try_route.pattern, req.uri.path) == false)
+        if (Match(try_route.pattern, req.uri.path) == false) {
             continue;
-        if (try_route.allowed_methods.count(req.method) <= 0)
+        }
+        if (try_route.allowed_methods.count(req.method) <= 0) {
             continue;
+        }
         return &try_route;
     }
 
@@ -106,7 +107,7 @@ void  HttpServer::__OnHttpRequest(SessionCtx* ss) {
     const WebRoute*  route = __FindWebRoute(ss->http_req, __routes);
     if (route == NULL)
         return ss->res_code = 404, __OnHttpError(ss);
-    if (!route->exectr.empty())
+    if (route->cgi_enabled)
         return __OnCgiRequest(ss, *route);
     return __OnStaticFileRequest(ss, *route);
 }

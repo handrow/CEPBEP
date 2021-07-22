@@ -44,8 +44,12 @@ std::string Logger::GetCurrentTime() {
     if (gettimeofday(&tv, NULL))
         throw std::runtime_error("Can't get time");
     localtime_r(&(tv.tv_sec), &timeinfo);
+    // int prt_sym_num = strftime(const_cast<char*>(str_time.data()), SIZE_OF_DATE_STR, "%F %T ", &timeinfo);
+    // if (prt_sym_num == 0)
+    //     throw std::runtime_error("Can't get time");
+    // str_time.resize(prt_sym_num);
     strftime(const_cast<char*>(str_time.data()), SIZE_OF_DATE_STR, "%F %T ", &timeinfo);
-    str_time.erase(str_time.size() - 1);
+    str_time.resize(SIZE_OF_DATE_STR - 1);
     return str_time + USToString(tv.tv_usec);
 }
 
@@ -62,8 +66,7 @@ void Logger::Send(Logger::LogLvl lvl, const char* message, ...) {
         va_list vl;
         va_start(vl, message);
         pthread_mutex_lock(&__output_mtx);
-        std::string str = FormatMessage(message, lvl);
-        vfprintf(__fout, str.c_str(), vl);
+        vfprintf(__fout, FormatMessage(message, lvl).c_str(), vl);
         if (fflush(__fout))
             throw std::runtime_error("fflush failed");
         pthread_mutex_unlock(&__output_mtx);

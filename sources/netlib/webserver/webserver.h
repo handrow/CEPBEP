@@ -51,6 +51,8 @@ class HttpServer {
     };
 
  public:
+    struct CgiEntry;
+
     struct SessionCtx {
         IO::Socket           conn_sock;
         std::string          res_buff;
@@ -61,7 +63,8 @@ class HttpServer {
 
         Http::ResponseWriter  http_writer;
         Http::Request         http_req;
-        Cgi::ResponseReader   resp_reader;
+
+        CgiEntry*             cgi;
 
         bool                  conn_close;
         int                   res_code;
@@ -73,21 +76,25 @@ class HttpServer {
     };
 
     struct CgiEntry {
-        fd_t        fd_in[2];
-        fd_t        fd_out[2];
-        SessionCtx* session;
-        u32         status;
-        u32         pid;
-        std::string in_buf;
+        IO::File              fd_in;
+        IO::File              fd_out;
+        u32                   pid;
+        SessionCtx*           session;
+        std::string           in_buf;
+        Cgi::ResponseReader   cgi_rdr;
     };
 
     typedef std::set<Http::Method> MethodSet;
+
+    struct CgiOptions {
+        std::string path_to_driver;
+    };
 
     struct WebRoute {
         std::string            pattern;
         std::string            root_directory;
         std::string            index_page;
-        std::string            exectr;
+        bool                   cgi_enabled;
         MethodSet              allowed_methods;
     };
 
@@ -101,9 +108,9 @@ private:
     /*                fd    file and session_ctx                 */
     typedef std::map< fd_t, StaticFileEntry > StaticFileFdMap;
 
-    typedef std::map< fd_t, CgiEntry >        CgiInFdMap;
+    typedef std::map< fd_t, CgiEntry* >       CgiFdMap;
 
-    typedef std::map< fd_t, CgiEntry* >       CgiOutFdMap;
+    typedef std::list< CgiEntry >       CgiList;
 
  private:
     /// Event basics logic
@@ -162,26 +169,32 @@ private:
     // Event::IEventPtr    __SpawnCgiWriteEvent(IO::Poller::PollEvent ev, IO::File file, SessionCtx* ss);
     // Event::IEventPtr    __SpawnCgiReadEvent(IO::Poller::PollEvent ev, IO::File file, SessionCtx* ss);
     // class  EvCgiWriteError;
-    void                __OnCgiFdRead(fd_t file, CgiEntry* ss);
-    void                __OnCgiFdError(fd_t file, CgiEntry* ss);
-    void                __OnCgiFdWrite(fd_t file, CgiEntry* ss);
+    void                __OnCgiFdRead(CgiEntry* cgi);
+    void                __OnCgiFdError(CgiEntry* cgi, fd_t fd);
+    void                __OnCgiFdWrite(CgiEntry* cgi);
+    void                CgiCheckPid();
+    void                __RmCgiFd(IO::File& fd);
     // void                __OnCgiFdReadEnd(IO::File file, CgiEntry* ss);
-    bool                CgiAcivation(CgiEntry& cgi, bool has_body);
-    Event::IEventPtr    __SpawnCgiReadEvent(IO::Poller::PollEvent ev, CgiEntry* ss, fd_t fd);
-    Event::IEventPtr    __SpawnCgiWriteEvent(IO::Poller::PollEvent ev, CgiEntry* ss, fd_t fd);
+    void                __CgiIOStart(CgiEntry* cgi, const std::string& resource_path, const WebRoute& route);
+    void                __CgiOutStart(CgiEntry* cgi, const std::string& resource_path, const WebRoute& route);
+    Event::IEventPtr    __SpawnCgiEvent(IO::Poller::PollEvent ev, CgiEntry* cgi, fd_t fd);
+    Event::IEventPtr    __SpawnCgiPidCheckHook();
+    Cgi::Envs           __FillEnv(SessionCtx* ss);
     class  EvCgiRead;
     class  EvCgiFdError;
     class  EvCgiWrite;
+    class  EvCgiCheckPid;
     // void                __OnCgiFdWriteError(IO::File file, SessionCtx* ss);
     // void                __OnCgiFdWriteEnd(IO::File file, SessionCtx* ss);
 ///-----
  public:
+    void  SetCGIOptions(const std::string path);
+    void  SetEnviromentVariables(Cgi::Envs env);
     void  AddListener(const IO::SockInfo& si);
     void  AddWebRoute(const WebRoute& entry);
     void  SetMimes(const Mime::MimeTypesMap& map);
     void  SetLogger(Log::Logger* a, Log::Logger* e, Log::Logger* s);
     void  ServeForever();
-    Cgi::Metavars       __env;
 
  private:
     Log::Logger*        __access_log;
@@ -194,9 +207,10 @@ private:
     SocketFdMap         __listeners_map;
     SessionFdMap        __sessions_map;
     StaticFileFdMap     __stat_files_read_map;
-    CgiInFdMap          __cgi_in_map;
-    CgiOutFdMap         __cgi_out_map;
-
+    CgiFdMap            __cgi_fd_map;
+    Cgi::Envs           __env;
+    CgiOptions          __cgi_options;
+    CgiList             __cgi_list;
     WebRouteList        __routes;
     Mime::MimeTypesMap  __mime_map;
 };
