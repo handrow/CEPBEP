@@ -9,8 +9,8 @@
 #include <string>
 
 int main(int ac, Cgi::Envs av, Cgi::Envs) {
-    Log::Logger             logger_stdout(Log::Logger::DEBUG);
-    Log::Logger             logger_null(Log::Logger::DEBUG, "/dev/null");
+    Log::Logger             logger_stdout(Log::Logger::ERROR);
+    // Log::Logger             logger_null(Log::Logger::DEBUG, "/dev/null");
     IO::SockInfo            saddr;
     Webserver::HttpServer   server;
 
@@ -65,7 +65,7 @@ int main(int ac, Cgi::Envs av, Cgi::Envs) {
 
         server.SetMimes(mimes);
 
-        server.SetLogger(&logger_stdout, &logger_stdout, &logger_null);
+        server.SetLogger(&logger_stdout, &logger_stdout, &logger_stdout);
 
         u16 port = (ac != 2) ? 9090
                              : Convert<u16>(av[1]);

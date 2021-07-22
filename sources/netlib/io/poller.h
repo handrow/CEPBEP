@@ -32,7 +32,7 @@ class Poller {
     };
 
  public:
-    Poller() : __timeout_ms(0) {}
+    Poller() : __timeout_ms(0), __i(0) {}
 
     Result Poll(Error* err);
 
@@ -48,11 +48,12 @@ class Poller {
 
  private:
     usize __FindPollFd(fd_t fd) const;
-    usize __FindEventFd() const;
+    usize __FindEventFd();
 
  private:
-    mut_std::vector<pollfd> __pfds;
-    int                 __timeout_ms;
+    mut_std::vector<pollfd>  __pfds;
+    int                      __timeout_ms;
+    int                      __i;
 };
 
 }  // namespace IO

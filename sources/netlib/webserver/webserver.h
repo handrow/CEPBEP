@@ -49,6 +49,11 @@ class HttpServer {
     };
 
  public:
+    struct StaticFile {
+        bool        closed;
+        IO::File    file;
+    };
+
     struct SessionCtx {
         IO::Socket           conn_sock;
         std::string          res_buff;
@@ -62,11 +67,8 @@ class HttpServer {
 
         bool                  conn_close;
         int                   res_code;
-    };
 
-    struct StaticFileEntry {
-        IO::File    file;
-        SessionCtx* session;
+        StaticFile            __link_stfile;
     };
 
     typedef std::set<Http::Method> MethodSet;
@@ -93,8 +95,6 @@ private:
     typedef std::map< fd_t, IO::Socket >      SocketFdMap;
     /*                fd    session_ctx                          */
     typedef std::map< fd_t, SessionCtx* >     SessionFdMap;
-    /*                fd    file and session_ctx                 */
-    typedef std::map< fd_t, StaticFileEntry > StaticFileFdMap;
 
  private:
     /// Event basics logic
@@ -143,14 +143,14 @@ private:
     /// For responsnses with static files
     void                __SendDirectoryListing(const std::string& resource_path, SessionCtx* ss);
     void                __SendStaticFileResponse(IO::File file, SessionCtx* ss);
-    void                __RemoveStaticFileCtx(IO::File file);
+    void                __RemoveStaticFileCtx(SessionCtx* stfile);
 
-    Event::IEventPtr    __SpawnStaticFileReadEvent(IO::Poller::PollEvent ev, IO::File file, SessionCtx* ss);
+    Event::IEventPtr    __SpawnStaticFileReadEvent(IO::Poller::PollEvent ev, SessionCtx* ss);
     class  EvStaticFileRead;
     class  EvStaticFileReadError;
-    void                __OnStaticFileRead(IO::File file, SessionCtx* ss);
-    void                __OnStaticFileReadError(IO::File file, SessionCtx* ss);
-    void                __OnStaticFileReadEnd(IO::File file, SessionCtx* ss);
+    void                __OnStaticFileRead(SessionCtx* ss);
+    void                __OnStaticFileReadError(SessionCtx* ss);
+    void                __OnStaticFileReadEnd(SessionCtx* ss);
 
  public:
     void  AddListener(const IO::SockInfo& si);
@@ -169,7 +169,7 @@ private:
 
     SocketFdMap         __listeners_map;
     SessionFdMap        __sessions_map;
-    StaticFileFdMap     __stat_files_read_map;
+    SessionFdMap        __stat_files_read_map;
 
     WebRouteList        __routes;
     Mime::MimeTypesMap  __mime_map;

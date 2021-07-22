@@ -56,11 +56,9 @@ void Logger::Send(Logger::LogLvl lvl, const char* message, ...) {
     if (lvl >= __min_log_lvl) {
         va_list vl;
         va_start(vl, message);
-        pthread_mutex_lock(&__output_mtx);
         vfprintf(__fout, FormatMessage(message, lvl).c_str(), vl);
         if (fflush(__fout))
             throw std::runtime_error("fflush failed");
-        pthread_mutex_unlock(&__output_mtx);
         va_end(vl);
     }
 }

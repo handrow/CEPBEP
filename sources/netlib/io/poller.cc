@@ -26,10 +26,11 @@ usize Poller::__FindPollFd(fd_t fd) const {
     return npos;
 }
 
-usize Poller::__FindEventFd() const {
+usize Poller::__FindEventFd() {
     for (size_t i = 0; i < __pfds.size(); ++i) {
-        if (__pfds[i].revents != 0x0)
-            return i;
+        usize rounded_index = (i + __i) % __pfds.size();
+        if (__pfds[rounded_index].revents != 0x0)
+            return __i = rounded_index, __i;
     }
     return npos;
 }

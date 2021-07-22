@@ -65,17 +65,20 @@ IO::Poller::Result   HttpServer::__PollEvent() {
 Event::IEventPtr HttpServer::__SwitchEventSpawners(IO::Poller::PollEvent pev, fd_t fd) {
     SocketFdMap::iterator  lstn_sock_it = __listeners_map.find(fd);
     if (lstn_sock_it != __listeners_map.end()) {
+        debug(__system_log, "Poller fd %d is LISTENER_EVENT", fd);
         return __SpawnListenerEvent(pev, &lstn_sock_it->second);
     }
 
     SessionFdMap::iterator  session_it = __sessions_map.find(fd);
     if (session_it != __sessions_map.end()) {
+        debug(__system_log, "Poller fd %d is SESSION_EVENT", fd);
         return __SpawnSessionEvent(pev, session_it->second);
     }
 
-    StaticFileFdMap::iterator  stat_file_rd_it = __stat_files_read_map.find(fd);
+    SessionFdMap::iterator  stat_file_rd_it = __stat_files_read_map.find(fd);
     if (stat_file_rd_it != __stat_files_read_map.end()) {
-        return __SpawnStaticFileReadEvent(pev, stat_file_rd_it->second.file, stat_file_rd_it->second.session);
+        debug(__system_log, "Poller fd %d is STATIC_FILE_EVENT", fd);
+        return __SpawnStaticFileReadEvent(pev, stat_file_rd_it->second);
     }
 
     return new DebugEvent(__system_log, pev, fd);

@@ -16,6 +16,8 @@ HttpServer::SessionCtx*  HttpServer::__NewSessionCtx(const IO::Socket& sock,
     ss->conn_close = false;
     ss->res_code = 200;
 
+    ss->__link_stfile.closed = true;
+
     return ss;
 }
 
@@ -27,6 +29,8 @@ void  HttpServer::__StartSessionCtx(SessionCtx* ss) {
 }
 
 void  HttpServer::__DeleteSessionCtx(SessionCtx* ss) {
+    __RemoveStaticFileCtx(ss);
+
     __poller.RmFd(ss->conn_sock.GetFd());
     ss->conn_sock.Close();
     __sessions_map.erase(ss->conn_sock.GetFd());
@@ -35,7 +39,7 @@ void  HttpServer::__DeleteSessionCtx(SessionCtx* ss) {
 
 /// Handlers
 void  HttpServer::__OnSessionRead(SessionCtx* ss) {
-    static const usize  READ_SESSION_BUFF_SZ = 512;
+    static const usize  READ_SESSION_BUFF_SZ = 10000;
     const std::string  portion = ss->conn_sock.Read(READ_SESSION_BUFF_SZ);
 
     info(__system_log, "Session[%d]: read %zu bytes",
@@ -59,7 +63,7 @@ void  HttpServer::__OnSessionRead(SessionCtx* ss) {
 }
 
 void  HttpServer::__OnSessionWrite(SessionCtx* ss) {
-    static const usize  WRITE_SESSION_BUFF_SZ = 512;
+    static const usize  WRITE_SESSION_BUFF_SZ = 10000;
 
     if (ss->res_buff.empty()) {
         info(__system_log, "Session[%d]: nothing to transmit, transmittion stopped",
