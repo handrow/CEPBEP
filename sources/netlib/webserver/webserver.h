@@ -54,7 +54,10 @@ class HttpServer {
         IO::File    file;
     };
 
+    struct VirtualServer;
+
     struct SessionCtx {
+        VirtualServer*       server;
         IO::Socket           conn_sock;
         std::string          res_buff;
         Http::RequestReader  req_rdr;
@@ -69,7 +72,7 @@ class HttpServer {
         int                   res_code;
 
         StaticFile            __link_stfile;
-
+        fd_t                  __listener_fd;
         u64                   __timeout_ms;
 
         void  UpdateTimeout(u64 timeout_ms) { __timeout_ms = tv_to_msec(GetTimeOfDay()) + timeout_ms; }
@@ -101,6 +104,23 @@ private:
     typedef std::map< fd_t, IO::Socket >      SocketFdMap;
     /*                fd    session_ctx                          */
     typedef std::map< fd_t, SessionCtx* >     SessionFdMap;
+
+public:
+    struct VirtualServer {
+        typedef std::list<std::string> Hostnames;
+
+        Hostnames           hostnames;
+        Mime::MimeTypesMap  mime_map;
+        WebRouteList        routes;
+        ErrpageMap          errpages;
+
+        Log::Logger*        access_log;
+        Log::Logger*        error_log;
+    };
+
+private:
+    /*                    listen_fd   server                     */
+    typedef std::multimap< fd_t,     VirtualServer > VirtualServerMap;
 
  private:
     /// Event basics logic
@@ -135,12 +155,13 @@ private:
     void                __HandleBadMethod(SessionCtx* ss, const WebRoute& route);
     void                __HandleDirectoryResource(SessionCtx* ss, const WebRoute& route,
                                                                   const std::string& fpath);
-    
 
     /// Sessions Logic
-    SessionCtx*         __NewSessionCtx(const IO::Socket& sock, Log::Logger* accessl, Log::Logger* errorl);
+    SessionCtx*         __NewSessionCtx(const IO::Socket& sock, fd_t fd);
     void                __StartSessionCtx(SessionCtx* ss);
     void                __DeleteSessionCtx(SessionCtx* ss);
+
+    VirtualServer*      __GetVirtualServer(fd_t lfd, const std::string& hostname);
 
     /// Sessions I/O handling
     Event::IEventPtr    __SpawnSessionEvent(IO::Poller::PollEvent ev, SessionCtx* ss);
@@ -170,28 +191,21 @@ private:
 
  public:
     void  SetTimeout(u64 msec);
-    void  AddListener(const IO::SockInfo& si);
-    void  AddWebRoute(const WebRoute& entry);
-    void  SetMimes(const Mime::MimeTypesMap& map);
-    void  SetErrorPage(int errcode, const std::string& errpage);
-    void  SetLogger(Log::Logger* a, Log::Logger* e, Log::Logger* s);
+    void  SetSystemLogger(Log::Logger* s);
+    void  AddVritualServer(const IO::SockInfo& si, const VirtualServer& vs);
+
     void  ServeForever();
 
  private:
-    Log::Logger*        __access_log;
     Log::Logger*        __system_log;
-    Log::Logger*        __error_log;
 
     IO::Poller          __poller;
     Event::Loop         __evloop;
 
+    VirtualServerMap    __vservers_map;
     SocketFdMap         __listeners_map;
     SessionFdMap        __sessions_map;
     SessionFdMap        __stat_files_read_map;
-
-    WebRouteList        __routes;
-    Mime::MimeTypesMap  __mime_map;
-    ErrpageMap          __errpages;
 
     u64                 __session_timeout;
 };

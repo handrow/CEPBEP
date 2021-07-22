@@ -3,15 +3,14 @@
 namespace Webserver {
 
 /// Basics
-HttpServer::SessionCtx*  HttpServer::__NewSessionCtx(const IO::Socket& sock,
-                                                     Log::Logger* accessl,
-                                                     Log::Logger* errorl) {
+HttpServer::SessionCtx*  HttpServer::__NewSessionCtx(const IO::Socket& sock, fd_t listen) {
 
     SessionCtx* ss = new SessionCtx;
 
-    ss->access_log = accessl;
-    ss->error_log = errorl;
+    ss->access_log = NULL;
+    ss->error_log = NULL;
     ss->conn_sock = sock;
+    ss->__listener_fd = listen;
 
     ss->conn_close = false;
     ss->res_code = 200;

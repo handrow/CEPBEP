@@ -123,7 +123,7 @@ void  HttpServer::__HandleStaticFile(SessionCtx* ss, const std::string& file_pat
         return ss->res_code = 500, __OnHttpError(ss);
     }
 
-    std::string mime_type = Mime::MapType(__mime_map, file_path);
+    std::string mime_type = Mime::MapType(ss->server->mime_map, file_path);
 
     info(ss->access_log, "Session[%d]: sending static file (%s) with type \"%s\"",
                           ss->conn_sock.GetFd(),
@@ -141,20 +141,56 @@ void  HttpServer::__OnHttpRedirect(SessionCtx* ss, const std::string& location, 
     return __OnHttpResponse(ss);
 }
 
+HttpServer::VirtualServer*
+HttpServer::__GetVirtualServer(fd_t lfd, const std::string& hostname) {
+
+    std::pair<VirtualServerMap::iterator, VirtualServerMap::iterator> vit_range = __vservers_map.equal_range(lfd);
+    VirtualServerMap::iterator vit = vit_range.first;
+    VirtualServerMap::iterator vit_e = vit_range.second;
+
+    for (; vit != vit_e; ++vit) {
+        VirtualServer* vs = &vit->second;
+        for (VirtualServer::Hostnames::iterator it = vs->hostnames.begin();
+                                                it != vs->hostnames.end();
+                                                ++it) {
+            if (Match(*it, hostname)) {
+                return vs;
+            }
+        }
+    }
+
+    return NULL;
+}
+
 void  HttpServer::__OnHttpRequest(SessionCtx* ss) {
     ss->http_req = ss->req_rdr.GetMessage();
 
     info(ss->access_log, "Session[%d]: new HTTP request:\n"
                          ">   http_method: %s\n"
                          ">  http_version: %s\n"
-                         ">           uri: %s",
+                         ">           uri: %s\n"
+                         ">          host: %s",
                             ss->conn_sock.GetFd(),
                             Http::MethodToString(ss->http_req.method).c_str(),
                             Http::ProtocolVersionToString(ss->http_req.version).c_str(),
-                            ss->http_req.uri.ToString().c_str());
+                            ss->http_req.uri.ToString().c_str(),
+                            ss->http_req.headers.Get("Host"));
+
+    /// Virtual server resolving
+    VirtualServer* vs = __GetVirtualServer(ss->__listener_fd, ss->http_req.headers.Get("Host"));
+    if (vs == NULL) {
+        info(ss->access_log, "Session[%d]: can't identify virtual server", ss->conn_sock.GetFd());
+        return ss->res_code = 400, __OnHttpError(ss);
+    }
+
+    ss->server = vs;
+    ss->access_log = vs->access_log;
+    ss->error_log = vs->error_log;
+
+    info(ss->access_log, "Session[%d]: virtual server identified", ss->conn_sock.GetFd());
 
     /// Resolving Web Route
-    const WebRoute*  route = __FindWebRoute(ss->http_req, __routes);
+    const WebRoute*  route = __FindWebRoute(ss->http_req, vs->routes);
     if (route == NULL) {
         debug(ss->access_log, "Session[%d]: no web route", ss->conn_sock.GetFd());
         return ss->res_code = 404, __OnHttpError(ss);

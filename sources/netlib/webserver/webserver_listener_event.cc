@@ -15,7 +15,7 @@ void  HttpServer::__OnListenerAccept(IO::Socket* lstn_sock) {
                             std::string(lstn_sock->GetSockInfo().addr_BE).c_str(),
                             u16(lstn_sock->GetSockInfo().port_BE));
 
-    SessionCtx* session = __NewSessionCtx(conn, __access_log, __error_log);
+    SessionCtx* session = __NewSessionCtx(conn, lstn_sock->GetFd());
     info(__system_log, "ServerSock[%d]: session (fd: %d) created",
                             lstn_sock->GetFd(),
                             session->conn_sock.GetFd());
