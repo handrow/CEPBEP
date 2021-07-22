@@ -64,7 +64,7 @@ int main(int ac, Cgi::Envs av, Cgi::Envs) {
         server.AddWebRoute(route1);
         server.AddWebRoute(route2);
         server.AddWebRoute(route_other);
-
+        server.SetErrorPage(404, "../www/errors/404.html");
         server.SetMimes(mimes);
 
         server.SetLogger(&logger_stdout, &logger_stdout, &logger_stdout);

@@ -62,6 +62,14 @@ SockInfo::operator sockaddr_in() const {
     return saddr;
 }
 
+bool SockInfo::operator==(const SockInfo& si) const {
+    return (addr_BE == si.addr_BE) && (port_BE == si.port_BE);
+}
+
+bool SockInfo::operator!=(const SockInfo& si) const {
+    return !(*this == si);
+}
+
 // SOCKET
 
 Socket::Socket(const SockInfo& sinfo, fd_t fd) : File(fd), __info(sinfo) {

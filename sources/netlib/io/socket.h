@@ -50,6 +50,8 @@ struct SockInfo {
     explicit SockInfo(IpAddrV4 ip = u32(-1), Port port = u16(-1));
     explicit SockInfo(const sockaddr_in& sin);
     operator struct sockaddr_in() const;
+    bool operator==(const SockInfo& si) const;
+    bool operator!=(const SockInfo& si) const;
 };
 
 class Socket : public File {

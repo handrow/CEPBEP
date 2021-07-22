@@ -165,6 +165,9 @@ private:
     void                __OnStaticFileReadError(SessionCtx* ss);
     void                __OnStaticFileReadEnd(SessionCtx* ss);
 
+    IO::File            __GetErrPage(int errcode, SessionCtx* ss);
+    void                __SendDefaultErrPage(SessionCtx* ss);
+
  public:
     void  SetTimeout(u64 msec);
     void  AddListener(const IO::SockInfo& si);

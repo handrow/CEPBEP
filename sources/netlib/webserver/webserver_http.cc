@@ -205,9 +205,13 @@ void  HttpServer::__OnHttpError(SessionCtx* ss, bool reset) {
 
     if (reset)
         ss->http_writer.Reset();
-    ss->http_writer.Write("Error occured: " + Convert<std::string>(ss->res_code) + ".\n");
-    ss->http_writer.Write("Good luck with it!\n");
-    __OnHttpResponse(ss);
+    if (__errpages.find(ss->res_code) != __errpages.end()) {
+        IO::File file = __GetErrPage(ss->res_code, ss);
+        if (file.GetFd() != -1) {
+            return __SendStaticFileResponse(file, ss);
+        }
+    }
+    return __SendDefaultErrPage(ss);
 }
 
 void  HttpServer::__OnHttpResponse(SessionCtx* ss) {
