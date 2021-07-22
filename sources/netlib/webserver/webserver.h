@@ -19,6 +19,8 @@
 #include "netlib/event/event.h"
 #include "netlib/event/loop.h"
 
+#include "config/config.h"
+
 #include "logger/logger.h"
 
 namespace Webserver {
@@ -45,7 +47,9 @@ class HttpServer {
         fd_t                  fd;
 
              DebugEvent(Log::Logger* l, IO::Poller::PollEvent p, fd_t f) : logger(l), pe(p), fd(f) {}
-        void Handle() { HttpServer::PrintDebugInfo(pe, fd, logger); }
+        void Handle() {
+            // HttpServer::PrintDebugInfo(pe, fd, logger);
+        }
     };
 
  public:
@@ -192,6 +196,8 @@ private:
     void  SetTimeout(u64 msec);
     void  SetSystemLogger(Log::Logger* s);
     void  AddVritualServer(const IO::SockInfo& si, const VirtualServer& vs);
+
+    void  Config(const Config::Category& cat);
 
     void  ServeForever();
 

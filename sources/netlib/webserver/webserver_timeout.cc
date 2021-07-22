@@ -16,7 +16,7 @@ void                HttpServer::__EvaluateIoTimeouts() {
 }
 
 void                HttpServer::__OnSessionTimeout(SessionCtx* ss) {
-    debug(ss->error_log, "Session[%d]: Timeout occured, disconnecting", ss->conn_sock.GetFd());
+    debug(__system_log, "Session[%d]: Timeout occured, disconnecting", ss->conn_sock.GetFd());
     __DeleteSessionCtx(ss);
 }
 

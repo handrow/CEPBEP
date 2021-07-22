@@ -7,8 +7,9 @@ HttpServer::SessionCtx*  HttpServer::__NewSessionCtx(const IO::Socket& sock, fd_
 
     SessionCtx* ss = new SessionCtx;
 
-    ss->access_log = NULL;
-    ss->error_log = NULL;
+    ss->access_log = __system_log;
+    ss->error_log = __system_log;
+
     ss->conn_sock = sock;
     ss->__listener_fd = listen;
 
@@ -59,6 +60,9 @@ void  HttpServer::__OnSessionRead(SessionCtx* ss) {
 
     if (ss->req_rdr.HasMessage()) {
         info(__system_log, "Session[%d]: HTTP request parsed", ss->conn_sock.GetFd());
+        ss->server = NULL;
+        ss->access_log = NULL;
+        ss->error_log = NULL;
         __OnHttpRequest(ss);
     } else if (ss->req_rdr.HasError()) {
         info(__system_log, "Session[%d]: HTTP request is bad (%s), sending error",

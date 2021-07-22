@@ -27,7 +27,7 @@ void  HttpServer::__RemoveStaticFileCtx(SessionCtx* ss) {
 
 /// Handlers
 void  HttpServer::__OnStaticFileRead(SessionCtx* ss) {
-    const static usize READ_FILE_BUF_SZ = 512;
+    const static usize READ_FILE_BUF_SZ = 10000;
     StaticFile& stfile = ss->__link_stfile;
 
     std::string file_part = stfile.file.Read(READ_FILE_BUF_SZ);

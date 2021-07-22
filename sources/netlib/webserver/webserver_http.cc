@@ -241,7 +241,9 @@ void  HttpServer::__OnHttpError(SessionCtx* ss, bool reset) {
 
     if (reset)
         ss->http_writer.Reset();
-    if (ss->server->errpages.find(ss->res_code) != ss->server->errpages.end()) {
+    if (ss->server != NULL &&
+        ss->server->errpages.find(ss->res_code) != ss->server->errpages.end()) {
+
         IO::File file = __GetErrPage(ss->res_code, ss);
         if (file.GetFd() != -1) {
             return __SendStaticFileResponse(file, ss);
