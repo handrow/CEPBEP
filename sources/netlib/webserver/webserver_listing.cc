@@ -1,3 +1,4 @@
+#include <iomanip>
 #include <string>
 #include <list>
 #include <sys/stat.h>
@@ -110,19 +111,18 @@ struct DirentryCompName {
 
 void  HttpServer::__SendDirectoryListing(const std::string& resource_path, SessionCtx* ss) {
     DirEntriesList  entries;
-    struct dirent   entry;
-    struct dirent*  is_end;
+    struct dirent*  entry;
     DIR*            dp = NULL;
 
     dp = opendir(resource_path.c_str());
     if (dp == NULL)
         return ss->res_code = 500, __OnHttpError(ss);
 
-    while (readdir_r(dp, &entry, &is_end), is_end != NULL) {
+    while ((entry = readdir(dp)) != NULL) {
         struct stat     st;
         DirEntry        dentry;
 
-        dentry.filename = std::string(entry.d_name, entry.d_namlen);
+        dentry.filename = std::string(entry->d_name, strlen(entry->d_name));
         if (dentry.filename == ".." || dentry.filename == ".")
             continue;
 
@@ -130,8 +130,8 @@ void  HttpServer::__SendDirectoryListing(const std::string& resource_path, Sessi
         int res = stat(path.c_str(), &st);
         if (res < 0)
             continue;
-        
-        dentry.date = st.st_mtimespec.tv_sec;
+
+        dentry.date = st.st_mtim.tv_sec;
         dentry.subdir = bool(S_ISDIR(st.st_mode));
         dentry.size = st.st_size;
         
