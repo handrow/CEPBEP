@@ -29,6 +29,8 @@ void HttpServer::__EvaluateCgiWorkers() {
 
         debug(__system_log, "Cgi[%d]: worker exited", ce.pid);
 
+        __StopCgiRead(&ce);
+        __StopCgiWrite(&ce);
         CgiPidMap::iterator del = it++;
         __cgi_pid_map.erase(del);
     }

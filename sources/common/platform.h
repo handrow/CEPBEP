@@ -7,7 +7,7 @@
 #include <cstring>
 
 
-typedef typeof(errno) errno_t;
+typedef int errno_t;
 
 
 inline bool ishexnumber(int c) {

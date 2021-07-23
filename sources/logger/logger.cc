@@ -3,6 +3,8 @@
 
 #include "logger/logger.h"
 
+#include <cstdarg>
+
 namespace Log {
 
 const char* Logger::LVL_TO_STR[] = {

@@ -268,7 +268,7 @@ void  HttpServer::Config(const Config::Category& cat, Cgi::Envs evs) {
                 std::string index_page = "";
 
                 // redirection handling
-                WebRedirect redirect = {.enabled = false};
+                WebRedirect redirect = {.enabled = false, .location = "", .code = 302};
 
                 MethodSet   allowed_methods;
 

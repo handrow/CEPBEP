@@ -80,14 +80,10 @@ ResponseReader::STT_ParseHeaders(bool* run) {
 }
 
 void ResponseReader::__SetStatus() {
-    State next_state;
     __err = Http::__CommonParsers::ParseCgiStatus(__res_data.headers,
                                                 &__res_data.version,
                                                 &__res_data.code,
                                                 &__res_data.code_message);
-    if (__err.IsError())
-        next_state = STT_ERROR_OCCURED;
-
     __res_data.headers.Rm("Status");
 }
 
@@ -102,6 +98,8 @@ ResponseReader::STT_ReadBodyContentLength(bool* run) {
         __res_data.body = __GetParsedBuffer();
         __FlushParsedBuffer();
         __SetStatus();
+        if (__err.IsError())
+            next_state = STT_ERROR_OCCURED;
     }
 
     *run = false;
