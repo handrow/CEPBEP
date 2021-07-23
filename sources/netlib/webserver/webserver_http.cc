@@ -167,6 +167,9 @@ void  HttpServer::__OnHttpRequest(SessionCtx* ss) {
     /// Virtual server resolving
     VirtualServer* vs = __GetVirtualServer(ss->__listener_fd, ss->http_req.headers.Get("Host"));
     if (vs == NULL) {
+        ss->server = NULL;
+        ss->error_log = __system_log;
+        ss->access_log = __system_log;
         info(__system_log, "Session[%d]: can't identify virtual server", ss->conn_sock.GetFd());
         return ss->res_code = 400, __OnHttpError(ss);
     }

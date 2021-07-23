@@ -42,7 +42,9 @@ void Poller::AddFd(fd_t fd, EventSet event_mask) {
 }
 
 void Poller::RmFd(fd_t fd) {
-    __pfds.erase(__pfds.begin() + __FindPollFd(fd));
+    usize off = __FindPollFd(fd);
+    if (off != npos)
+        __pfds.erase(__pfds.begin() + off);
 }
 
 void Poller::SetEvMask(fd_t fd, EventSet event_mask) {

@@ -1,0 +1,30 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Данные формы</title>
+</head>
+<body>
+
+    <form action="/cgi/form.py" method="GET">
+    <h3>Python GET</h3>
+    <p>Login: <input name="login"> Password: <input type="password" name="pass"> Submit: <input type="submit"></p>
+    </form>
+
+    <form action="/cgi/form.py" method="POST">
+    <h3>Python POST</h3>
+    <p>Login: <input name="login"> Password: <input type="password" name="pass"> Submit: <input type="submit"></p>
+    </form>
+
+    <form action="/cgi/form.php" method="POST">
+    <h3>Php POST</h3>
+    <p>Login: <input name="login"> Password: <input type="password" name="pass"> Submit: <input type="submit"></p>
+    </form>
+
+    <form action="/cgi/form.php" method="GET">
+    <h3>Php GET</h3>
+    <p>Login: <input name="login"> Password: <input type="password" name="pass"> Submit: <input type="submit"></p>
+    </form>
+
+</body>
+</html>

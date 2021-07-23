@@ -220,6 +220,7 @@ private:
     class  EvCgiRead;
     class  EvCgiError;
     class  EvCgiWrite;
+    class  EvCgiHup;
 
     Cgi::CStringVec     __FillCgiMetavars(SessionCtx* ss, const std::string& filepath);
     bool                __AvaibleCgiDriver(const std::string& filepath);
@@ -232,6 +233,7 @@ private:
     void                __OnCgiOutput(SessionCtx* ss);
     void                __OnCgiInput(SessionCtx* ss);
     void                __OnCgiError(SessionCtx* ss);
+    void                __OnCgiHup(SessionCtx* ss);
     void                __CgiWorker(fd_t ipip[2], fd_t opip[2],
                                     SessionCtx* ss, const std::string& filepath);
 

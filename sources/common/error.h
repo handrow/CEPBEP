@@ -1,6 +1,7 @@
 #ifndef COMMON_ERROR_H_
 #define COMMON_ERROR_H_
 
+#include <cstring>
 #include <cerrno>
 #include <string>
 
@@ -22,12 +23,7 @@ struct Error {
 };
 
 struct SystemError: public Error {
-    enum { ERRNO_MSG_BUFF_SZ = 1024 };
-
-    explicit SystemError(errno_t errno_code = ERR_OK) : Error(errno_code) {
-        char errno_msg_buffer[ERRNO_MSG_BUFF_SZ];
-        strerror_r(errno_code, errno_msg_buffer, sizeof(errno_msg_buffer));
-        this->message = std::string(reinterpret_cast<const char *>(errno_msg_buffer));
+    explicit SystemError(errno_t errno_code = ERR_OK) : Error(errno_code, strerror(errno_code)) {
     }
 
     inline Error Base() const {
