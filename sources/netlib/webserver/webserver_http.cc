@@ -184,7 +184,9 @@ HttpServer::__GetVirtualServer(fd_t lfd, const std::string& hostname) {
 }
 
 void  HttpServer::__OnHttpRequest(SessionCtx* ss) {
-    ss->http_req = ss->req_rdr.GetMessage();
+    /// Max body size check
+    if (ss->http_req.body.size() > __max_body_size)
+            return ss->res_code = 413, __OnHttpError(ss);
 
     /// Virtual server resolving
     VirtualServer* vs = __GetVirtualServer(ss->__listener_fd, ss->http_req.headers.Get("Host"));
@@ -252,13 +254,13 @@ void  HttpServer::__OnHttpRequest(SessionCtx* ss) {
         return ss->res_code = 404, __OnHttpError(ss);
     }
 
-    if (ss->http_req.method == Http::METHOD_DELETE)
-        return __HandleDeleteFile(ss, filepath);
-
     /// Handle directory accesses
     if (IsDirectory(filepath)) {
         return __HandleDirectoryResource(ss, *route, filepath);
     }
+
+    if (ss->http_req.method == Http::METHOD_DELETE)
+        return __HandleDeleteFile(ss, filepath);
 
     if (route->cgi_enabled && __AvaibleCgiDriver(filepath)) {
         return __HandleCgiRequest(ss, filepath);
@@ -271,7 +273,7 @@ void  HttpServer::__OnHttpRequest(SessionCtx* ss) {
 void  HttpServer::__HandleDeleteFile(SessionCtx* ss, const std::string& filepath) {
     if (std::remove(filepath.c_str()))
         return ss->res_code = 500, __OnHttpError(ss);
-    return ss->res_code = 204, __OnHttpResponse(ss);
+    return ss->res_code = 200, __OnHttpResponse(ss);
 }
 
 void  HttpServer::__OnHttpError(SessionCtx* ss, bool reset) {
@@ -293,6 +295,10 @@ void  HttpServer::__OnHttpError(SessionCtx* ss, bool reset) {
 }
 
 void  HttpServer::__OnHttpResponse(SessionCtx* ss) {
+    if (ss->http_req.version != Http::HTTP_1_1 &&
+        ss->http_req.version != Http::HTTP_1_0)
+        ss->http_req.version = Http::HTTP_1_1;
+
     if (ss->http_req.version == Http::HTTP_1_1) {
         // Set default connection
         if (ss->conn_close == true) {

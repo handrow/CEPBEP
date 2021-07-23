@@ -60,21 +60,22 @@ void  HttpServer::__OnSessionRead(SessionCtx* ss) {
     ss->req_rdr.Read(portion);
     ss->req_rdr.Process();
 
+    ss->access_log = __system_log;
+    ss->error_log = __system_log;
+    ss->server = NULL;
+    ss->__link_cgi = NULL;
+
     if (ss->req_rdr.HasMessage()) {
         info(__system_log, "Session[%d]: HTTP request parsed", ss->conn_sock.GetFd());
-        ss->server = NULL;
-        ss->access_log = __system_log;
-        ss->error_log = __system_log;
-        ss->__link_cgi = NULL;
-        if (ss->http_req.body.size() > __max_body_size)
-            return ss->res_code = 413, __OnHttpError(ss);
-        __OnHttpRequest(ss);
+        ss->http_req = ss->req_rdr.GetMessage();
+        ss->req_rdr.Reset();
+        return __OnHttpRequest(ss);
     } else if (ss->req_rdr.HasError()) {
         info(__system_log, "Session[%d]: HTTP request is bad (%s), sending error",
                             ss->conn_sock.GetFd(),
                             ss->req_rdr.GetError().message.c_str());
-        ss->res_code = 400;
-        __OnHttpError(ss);
+        ss->req_rdr.Reset();
+        return ss->res_code = 400, __OnHttpError(ss);
     }
 }
 

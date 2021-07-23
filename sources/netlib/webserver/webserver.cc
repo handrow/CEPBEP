@@ -151,10 +151,9 @@ void  HttpServer::Config(const Config::Category& cat, Cgi::Envs evs) {
         if (cat.HasCategory("GLOBAL")) {
             const Config::Category& global_cat = cat.GetSubcategoryRef("GLOBAL");
 
-
             if (global_cat.HasField("cwd"))      GLOBAL_cwd = global_cat.GetFieldValue("cwd");
             if (global_cat.HasField("timeout"))  GLOBAL_timeout = Convert<u64>(global_cat.GetFieldValue("timeout"));
-            if (global_cat.HasField("max_body_size")) GLOBAL_max_body = Convert<u64>(global_cat.GetFieldValue("max_body_size"));
+            if (global_cat.HasField("max_body")) GLOBAL_max_body = Convert<u64>(global_cat.GetFieldValue("max_body"));
             if (global_cat.HasField("logger"))   GLOBAL_logger_key = global_cat.GetFieldValue("logger");
         }
 
@@ -165,7 +164,6 @@ void  HttpServer::Config(const Config::Category& cat, Cgi::Envs evs) {
 
         __session_timeout = GLOBAL_timeout;
         __max_body_size = GLOBAL_max_body;
-        // __max_body_size = GLOBAL_max_body;
     }
 
     SetTimeout(GLOBAL_timeout);
