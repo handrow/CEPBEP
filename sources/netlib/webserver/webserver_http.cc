@@ -4,20 +4,6 @@
 
 namespace Webserver {
 
-const HttpServer::WebRoute*
-HttpServer::__FindWebRoute(const Http::Request& req, const WebRouteList& routes) {
-    for (WebRouteList::const_iterator route_it  = routes.begin();
-                                      route_it != routes.end();
-                                      ++route_it) {
-        const WebRoute& try_route = *route_it;
-        if (Match(try_route.pattern, req.uri.path) == false)
-            continue;
-        return &try_route;
-    }
-
-    return NULL;
-}
-
 namespace {
 //  Examples
 //  /such/path/*.jpg        , /such/path/rel/path.jpg           -> (rel/path.jpg)
@@ -27,30 +13,66 @@ namespace {
 //  /*                      , /hello/world.cc                   -> (hello/world.cc)
 //  *                       , /hello/abc/hi                     -> (hello/abc/hi)
 //  /gaylor[d|c]/*          , /gaylord/abc/bde                  -> (abc/bde)
-std::string  GetRelativePathFromPattern(const std::string& pattern, const std::string& full_path) {
-    usize first_star_pos = pattern.find_first_of("*");
-    if (first_star_pos == std::string::npos)
-        first_star_pos = pattern.length();
+// std::string  GetRelativePathFromPattern(const std::string& pattern, const std::string& full_path) {
+//     usize first_star_pos = pattern.find_first_of("*");
+//     if (first_star_pos == std::string::npos)
+//         first_star_pos = pattern.length();
 
-    usize last_path_sep_pos = pattern.find_last_of("/", first_star_pos);
-    if (last_path_sep_pos == std::string::npos)
-        last_path_sep_pos = 0;
-    else
-        last_path_sep_pos += 1;
+//     usize last_path_sep_pos = pattern.find_last_of("/", first_star_pos);
+//     if (last_path_sep_pos == std::string::npos)
+//         last_path_sep_pos = 0;
+//     else
+//         last_path_sep_pos += 1;
 
-    return full_path.substr(last_path_sep_pos);
+//     return full_path.substr(last_path_sep_pos);
+// }
+
+usize        PathDiffer(const std::string& pattern, const std::string& path) {
+    usize i;
+    for (i = 0; i < pattern.length() && pattern[i] == path[i]; ++i) {
+    }
+
+    return i;
 }
 
-std::string AppendPath(const std::string& dirname, const std::string& basename) {
-    std::string normalized_dirname = (Back(dirname) == '/')
-                                     ? dirname
-                                     : dirname + "/";
+// /abc/adf, /abc/adf/abg/jhg -> abg/jhg
+// /abc/adf/, /abc/adf/abg/jhg -> abg/jhg
+// /abc/ad,   /abc/adf/abg/jhg -> adf/abg/jhg
+std::string  GetRelativePathFromPattern(const std::string& pattern, const std::string& path) {
+    usize diff = PathDiffer(pattern, path);
 
-    const usize last_sep_pos = normalized_dirname.find_last_not_of("/") + 1;
-
-    return normalized_dirname.substr(0, last_sep_pos + 1) + basename;
+    if (path.length() == diff)
+        return "";
+    if (path[diff] == '/')
+        return path.substr(diff + 1);
+    
+    diff = path.rfind('/', diff);
+    if (diff == std::string::npos)
+        return "";
+    return path.substr(diff + 1);
 }
+
+bool  MatchPath(const std::string& pattern, const std::string& path) {
+    usize diff = PathDiffer(pattern, path);
+
+    return pattern.length() == diff;
+}
+
 }  // namespace
+
+const HttpServer::WebRoute*
+HttpServer::__FindWebRoute(const Http::Request& req, const WebRouteList& routes) {
+    for (WebRouteList::const_iterator route_it  = routes.begin();
+                                      route_it != routes.end();
+                                      ++route_it) {
+        const WebRoute& try_route = *route_it;
+        if (MatchPath(try_route.pattern, req.uri.path) == false)
+            continue;
+        return &try_route;
+    }
+
+    return NULL;
+}
 
 void  HttpServer::__HandleBadMethod(SessionCtx* ss, const WebRoute& route) {
     debug(ss->access_log, "Session[%d]: request method (%s) isn't allowed",
@@ -214,6 +236,9 @@ void  HttpServer::__OnHttpRequest(SessionCtx* ss) {
     if (route->allowed_methods.count(ss->http_req.method) <= 0) {
         return __HandleBadMethod(ss, *route);
     }
+
+    if (__IsUpload(ss, *route))
+        return __HandleUploadRequest(ss, *route);
 
     /// Getting pathes
     std::string  relpath = GetRelativePathFromPattern(route->pattern, ss->http_req.uri.path);

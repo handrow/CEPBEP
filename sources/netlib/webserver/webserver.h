@@ -55,6 +55,11 @@ class HttpServer {
     };
 
  public:
+    struct UploadReq {
+        std::string filename;
+        std::string file_content;
+    };
+
     struct StaticFile {
         bool        closed;
         IO::File    file;
@@ -109,8 +114,9 @@ class HttpServer {
         std::string            root_directory;
         std::string            index_page;          // if empty, index page is disabled
         WebRedirect            reditect;            // if empty, redirection is disabled
-        bool                   cgi_enabled;
         MethodSet              allowed_methods;
+        bool                   cgi_enabled;
+        bool                   upload_enabled;
         bool                   listing_enabled;
     };
 
@@ -236,6 +242,11 @@ private:
     void                __OnCgiHup(SessionCtx* ss);
     void                __CgiWorker(fd_t ipip[2], fd_t opip[2],
                                     SessionCtx* ss, const std::string& filepath);
+
+    bool                __IsUpload(SessionCtx* ss, const WebRoute& rt);
+    void                __HandleUploadRequest(SessionCtx* ss, const WebRoute& rt);
+    void                __OnUploadEnd(SessionCtx* ss, const WebRoute& route,
+                                      const std::list<UploadReq>& files);
 
  public:
     void  SetTimeout(u64 msec);

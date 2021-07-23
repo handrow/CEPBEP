@@ -90,6 +90,11 @@ class Tokenizator {
     explicit Tokenizator(const std::string& str, usize offset = 0ULL);
     std::string Next(const char delims[], bool* run);
     std::string Next(const char bdelims[], const char edelims[], bool* run);
+
+    std::string NextS(const std::string& delimiter, bool* run);
+    std::string NextLine(bool* run);
+
+    usize GetPos() const;
 };
 
 bool Match(const std::string& reg, const std::string& str, usize ri = 0, usize si = 0);

@@ -264,6 +264,7 @@ void  HttpServer::Config(const Config::Category& cat, Cgi::Envs evs) {
                 // directory handling
                 bool        cgi_enabled = false;
                 bool        listing_enabled = false;
+                bool        upload_enabled = false;
                 std::string index_page = "";
 
                 // redirection handling
@@ -294,7 +295,8 @@ void  HttpServer::Config(const Config::Category& cat, Cgi::Envs evs) {
 
                     if (route_cat.HasField("index"))         index_page = route_cat.GetFieldValue("index");
                     if (route_cat.HasField("listing"))       listing_enabled = ReadYes(route_cat.GetFieldValue("listing"));
-                    if (route_cat.HasField("cgi"))           cgi_enabled = true;
+                    if (route_cat.HasField("upload"))        upload_enabled = ReadYes(route_cat.GetFieldValue("upload"));
+                    if (route_cat.HasField("cgi"))           cgi_enabled = ReadYes(route_cat.GetFieldValue("cgi"));
                 }
 
                 ROUTES_registry[it1->first] = (WebRoute){
@@ -302,8 +304,9 @@ void  HttpServer::Config(const Config::Category& cat, Cgi::Envs evs) {
                     .root_directory = root,
                     .index_page = index_page,
                     .reditect = redirect,
-                    .cgi_enabled = cgi_enabled,
                     .allowed_methods = allowed_methods,
+                    .cgi_enabled = cgi_enabled,
+                    .upload_enabled = upload_enabled,
                     .listing_enabled = listing_enabled,
                 };
             }
@@ -365,7 +368,7 @@ void  HttpServer::Config(const Config::Category& cat, Cgi::Envs evs) {
                     std::string logger_key = server_cat.GetFieldValue("error_log");
                     if (LOGGERS_registry.count(logger_key) <= 0)
                         throw std::runtime_error(errmsg_pre + logger_key + ": no such logger");
-                    vs.access_log = LOGGERS_registry[logger_key];
+                    vs.error_log = LOGGERS_registry[logger_key];
                 }
 
                 vs.mime_map = MIMES_map;

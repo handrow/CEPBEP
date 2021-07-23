@@ -4,7 +4,7 @@ project(CEPBEP)
 # Configuration
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY  ${CMAKE_SOURCE_DIR}/bin)
 
-set(CMAKE_CXX_FLAGS                 "-Wall -Wextra -Werror")
+set(CMAKE_CXX_FLAGS                 "-Wall -Wextra -Werror -g -fsanitize=address")
 set(CMAKE_CXX_STANDARD              98)
 set(TEST_DIR                        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
@@ -67,6 +67,7 @@ add_library(netlib
     "sources/netlib/webserver/webserver_timeout.cc"
     "sources/netlib/webserver/webserver_err.cc"
     "sources/netlib/webserver/webserver_cgi.cc"
+    "sources/netlib/webserver/webserver_upload.cc"
 )
 
 add_library(config_parser
