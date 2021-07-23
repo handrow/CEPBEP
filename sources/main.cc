@@ -13,11 +13,14 @@
 int main(int ac, Cgi::Envs av, Cgi::Envs ev) {
     Webserver::HttpServer   server;
     Config::Category        config;
+    std::string             config_path;
     try {
         if (ac != 2)
-            throw std::runtime_error("Invalid command line arguments");
+            config_path = "webserv.cfg";
+        else
+            config_path = av[1];
         Error err;
-        config = Config::Category::ParseFromINI(av[1], &err);\
+        config = Config::Category::ParseFromINI(config_path, &err);
         if (err.IsError())
             throw std::runtime_error("Config file parsing failed: " + err.message);
         server.Config(config, ev);
