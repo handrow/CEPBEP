@@ -16,19 +16,10 @@ const char* Logger::LVL_TO_STR[] = {
 
 const size_t Logger::SIZE_OF_DATE_STR = 20;
 
-Logger::Logger(Logger::LogLvl lvl, const char* logfile_path) : __min_log_lvl(lvl) {
-    __fout = fopen(logfile_path, "w");
-    if (!__fout)
-        throw std::runtime_error("fopen() failed");
-    if (pthread_mutex_init(&__output_mtx, NULL))
-        throw std::runtime_error("Can't create mutex");
+Logger::Logger(Logger::LogLvl lvl, const std::string& logfile_path) : __min_log_lvl(lvl), __path(logfile_path), __fout(NULL) {
 }
 
 Logger::~Logger() {
-    if (pthread_mutex_destroy(&__output_mtx))
-        throw std::runtime_error("Can't destroy mutex");
-    if (fclose(__fout))
-        throw std::runtime_error("Can't close file for outstream");
 }
 
 std::string Logger::USToString(int usec) {

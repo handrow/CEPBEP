@@ -41,9 +41,20 @@ class Logger {
         CRITICAL
     };
 
-    explicit Logger(LogLvl lvl, const char* logfile_path = "/dev/stdout");
+    explicit Logger(LogLvl lvl = DEBUG, const std::string& logfile_path = "/dev/stdout");
     ~Logger();
     void Send(LogLvl lvl, const char* str, ...);
+
+    void Open() {
+        __fout = fopen(__path.c_str(), "w");
+        if (!__fout)
+            throw std::runtime_error("fopen() failed");
+    }
+
+    void Close() {
+        if (__fout)
+            fclose(__fout);
+    }
 
  protected:
     static std::string FormatMessage(const char* str, LogLvl lvl);
@@ -54,7 +65,7 @@ class Logger {
     static const size_t SIZE_OF_DATE_STR;
 
     LogLvl __min_log_lvl;
-    pthread_mutex_t __output_mtx;
+    std::string __path;
     FILE* __fout;
 };
 

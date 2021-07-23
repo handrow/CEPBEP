@@ -218,7 +218,7 @@ void  HttpServer::Config(const Config::Category& cat, Cgi::Envs evs) {
     }
 
     /// LOGGERS registry
-    std::map<std::string, Log::Logger*> LOGGERS_registry;
+    std::map<std::string, Log::Logger> LOGGERS_registry;
     {
         if (cat.HasCategory("LOGGERS")) {
             const Config::Category& loggers_cat = cat.GetSubcategoryRef("LOGGERS");
@@ -236,14 +236,15 @@ void  HttpServer::Config(const Config::Category& cat, Cgi::Envs evs) {
                 if (logger_cat.HasField("path"))    path = logger_cat.GetFieldValue("path");
                 if (logger_cat.HasField("lvl"))     lvl = ReadLoggerLvl(logger_cat.GetFieldValue("lvl"));
 
-                LOGGERS_registry[it1->first] = new Log::Logger(lvl, path.c_str());
+                LOGGERS_registry[it1->first] = Log::Logger(lvl, path.c_str());
             }
         }
     }
 
     if (LOGGERS_registry.count(GLOBAL_logger_key) <= 0)
         throw std::runtime_error("Config: " + GLOBAL_logger_key + ": no such logger");
-    SetSystemLogger(LOGGERS_registry[GLOBAL_logger_key]);
+    LOGGERS_registry[GLOBAL_logger_key].Open();
+    SetSystemLogger(&LOGGERS_registry[GLOBAL_logger_key]);
 
     /// ROUTES registry
     std::map<std::string, WebRoute> ROUTES_registry;
@@ -360,14 +361,16 @@ void  HttpServer::Config(const Config::Category& cat, Cgi::Envs evs) {
                     std::string logger_key = server_cat.GetFieldValue("access_log");
                     if (LOGGERS_registry.count(logger_key) <= 0)
                         throw std::runtime_error(errmsg_pre + logger_key + ": no such logger");
-                    vs.access_log = LOGGERS_registry[logger_key];
+                    LOGGERS_registry[logger_key].Open();
+                    vs.access_log = &LOGGERS_registry[logger_key];
                 }
 
                 if (server_cat.HasField("error_log")) {
                     std::string logger_key = server_cat.GetFieldValue("error_log");
                     if (LOGGERS_registry.count(logger_key) <= 0)
                         throw std::runtime_error(errmsg_pre + logger_key + ": no such logger");
-                    vs.error_log = LOGGERS_registry[logger_key];
+                    LOGGERS_registry[logger_key].Open();
+                    vs.error_log = &LOGGERS_registry[logger_key];
                 }
 
                 vs.mime_map = MIMES_map;
@@ -383,16 +386,6 @@ void  HttpServer::Config(const Config::Category& cat, Cgi::Envs evs) {
 
     /// RUN!!!
     ServeForever();
-
-    /// DEALLOCATION of logger registry
-    {
-        std::map<std::string, Log::Logger*>::iterator lit = LOGGERS_registry.begin();
-        std::map<std::string, Log::Logger*>::iterator lend = LOGGERS_registry.end();
-
-        for (;lit != lend; ++lit) {
-            delete lit->second;
-        }
-    }
 }
 
 }  // namespace Webserver
