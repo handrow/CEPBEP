@@ -6,7 +6,7 @@ void  HttpServer::__OnListenerAccept(IO::Socket* lstn_sock) {
     Error err;
     IO::Socket conn = IO::Socket::AcceptNewConnection(lstn_sock, &err);
     if (err.IsError()) {
-        error(__system_log, "ServerSock[%d]: acception failed: %s (%d)", lstn_sock->GetFd(), err.message, err.errcode);
+        error(__system_log, "ServerSock[%d]: acception failed: %s (%d)", lstn_sock->GetFd(), err.message.c_str(), err.errcode);
     } else {
         info(__system_log, "ServerSock[%d]: accepted new connection:\n"
                         ">  connection_info: (%s:%u)\n"

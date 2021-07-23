@@ -54,8 +54,10 @@ IO::Poller::Result   HttpServer::__PollEvent() {
                           bool(res.ev & IO::Poller::POLL_CLOSE),
                           bool(res.ev & IO::Poller::POLL_PRIO));
 
-    if (err.IsError())
-        throw std::runtime_error("Poll failed: " + err.message);
+    if (err.IsError()) {
+        error(__system_log, "Poll error: %s (%d)", err.message.c_str(), err.errcode);
+        return res.ev = 0x0, res.fd = -1, res;
+    }
 
     res.ev = __MostWantedPollEvent(res.ev);
 

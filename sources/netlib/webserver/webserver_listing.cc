@@ -7,6 +7,12 @@
 
 #include "netlib/webserver/webserver.h"
 
+#ifdef __linux__
+    #define st_mtim st_mtim
+#else
+    #define st_mtim st_mtimespec
+#endif
+
 namespace Webserver {
 namespace {
 

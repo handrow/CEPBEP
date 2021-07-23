@@ -2,6 +2,8 @@
 
 #include "common/file.h"
 
+#include <csignal>
+
 #include "dirent.h"
 #include <unistd.h>
 #include <sys/stat.h>
@@ -199,8 +201,6 @@ void  HttpServer::__OnCgiOutput(SessionCtx* ss) {
     static const usize READ_BUF_SZ = 10000;
     CgiEntry& ce = *ss->__link_cgi;
     std::string portion = ce.fd_out.Read(READ_BUF_SZ);
-
-    debug(__system_log, "Cgi[%d]: output:\n%s", ce.pid);
 
     if (portion.empty()) {
         ce.cgi_rdr.EndRead();
