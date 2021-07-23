@@ -252,6 +252,9 @@ void  HttpServer::__OnHttpRequest(SessionCtx* ss) {
         return ss->res_code = 404, __OnHttpError(ss);
     }
 
+    if (ss->http_req.method == Http::METHOD_DELETE)
+        return __HandleDeleteFile(ss, filepath);
+
     /// Handle directory accesses
     if (IsDirectory(filepath)) {
         return __HandleDirectoryResource(ss, *route, filepath);
@@ -265,13 +268,19 @@ void  HttpServer::__OnHttpRequest(SessionCtx* ss) {
     return __HandleStaticFile(ss, filepath);
 }
 
+void  HttpServer::__HandleDeleteFile(SessionCtx* ss, const std::string& filepath) {
+    if (std::remove(filepath.c_str()))
+        return ss->res_code = 500, __OnHttpError(ss);
+    return ss->res_code = 204, __OnHttpResponse(ss);
+}
+
 void  HttpServer::__OnHttpError(SessionCtx* ss, bool reset) {
     info(ss->access_log, "Session[%d]: sending HTTP error",
                          ss->conn_sock.GetFd(),
                          ss->res_code);
-
-    if (reset)
+    if (reset) {
         ss->http_writer.Reset();
+    }
     if (ss->server != NULL &&
         ss->server->errpages.find(ss->res_code) != ss->server->errpages.end()) {
 

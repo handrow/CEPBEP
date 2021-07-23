@@ -187,7 +187,8 @@ private:
     void                __HandleBadMethod(SessionCtx* ss, const WebRoute& route);
     void                __HandleDirectoryResource(SessionCtx* ss, const WebRoute& route,
                                                                   const std::string& fpath);
-
+    void                __HandleDeleteFile(SessionCtx* ss, const std::string& filepath);
+    
     /// Sessions Logic
     SessionCtx*         __NewSessionCtx(const IO::Socket& sock, fd_t fd);
     void                __StartSessionCtx(SessionCtx* ss);
@@ -273,6 +274,7 @@ private:
     Cgi::Envs           __envs;
     CgiDriverMap        __cgi_drivers;
     u64                 __session_timeout;
+    usize               __max_body_size;
 };
 
 }
