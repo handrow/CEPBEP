@@ -292,7 +292,7 @@ void  HttpServer::Config(const Config::Category& cat, Cgi::Envs evs) {
                     else
                         throw std::runtime_error(errmsg_pre + "allowed_methods field is required");
 
-                    if (route_cat.HasField("index_page"))    index_page = route_cat.GetFieldValue("index_page");
+                    if (route_cat.HasField("index"))         index_page = route_cat.GetFieldValue("index");
                     if (route_cat.HasField("listing"))       listing_enabled = ReadYes(route_cat.GetFieldValue("listing"));
                     if (route_cat.HasField("cgi"))           cgi_enabled = true;
                 }
