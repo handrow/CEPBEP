@@ -114,8 +114,6 @@ void  HttpServer::OnUploadEnd(SessionCtx* ss, const WebRoute& route, const std::
     std::list<UploadReq>::const_iterator itend = files.end();
     std::list<UploadReq>::const_iterator it;
 
-    printf("Ya tvar 1\n");
-
     for (it = files.begin(); it != itend; ++it) {
         std::string upload_path = AppendPath(uploadDir, it->FileName);
         if (IsExist(upload_path)) {
@@ -125,8 +123,6 @@ void  HttpServer::OnUploadEnd(SessionCtx* ss, const WebRoute& route, const std::
             return ss->ResponseCode = 403, OnHttpError(ss);
         }
     }
-
-    printf("Ya tvar 2\n");
 
     bool fileFailed = false;
     std::string fileUrls = "";
@@ -154,8 +150,6 @@ void  HttpServer::OnUploadEnd(SessionCtx* ss, const WebRoute& route, const std::
                                    uploadPath.c_str());
         }
     }
-
-    printf("Ya tvar 3\n");
 
     if (fileFailed) {
         return ss->ResponseCode = 500, OnHttpError(ss);

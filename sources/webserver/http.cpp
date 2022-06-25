@@ -109,7 +109,7 @@ void  HttpServer::HandleDirectoryResource(SessionCtx* ss,
             return ss->ResponseCode = 404, OnHttpError(ss);
         }
 
-    } else if (Back(filepath) != '/') {
+    } else if (Back(filepath) != '/' || Back(ss->Request.Uri.Path) != '/') {
         std::string fullDirRedirect = AppendPath(ss->Request.Uri.Path, route.IndexPage);
         debug(ss->AccessLog, "Session[%d]: Found directory (%s), redirecting to (%s)",
                                 ss->ConnectionSock.GetFd(),
@@ -137,7 +137,7 @@ void  HttpServer::HandleStaticFile(SessionCtx* ss, const std::string& file_path)
     IO::File  file = IO::File::OpenFile(file_path, O_RDONLY, &err);
 
     if (err.IsError()) {
-        error(ss->ErrorLOg, "Session[%d]: static file \"%s\" couldn't be open: ``%s''",
+        error(ss->ErrorLOg, "Session[%d]: static file (%s) couldn't be open: ``%s''",
                               ss->ConnectionSock.GetFd(),
                               file_path.c_str(),
                               err.Description.c_str());

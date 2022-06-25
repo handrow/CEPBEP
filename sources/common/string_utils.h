@@ -49,7 +49,7 @@ inline std::string Trim(const std::string& str, char sym) {
     USize end = str.find_last_not_of(sym);
 
     if (begin == std::string::npos) {
-        begin = 0;
+        begin = str.length();
     }
     if (end != std::string::npos) {
         end += 1;
