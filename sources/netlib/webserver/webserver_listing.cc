@@ -18,7 +18,7 @@ namespace {
 
 struct DirEntry {
     std::string  filename;
-    usize        size;
+    USize        size;
     time_t       date;
     bool         subdir;
 };
@@ -43,7 +43,7 @@ enum {
     __FMT_SIZE_PIB,
 };
 
-std::string  FileSizeToStr(usize bytes) {
+std::string  FileSizeToStr(USize bytes) {
     int fsi = __FMT_SIZE_B;
     float fsz = static_cast<float>(bytes);
 
@@ -122,7 +122,7 @@ void  HttpServer::__SendDirectoryListing(const std::string& resource_path, Sessi
 
     dp = opendir(resource_path.c_str());
     if (dp == NULL)
-        return ss->res_code = 500, __OnHttpError(ss);
+        return ss->ResponseCode = 500, __OnHttpError(ss);
 
     while ((entry = readdir(dp)) != NULL) {
         struct stat     st;
@@ -147,10 +147,10 @@ void  HttpServer::__SendDirectoryListing(const std::string& resource_path, Sessi
     entries.sort(DirentryCompName());
     entries.sort(DirentryCompType());
 
-    ss->http_writer.Header().Set("Content-type", "text/html");
-    ss->http_writer.Write(GenerateHtmlListing(ss->http_req.uri.path, entries));
+    ss->ResponseWriter.Header().Set("Content-type", "text/html");
+    ss->ResponseWriter.Write(GenerateHtmlListing(ss->Request.Uri.Path, entries));
 
-    return ss->res_code = 200, __OnHttpResponse(ss);
+    return ss->ResponseCode = 200, __OnHttpResponse(ss);
 }
 
 }  // namespace Webserver

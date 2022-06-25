@@ -13,21 +13,21 @@ struct Error {
         ERR_OK = 0
     };
 
-    i32         errcode;
-    std::string message;
+    Int32       ErrorCode;
+    std::string Description;
 
-    explicit Error(i32 ec = ERR_OK, const std::string& msg = std::string()) : errcode(ec), message(msg) {}
+    explicit Error(Int32 ec = ERR_OK, const std::string& msg = std::string()) : ErrorCode(ec), Description(msg) {}
 
-    inline bool IsOk() const { return errcode == ERR_OK; }
-    inline bool IsError() const { return errcode != ERR_OK; }
+    inline bool IsOk() const { return ErrorCode == ERR_OK; }
+    inline bool IsError() const { return ErrorCode != ERR_OK; }
 };
 
 struct SystemError: public Error {
-    explicit SystemError(errno_t errno_code = ERR_OK) : Error(errno_code, strerror(errno_code)) {
+    explicit SystemError(errno_t errnoCode = ERR_OK) : Error(errnoCode, strerror(errnoCode)) {
     }
 
     inline Error Base() const {
-        return Error(this->errcode, this->message);
+        return Error(this->ErrorCode, this->Description);
     }
 };
 

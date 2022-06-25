@@ -1,9 +1,9 @@
 #include "common/string_utils.h"
 
-Tokenizator::Tokenizator(const std::string& str, usize offset)
-: __str(str)
-, __tok_begin(offset)
-, __tok_end(offset) {
+Tokenizator::Tokenizator(const std::string& str, USize offset)
+: Str_(str)
+, TokBegin_(offset)
+, TokEnd_(offset) {
 }
 
 std::string Tokenizator::Next(const char delims[], bool* run) {
@@ -11,62 +11,62 @@ std::string Tokenizator::Next(const char delims[], bool* run) {
 }
 
 std::string Tokenizator::Next(const char bdelims[], const char edelims[], bool* run) {
-    __tok_begin = __str.find_first_not_of(bdelims, __tok_end);
-    if (__tok_begin == std::string::npos) {
+    TokBegin_ = Str_.find_first_not_of(bdelims, TokEnd_);
+    if (TokBegin_ == std::string::npos) {
         return *run = false, "";
     }
-    __tok_end = __str.find_first_of(edelims, __tok_begin);
-    if (__tok_end == std::string::npos)
-        __tok_end = __str.length();
+    TokEnd_ = Str_.find_first_of(edelims, TokBegin_);
+    if (TokEnd_ == std::string::npos)
+        TokEnd_ = Str_.length();
 
-    return __str.substr(__tok_begin, __tok_end - __tok_begin);
+    return Str_.substr(TokBegin_, TokEnd_ - TokBegin_);
 }
 
 std::string Tokenizator::NextS(const std::string& delimiter, bool* run) {
-    while (__tok_end < __str.length() &&
-           __str.compare(__tok_end, delimiter.length(), delimiter.c_str()) == 0) {
+    while (TokEnd_ < Str_.length() &&
+           Str_.compare(TokEnd_, delimiter.length(), delimiter.c_str()) == 0) {
 
-        __tok_end += delimiter.length();
+        TokEnd_ += delimiter.length();
     }
-    __tok_begin = __tok_end;
+    TokBegin_ = TokEnd_;
 
-    if (__tok_begin >= __str.length())
+    if (TokBegin_ >= Str_.length())
         return *run = false, "";
 
-    __tok_end = __str.find(delimiter, __tok_begin);
+    TokEnd_ = Str_.find(delimiter, TokBegin_);
 
-    if (__tok_end == std::string::npos) {
-        __tok_end = __str.length();
+    if (TokEnd_ == std::string::npos) {
+        TokEnd_ = Str_.length();
     }
 
-    return __str.substr(__tok_begin, __tok_end - __tok_begin);
+    return Str_.substr(TokBegin_, TokEnd_ - TokBegin_);
 }
 
 std::string  Tokenizator::NextLine(bool* run) {
-    __tok_begin = __tok_end;
-    if (__tok_begin >= __str.length())
+    TokBegin_ = TokEnd_;
+    if (TokBegin_ >= Str_.length())
         return *run = false, "";
 
-    usize crlf_pos = __str.find("\r\n", __tok_begin);
-    usize lf_pos = __str.find("\n", __tok_begin);
+    USize crlfPos = Str_.find("\r\n", TokBegin_);
+    USize lfPos = Str_.find("\n", TokBegin_);
     std::string result;
 
-    if (crlf_pos < lf_pos) {
-        result = __str.substr(__tok_begin, crlf_pos - __tok_begin);
-        __tok_end = crlf_pos + 2;
+    if (crlfPos < lfPos) {
+        result = Str_.substr(TokBegin_, crlfPos - TokBegin_);
+        TokEnd_ = crlfPos + 2;
 
-    } else if (lf_pos < crlf_pos) {
-        result = __str.substr(__tok_begin, lf_pos - __tok_begin);
-        __tok_end = lf_pos + 1;
+    } else if (lfPos < crlfPos) {
+        result = Str_.substr(TokBegin_, lfPos - TokBegin_);
+        TokEnd_ = lfPos + 1;
 
     } else {
-        result = __str.substr(__tok_begin);
-        __tok_end = __str.length();
+        result = Str_.substr(TokBegin_);
+        TokEnd_ = Str_.length();
     }
 
     return result;
 }
 
-usize  Tokenizator::GetPos() const {
-    return __tok_end;
+USize  Tokenizator::GetPos() const {
+    return TokEnd_;
 }

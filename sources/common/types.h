@@ -10,24 +10,24 @@
 #include <cstdint>
 #endif
 
-typedef uint64_t    u64;
-typedef uint32_t    u32;
-typedef uint16_t    u16;
-typedef uint8_t     u8;
+typedef uint64_t    UInt64;
+typedef uint32_t    UInt32;
+typedef uint16_t    UInt16;
+typedef uint8_t     UInt8;
 
-typedef int64_t     i64;
-typedef int32_t     i32;
-typedef int16_t     i16;
-typedef int8_t      i8;
+typedef int64_t     Int64;
+typedef int32_t     Int32;
+typedef int16_t     Int16;
+typedef int8_t      Int8;
 
-typedef size_t      usize;
-typedef ssize_t     isize;
+typedef size_t      USize;
+typedef ssize_t     ISize;
 
-typedef int             fd_t;
-typedef struct timeval  timeval_t;
+typedef int             Fd;
+typedef struct timeval  TimeVal;
 
 template<typename Typo>
-inline void safe_pointer_assign(Typo* pointer, const Typo& val) {
+inline void AssignPtrSafely(Typo* pointer, const Typo& val) {
     if (pointer != NULL) {
         *pointer = val;
     }

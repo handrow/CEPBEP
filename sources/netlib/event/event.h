@@ -9,19 +9,19 @@ namespace Event {
 
 class IEvent {
  public:
-    inline u64 GetTimeToHandleMs() const {
-        u64 now = now_ms();
+    inline UInt64 GetTimeToHandleMs() const {
+        UInt64 now = now_ms();
 
-        if (__handle_time_ms <= now)
+        if (HandleTimeMs_ <= now)
             return 0;
-        return __handle_time_ms - now;
+        return HandleTimeMs_ - now;
     }
 
-    inline u64 GetTimePointMs() const {
-        return __handle_time_ms;
+    inline UInt64 GetTimePointMs() const {
+        return HandleTimeMs_;
     }
 
-    explicit IEvent(u64 timepoint_ms = 0) : __handle_time_ms(timepoint_ms) {
+    explicit IEvent(UInt64 timepoint_ms = 0) : HandleTimeMs_(timepoint_ms) {
     }
 
     virtual ~IEvent() {
@@ -31,7 +31,7 @@ class IEvent {
     virtual void Handle() = 0;
 
  private:
-    const u64 __handle_time_ms;
+    const UInt64 HandleTimeMs_;
 };
 
 typedef IEvent*   IEventPtr;

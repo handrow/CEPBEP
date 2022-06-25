@@ -22,12 +22,12 @@ class ResponseReader {
         STT_ERROR_OCCURED,  // makes self-pause
     };
 
-    usize           __i;
-    Error           __err;
-    State           __state;
-    Http::Response  __res_data;
-    usize           __end_read_i;
-    std::string     __buffer;
+    USize           Idx_;
+    Error           Error_;
+    State           State_;
+    Http::Response  Result_;
+    USize           EndOfRead_;
+    std::string     Buffer_;
 
 
  private:

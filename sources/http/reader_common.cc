@@ -5,7 +5,7 @@
 namespace Http {
 namespace __CommonHelpers {
 
-usize IsWhiteSpace(const std::string& s, usize i) {
+USize IsWhiteSpace(const std::string& s, USize i) {
     return (s[i] == ' ') ? 1
                          : 0;
 }
@@ -40,66 +40,66 @@ namespace __CommonParsers {
 #define NOT_FOUND(idx)          ((idx) == (std::string::npos))
 
 Error  ParseRequestLine(const std::string& buff, Method* mtd, URI* uri, ProtocolVersion* ver) {
-    usize tok_begin = 0;
-    usize tok_end = 0;
+    USize tokBegin = 0;
+    USize tokEnd = 0;
 
     /// Skip whitespaces
     {
-        tok_end = buff.find_first_not_of(' ', tok_begin);
-        tok_begin = tok_end;
-        if (NOT_FOUND(tok_end))
+        tokEnd = buff.find_first_not_of(' ', tokBegin);
+        tokBegin = tokEnd;
+        if (NOT_FOUND(tokEnd))
             return Error(HTTP_READER_BAD_START_LINE, "Empty start line");
     }
 
     /// Parse method
     {
-        tok_end = buff.find_first_of(' ', tok_begin);
-        if (NOT_FOUND(tok_end))
+        tokEnd = buff.find_first_of(' ', tokBegin);
+        if (NOT_FOUND(tokEnd))
             return Error(HTTP_READER_BAD_START_LINE, "Not full start line");
-        *mtd = MethodFromString(GET_TOKEN(buff, tok_begin, tok_end));
+        *mtd = MethodFromString(GET_TOKEN(buff, tokBegin, tokEnd));
         if (*mtd == METHOD_UNKNOWN)
             return Error(HTTP_READER_BAD_METHOD, "Unsupported method");
-        tok_begin = tok_end;
+        tokBegin = tokEnd;
     }
 
     /// Skip whitespaces
     {
-        tok_end = buff.find_first_not_of(' ', tok_begin);
-        tok_begin = tok_end;
-        if (NOT_FOUND(tok_end))
+        tokEnd = buff.find_first_not_of(' ', tokBegin);
+        tokBegin = tokEnd;
+        if (NOT_FOUND(tokEnd))
             return Error(HTTP_READER_BAD_START_LINE, "Not full start line");
     }
 
     /// Parse URI
     {
-        Error uri_err(0);
-        tok_end = buff.find_first_of(' ', tok_begin);
-        if (NOT_FOUND(tok_end))
+        Error uriError(0);
+        tokEnd = buff.find_first_of(' ', tokBegin);
+        if (NOT_FOUND(tokEnd))
             return Error(HTTP_READER_BAD_START_LINE, "Not full start line");
-        *uri = URI::Parse(GET_TOKEN(buff, tok_begin, tok_end), &uri_err);
-        if (uri_err.IsError())
-            return uri_err;
-        tok_begin = tok_end;
+        *uri = URI::Parse(GET_TOKEN(buff, tokBegin, tokEnd), &uriError);
+        if (uriError.IsError())
+            return uriError;
+        tokBegin = tokEnd;
     }
 
     /// Skip whitespaces
     {
-        tok_end = buff.find_first_not_of(' ', tok_begin);
-        tok_begin = tok_end;
-        if (NOT_FOUND(tok_end))
+        tokEnd = buff.find_first_not_of(' ', tokBegin);
+        tokBegin = tokEnd;
+        if (NOT_FOUND(tokEnd))
             return Error(HTTP_READER_BAD_START_LINE, "Not full start line");
     }
 
     /// Parse version
     {
-        tok_end = buff.find_first_of("\n", tok_begin);
-        if (NOT_FOUND(tok_end))
+        tokEnd = buff.find_first_of("\n", tokBegin);
+        if (NOT_FOUND(tokEnd))
             return Error(HTTP_READER_BAD_START_LINE, "Not full start line");
-        if (buff[tok_end - 1] == '\r')
-            tok_end -= 1;
+        if (buff[tokEnd - 1] == '\r')
+            tokEnd -= 1;
 
         *ver = ProtocolVersionFromString(
-                    Trim(GET_TOKEN(buff, tok_begin, tok_end), ' '));
+                    Trim(GET_TOKEN(buff, tokBegin, tokEnd), ' '));
         if (*ver == HTTP_NO_VERSION)
             return Error(HTTP_READER_BAD_PROTOCOL_VERSION, "Bad protocol version");
     }
@@ -108,64 +108,64 @@ Error  ParseRequestLine(const std::string& buff, Method* mtd, URI* uri, Protocol
 }
 
 Error  ParseResponseLine(const std::string& buff, ProtocolVersion* ver, int* rcode, std::string* phrase) {
-    usize tok_begin = 0;
-    usize tok_end = 0;
+    USize tokBegin = 0;
+    USize tokEnd = 0;
 
     /// Skip whitespaces
     {
-        tok_end = buff.find_first_not_of(' ', tok_begin);
-        tok_begin = tok_end;
-        if (NOT_FOUND(tok_end))
+        tokEnd = buff.find_first_not_of(' ', tokBegin);
+        tokBegin = tokEnd;
+        if (NOT_FOUND(tokEnd))
             return Error(HTTP_READER_BAD_START_LINE, "Empty start line");
     }
 
     /// Parse version
     {
-        tok_end = buff.find_first_of(' ', tok_begin);
-        if (NOT_FOUND(tok_end))
+        tokEnd = buff.find_first_of(' ', tokBegin);
+        if (NOT_FOUND(tokEnd))
             return Error(HTTP_READER_BAD_START_LINE, "Not full start line");
-        *ver = ProtocolVersionFromString(GET_TOKEN(buff, tok_begin, tok_end));
+        *ver = ProtocolVersionFromString(GET_TOKEN(buff, tokBegin, tokEnd));
         if (*ver == HTTP_NO_VERSION)
             return Error(HTTP_READER_BAD_PROTOCOL_VERSION, "Unsupported version");
-        tok_begin = tok_end;
+        tokBegin = tokEnd;
     }
 
     /// Skip whitespaces
     {
-        tok_end = buff.find_first_not_of(' ', tok_begin);
-        tok_begin = tok_end;
-        if (NOT_FOUND(tok_end))
+        tokEnd = buff.find_first_not_of(' ', tokBegin);
+        tokBegin = tokEnd;
+        if (NOT_FOUND(tokEnd))
             return Error(HTTP_READER_BAD_START_LINE, "Not full start line");
     }
 
     /// Parse code
     {
-        tok_end = buff.find_first_of(' ', tok_begin);
-        if (NOT_FOUND(tok_end))
+        tokEnd = buff.find_first_of(' ', tokBegin);
+        if (NOT_FOUND(tokEnd))
             return Error(HTTP_READER_BAD_START_LINE, "Not full start line");
-        *rcode = Convert<int>(GET_TOKEN(buff, tok_begin, tok_end));
+        *rcode = Convert<int>(GET_TOKEN(buff, tokBegin, tokEnd));
         // if (*rcode == HTTP_READER_BAD_CODE)
         //     return Error(HTTP_READER_BAD_CODE, "Bad code");
-        tok_begin = tok_end;
+        tokBegin = tokEnd;
     }
 
     /// Skip whitespaces
     {
-        tok_end = buff.find_first_not_of(' ', tok_begin);
-        tok_begin = tok_end;
-        if (NOT_FOUND(tok_end))
+        tokEnd = buff.find_first_not_of(' ', tokBegin);
+        tokBegin = tokEnd;
+        if (NOT_FOUND(tokEnd))
             return Error(HTTP_READER_BAD_START_LINE, "Not full start line");
     }
 
     /// Parse code phrase
     {
-        tok_end = buff.find_first_of("\n", tok_begin);
-        if (NOT_FOUND(tok_end))
+        tokEnd = buff.find_first_of("\n", tokBegin);
+        if (NOT_FOUND(tokEnd))
             return Error(HTTP_READER_BAD_START_LINE, "Not full start line");
-        if (buff[tok_end - 1] == '\r')
-            tok_end -= 1;
+        if (buff[tokEnd - 1] == '\r')
+            tokEnd -= 1;
 
-        *phrase = Trim(GET_TOKEN(buff, tok_begin, tok_end), ' ');
+        *phrase = Trim(GET_TOKEN(buff, tokBegin, tokEnd), ' ');
         // if (*phrase == HTTP_READER_BAD_CODE_PHRASE)
         //     return Error(HTTP_READER_BAD_CODE_PHRASE, "Bad protocol version");
     }
@@ -175,43 +175,43 @@ Error  ParseResponseLine(const std::string& buff, ProtocolVersion* ver, int* rco
 
 // Ignore: (CRLF)
 // Valid: (HDR_KEY): *(WS) (HDR_VAL) *(WS) (CRLF)
-Error  ParseHeaderPair(const std::string& pair_str, Headers* hdrs) {
-    usize delimiter = 0;
-    usize end = pair_str.size() - 1;
+Error  ParseHeaderPair(const std::string& pairStr, Headers* hdrs) {
+    USize delimiter = 0;
+    USize end = pairStr.size() - 1;
 
     std::string key;
     std::string val;
 
-    if (pair_str[end] == '\n' && end == 0)  // Empty line ( pair_str == "\n" )
+    if (pairStr[end] == '\n' && end == 0)  // Empty line ( pairStr == "\n" )
         return Error(0);
-    if (pair_str[end - 1] == '\r')
+    if (pairStr[end - 1] == '\r')
         end -= 1;
-    if (end == 0)  // Empty line ( pair_str == "\r\n" )
+    if (end == 0)  // Empty line ( pairStr == "\r\n" )
         return Error(0);
 
     /// find of pair delimiter
-    delimiter = pair_str.find_first_of(':');  // IT MUST BE FOUNDED, our pair isn't empty line
+    delimiter = pairStr.find_first_of(':');  // IT MUST BE FOUNDED, our pair isn't empty line
     if (NOT_FOUND(delimiter))
         return Error(HTTP_READER_BAD_HEADER_KEY, "Bad header key");
 
-    key = GET_TOKEN(pair_str, 0, delimiter);
+    key = GET_TOKEN(pairStr, 0, delimiter);
     if (key.empty() || Back(key) == ' ')
         return Error(HTTP_READER_BAD_HEADER_KEY, "Bad header key");
 
     /// Key validation
-    for (usize i = 0; i < key.size(); ++i) {
+    for (USize i = 0; i < key.size(); ++i) {
         if (!__CommonHelpers::IsValidHdrKey(key[i]))
             return Error(HTTP_READER_BAD_HEADER_KEY, "Bad header key");
     }
 
     /// Moving delimiter to first not whitespace symbol
-    delimiter = pair_str.find_first_not_of(' ', delimiter + 1);
+    delimiter = pairStr.find_first_not_of(' ', delimiter + 1);
     /// Moving end to the first space in the last spaces :)
-    end = pair_str.find_last_not_of(' ', end - 1) + 1;
+    end = pairStr.find_last_not_of(' ', end - 1) + 1;
 
-    val = GET_TOKEN(pair_str, delimiter, end);
+    val = GET_TOKEN(pairStr, delimiter, end);
     /// Value validation
-    for (usize i = 0; i < val.size(); ++i) {
+    for (USize i = 0; i < val.size(); ++i) {
         if (!__CommonHelpers::IsValidHdrValue(val[i]))
             return Error(HTTP_READER_BAD_HEADER_VALUE, "Bad header value");
     }
@@ -222,22 +222,22 @@ Error  ParseHeaderPair(const std::string& pair_str, Headers* hdrs) {
 }
 
 Error  ParseHeaders(const std::string& buff, Headers* hdrs) {
-    usize tok_begin = 0;
-    usize tok_end = 0;
+    USize tokBegin = 0;
+    USize tokEnd = 0;
     Error err(0);
 
     for (;;) {
-        tok_end = buff.find("\n", tok_begin);
-        if (NOT_FOUND(tok_end)) {
+        tokEnd = buff.find("\n", tokBegin);
+        if (NOT_FOUND(tokEnd)) {
             break;
         }
-        tok_end += 1;
+        tokEnd += 1;
 
-        err = ParseHeaderPair(GET_TOKEN(buff, tok_begin, tok_end), hdrs);
+        err = ParseHeaderPair(GET_TOKEN(buff, tokBegin, tokEnd), hdrs);
         if (err.IsError())
             return err;
 
-        tok_begin = tok_end;
+        tokBegin = tokEnd;
     }
 
     return Error(0);
@@ -245,10 +245,10 @@ Error  ParseHeaders(const std::string& buff, Headers* hdrs) {
 
 namespace {
 
-usize HexNumFromString(const std::string& hex_str) {
-    usize num;
+USize HexNumFromString(const std::string& hexStr) {
+    USize num;
     std::stringstream ss;
-    ss << std::hex << hex_str;
+    ss << std::hex << hexStr;
     ss >> num;
 
     return num;
@@ -256,7 +256,7 @@ usize HexNumFromString(const std::string& hex_str) {
 
 }  // namespace
 
-Error  ParseChunkSize(const std::string& buff, usize* chunk_size) {
+Error  ParseChunkSize(const std::string& buff, USize* chunkSize) {
     std::string str = buff;
 
     if (Back(str) == '\n') {
@@ -266,26 +266,26 @@ Error  ParseChunkSize(const std::string& buff, usize* chunk_size) {
         str.resize(str.size() - 1);
     }
 
-    *chunk_size = HexNumFromString(str);
+    *chunkSize = HexNumFromString(str);
     return Error(Error::ERR_OK);  // no error
 }
 
 Error  ParseCgiStatus(const Headers& hdrs, ProtocolVersion* ver, int* rcode, std::string* phrase) {
     bool isset = true;
-    std::string status_val = hdrs.Get("Status", &isset);
+    std::string statusValue = hdrs.Get("Status", &isset);
     if (isset) {
-        usize tok_begin = 0;
-        usize tok_end = 0;
+        USize tokBegin = 0;
+        USize tokEnd = 0;
 
-        tok_end = status_val.find_first_of(' ');
-        if (NOT_FOUND(tok_end))
+        tokEnd = statusValue.find_first_of(' ');
+        if (NOT_FOUND(tokEnd))
             return Error(HTTP_READER_BAD_CODE, "Bad cgi code");
-        *rcode = Convert<int>(GET_TOKEN(status_val, tok_begin, tok_end));
-        tok_begin = tok_end;
+        *rcode = Convert<int>(GET_TOKEN(statusValue, tokBegin, tokEnd));
+        tokBegin = tokEnd;
 
-        tok_begin = tok_end;
-        tok_end = status_val.length();
-        *phrase = Trim(GET_TOKEN(status_val, tok_begin, tok_end), ' ');
+        tokBegin = tokEnd;
+        tokEnd = statusValue.length();
+        *phrase = Trim(GET_TOKEN(statusValue, tokBegin, tokEnd), ' ');
     } else {
         *rcode = 200;
         *phrase = "OK";

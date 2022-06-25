@@ -4,15 +4,15 @@
 namespace Webserver {
 
 bool  HttpServer::__IsUpload(SessionCtx* ss, const WebRoute& rt) {
-    std::string type = ss->http_req.headers.Get("Content-Type");
+    std::string type = ss->Request.Headers.Get("Content-Type");
 
-    return rt.upload_enabled &&
+    return rt.UploadEnabled &&
            type.compare(0, 19, "multipart/form-data") == 0 &&
-           ss->http_req.method == Http::METHOD_POST;
+           ss->Request.Method == Http::METHOD_POST;
 }
 
 bool  GetParamTokens(const std::string& param, std::string* key, std::string* val, char d = '=') {
-    usize delim = param.find(d);
+    USize delim = param.find(d);
     if (delim == std::string::npos) {
         return false;
     }
@@ -76,7 +76,7 @@ void  ParseContentDisposition(const std::string& line, std::string* filename) {
 void  HandleChunk(const std::string& chunk, std::list<HttpServer::UploadReq>* files) {
     Tokenizator tkz(chunk);
 
-    bool         first_line = true;
+    bool         firstLineFlag = true;
     std::string  filename;
 
     for (;;) {
@@ -87,29 +87,29 @@ void  HandleChunk(const std::string& chunk, std::list<HttpServer::UploadReq>* fi
         if (run == false)
             return;
 
-        if (meta_line.empty() && !first_line)
+        if (meta_line.empty() && !firstLineFlag)
             break;
 
         ParseContentDisposition(meta_line, &filename);
-        first_line = false;
+        firstLineFlag = false;
     }
     if (!filename.empty()) {
-        usize body_begin = tkz.GetPos();
-        usize body_end;
-        body_end = chunk.rfind("\n");
-        if (body_end == std::string::npos)
-            body_end = chunk.rfind("\r\n");
+        USize bodyBegin = tkz.GetPos();
+        USize bodyEnd;
+        bodyEnd = chunk.rfind("\n");
+        if (bodyEnd == std::string::npos)
+            bodyEnd = chunk.rfind("\r\n");
 
         HttpServer::UploadReq upld;
-        upld.filename = filename;
-        upld.file_content = chunk.substr(body_begin, body_end - body_begin);
+        upld.FileName = filename;
+        upld.FileContent = chunk.substr(bodyBegin, bodyEnd - bodyBegin);
         files->push_back(upld);
     }
 }
 
 void  HttpServer::__OnUploadEnd(SessionCtx* ss, const WebRoute& route, const std::list<UploadReq>& files) {
 
-    std::string upload_dir = route.root_directory;
+    std::string uploadDir = route.RootDir;
 
     std::list<UploadReq>::const_iterator itend = files.end();
     std::list<UploadReq>::const_iterator it;
@@ -117,70 +117,70 @@ void  HttpServer::__OnUploadEnd(SessionCtx* ss, const WebRoute& route, const std
     printf("Ya tvar 1\n");
 
     for (it = files.begin(); it != itend; ++it) {
-        std::string upload_path = AppendPath(upload_dir, it->filename);
+        std::string upload_path = AppendPath(uploadDir, it->FileName);
         if (IsExist(upload_path)) {
-            debug(ss->error_log, "Session[%d]: file %s already exists, returning 403 error",
-                                   ss->conn_sock.GetFd(),
+            debug(ss->ErrorLOg, "Session[%d]: file %s already exists, returning 403 error",
+                                   ss->ConnectionSock.GetFd(),
                                    upload_path.c_str());
-            return ss->res_code = 403, __OnHttpError(ss);
+            return ss->ResponseCode = 403, __OnHttpError(ss);
         }
     }
 
     printf("Ya tvar 2\n");
 
-    bool file_fail = false;
-    std::string file_urls = "";
+    bool fileFailed = false;
+    std::string fileUrls = "";
 
     for (it = files.begin(); it != itend; ++it) {
-        std::string upload_path = AppendPath(upload_dir, it->filename);
-        std::string upload_url = AppendPath(route.pattern, it->filename);
+        std::string uploadPath = AppendPath(uploadDir, it->FileName);
+        std::string uploadURL = AppendPath(route.Pattern, it->FileName);
     
         Error err;
-        IO::File file = IO::File::OpenFile(upload_path,
+        IO::File file = IO::File::OpenFile(uploadPath,
                                            O_CREAT | O_EXCL | O_WRONLY,
                                            &err);
         if (err.IsError()) {
-            debug(ss->error_log, "Session[%d]: file %s open failed: %s",
-                                   ss->conn_sock.GetFd(),
-                                   upload_path.c_str(),
-                                   err.message.c_str());
-            file_fail = true;
+            debug(ss->ErrorLOg, "Session[%d]: file %s open failed: %s",
+                                   ss->ConnectionSock.GetFd(),
+                                   uploadPath.c_str(),
+                                   err.Description.c_str());
+            fileFailed = true;
         } else {
-            file.Write(it->file_content);
+            file.Write(it->FileContent);
             file.Close();
-            file_urls += upload_url + "\n";
-            debug(ss->error_log, "Session[%d]: file %s created",
-                                   ss->conn_sock.GetFd(),
-                                   upload_path.c_str());
+            fileUrls += uploadURL + "\n";
+            debug(ss->ErrorLOg, "Session[%d]: file %s created",
+                                   ss->ConnectionSock.GetFd(),
+                                   uploadPath.c_str());
         }
     }
 
     printf("Ya tvar 3\n");
 
-    if (file_fail) {
-        return ss->res_code = 500, __OnHttpError(ss);
+    if (fileFailed) {
+        return ss->ResponseCode = 500, __OnHttpError(ss);
     }
 
-    ss->res_code = 201;
-    ss->http_writer.Write(file_urls);
+    ss->ResponseCode = 201;
+    ss->ResponseWriter.Write(fileUrls);
     return __OnHttpResponse(ss);
 }
 
 void  HttpServer::__HandleUploadRequest(SessionCtx* ss, const WebRoute& route) {
-    info(ss->access_log, "Session[%d]: upload request", ss->conn_sock.GetFd());
+    info(ss->AccessLog, "Session[%d]: upload request", ss->ConnectionSock.GetFd());
 
     std::list<UploadReq> files;
 
-    bool  boundary_exists;
-    std::string  boundary_token =
-            "--" + GetBoundary(ss->http_req.headers.Get("Content-Type"), &boundary_exists);
+    bool  boundaryExists;
+    std::string  boundareToken =
+            "--" + GetBoundary(ss->Request.Headers.Get("Content-Type"), &boundaryExists);
 
-    if (boundary_exists) {
-        Tokenizator tkz(ss->http_req.body);
+    if (boundaryExists) {
+        Tokenizator tkz(ss->Request.Body);
         bool run = true;
         std::string chunk_token;
         for (;;) {
-            chunk_token = tkz.NextS(boundary_token, &run);
+            chunk_token = tkz.NextS(boundareToken, &run);
             if (run == false)
                 break;
             if (chunk_token == "--" || chunk_token == "--\n" || chunk_token == "--\r\n")
@@ -189,8 +189,8 @@ void  HttpServer::__HandleUploadRequest(SessionCtx* ss, const WebRoute& route) {
         }
         return __OnUploadEnd(ss, route, files);
     } else {
-        debug(ss->error_log, "Session[%d]: multipart form data boundary isn't exist, returning error", ss->conn_sock.GetFd());
-        return ss->res_code = 400, __OnHttpError(ss);
+        debug(ss->ErrorLOg, "Session[%d]: multipart form data boundary isn't exist, returning error", ss->ConnectionSock.GetFd());
+        return ss->ResponseCode = 400, __OnHttpError(ss);
     }
 }
 

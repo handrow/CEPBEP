@@ -2,11 +2,11 @@
 
 namespace {
 
-inline bool IsntEnd(const std::string& str, usize i) {
+inline bool IsntEnd(const std::string& str, USize i) {
     return i < str.size();
 }
 
-usize TryBlock(const std::string& reg, const std::string& str, usize ri, usize si) {
+USize TryBlock(const std::string& reg, const std::string& str, USize ri, USize si) {
     std::string block = reg.substr(ri, reg.find("]") - ri);
 
     Tokenizator tkz(block);
@@ -23,7 +23,7 @@ usize TryBlock(const std::string& reg, const std::string& str, usize ri, usize s
 
 }  // namespace
 
-bool Match(const std::string& reg, const std::string& str, usize ri, usize si) {
+bool Match(const std::string& reg, const std::string& str, USize ri, USize si) {
     if (IsntEnd(str, si) && (IsntEnd(reg, ri) && reg[ri] == '*')) {
         return Match(reg, str, ri, si + 1) || Match(reg, str, ri + 1, si);
     } else if (IsntEnd(str, si) && IsntEnd(reg, ri) && str[si] == reg[ri]) {

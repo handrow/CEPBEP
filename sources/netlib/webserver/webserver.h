@@ -29,26 +29,26 @@ namespace Webserver {
 
 class HttpServer {
  public:
-    static void PrintDebugInfo(IO::Poller::PollEvent p, fd_t fd, Log::Logger* l) {
-        const char* poll_ev_str;
+    static void PrintDebugInfo(IO::Poller::PollEvent p, Fd fd, Log::Logger* l) {
+        const char* PollerEventStr;
         switch (p) {
-            case IO::Poller::POLL_CLOSE:        poll_ev_str = "POLL_CLOSE"; break;
-            case IO::Poller::POLL_ERROR:        poll_ev_str = "POLL_ERROR"; break;
-            case IO::Poller::POLL_NONE:         poll_ev_str = "POLL_NONE"; break;
-            case IO::Poller::POLL_WRITE:        poll_ev_str = "POLL_WRITE"; break;
-            case IO::Poller::POLL_READ:         poll_ev_str = "POLL_READ"; break;
-            case IO::Poller::POLL_NOT_OPEN:     poll_ev_str = "POLL_NOT_OPEN"; break;
-            default:                            poll_ev_str = "UNKNOWN"; break;
+            case IO::Poller::POLL_CLOSE:        PollerEventStr = "POLL_CLOSE"; break;
+            case IO::Poller::POLL_ERROR:        PollerEventStr = "POLL_ERROR"; break;
+            case IO::Poller::POLL_NONE:         PollerEventStr = "POLL_NONE"; break;
+            case IO::Poller::POLL_WRITE:        PollerEventStr = "POLL_WRITE"; break;
+            case IO::Poller::POLL_READ:         PollerEventStr = "POLL_READ"; break;
+            case IO::Poller::POLL_NOT_OPEN:     PollerEventStr = "POLL_NOT_OPEN"; break;
+            default:                            PollerEventStr = "UNKNOWN"; break;
         }
-        debug(l, "DEBUG_POLL_INFO: PEV='%s', PEV=0x%x, FD=%d", poll_ev_str, p, fd);
+        debug(l, "DEBUG_POLL_INFO: PEV='%s', PEV=0x%x, FD=%d", PollerEventStr, p, fd);
     }
 
     struct DebugEvent : public Event::IEvent {
-        Log::Logger*           logger;
-        IO::Poller::PollEvent pe;
-        fd_t                  fd;
+        Log::Logger*           Logger;
+        IO::Poller::PollEvent  PollerEv;
+        Fd                     FileD;
 
-             DebugEvent(Log::Logger* l, IO::Poller::PollEvent p, fd_t f) : logger(l), pe(p), fd(f) {}
+             DebugEvent(Log::Logger* l, IO::Poller::PollEvent p, Fd f) : Logger(l), PollerEv(p), FileD(f) {}
         void Handle() {
             // HttpServer::PrintDebugInfo(pe, fd, logger);
         }
@@ -56,104 +56,104 @@ class HttpServer {
 
  public:
     struct UploadReq {
-        std::string filename;
-        std::string file_content;
+        std::string FileName;
+        std::string FileContent;
     };
 
     struct StaticFile {
-        bool        closed;
-        IO::File    file;
+        bool        IsClosed;
+        IO::File    File;
     };
 
     struct VirtualServer;
     struct CgiEntry;
 
     struct SessionCtx {
-        VirtualServer*       server;
-        IO::Socket           conn_sock;
-        std::string          res_buff;
-        Http::RequestReader  req_rdr;
+        VirtualServer*       Server;
+        IO::Socket           ConnectionSock;
+        std::string          ResultBuffer;
+        Http::RequestReader  RequestReader;
 
-        Log::Logger*         access_log;
-        Log::Logger*         error_log;
+        Log::Logger*         AccessLog;
+        Log::Logger*         ErrorLOg;
 
-        Http::ResponseWriter  http_writer;
-        Http::Request         http_req;
+        Http::ResponseWriter  ResponseWriter;
+        Http::Request         Request;
 
 
-        bool                  conn_close;
-        int                   res_code;
+        bool                  IsConnectionClosed;
+        int                   ResponseCode;
 
-        CgiEntry*             __link_cgi;
-        StaticFile            __link_stfile;
-        fd_t                  __listener_fd;
-        u64                   __timeout_ms;
+        CgiEntry*             CgiPtr;
+        StaticFile            StatfilePtr;
+        Fd                    ListenerFileDesc;
+        UInt64                TimeoutMs_;
 
-        void  UpdateTimeout(u64 timeout_ms) { __timeout_ms = tv_to_msec(GetTimeOfDay()) + timeout_ms; }
+        void  UpdateTimeout(UInt64 timeoutMs) { TimeoutMs_ = tv_to_msec(GetTimeOfDay()) + timeoutMs; }
     };
 
     struct CgiEntry {
-        IO::File              fd_in;
-        IO::File              fd_out;
-        pid_t                 pid;
-        std::string           in_buf;
-        Cgi::ResponseReader   cgi_rdr;
-        Http::Response        cgi_res;
+        IO::File              FileDescIn;
+        IO::File              FileDescOut;
+        pid_t                 Pid;
+        std::string           InBuffer;
+        Cgi::ResponseReader   CgiReader;
+        Http::Response        CgiResponse;
     };
 
     typedef std::set<Http::Method> MethodSet;
 
     struct WebRedirect {
-        bool                enabled;
-        std::string         location;
-        int                 code;
+        bool                Enabled;
+        std::string         Location;
+        int                 Code;
     };
 
     struct WebRoute {
-        std::string            pattern;
-        std::string            root_directory;
-        std::string            index_page;          // if empty, index page is disabled
-        WebRedirect            reditect;            // if empty, redirection is disabled
-        MethodSet              allowed_methods;
-        bool                   cgi_enabled;
-        bool                   upload_enabled;
-        bool                   listing_enabled;
+        std::string            Pattern;
+        std::string            RootDir;
+        std::string            IndexPage;          // if empty, index page is disabled
+        WebRedirect            Redirect;            // if empty, redirection is disabled
+        MethodSet              AllowedMethods;
+        bool                   CgiEnabled;
+        bool                   UploadEnabled;
+        bool                   ListingEnabled;
     };
 
 public:
     /*                 route                                     */
     typedef std::list< WebRoute >             WebRouteList;
     /*                fd    listen_sock                          */
-    typedef std::map< fd_t, IO::Socket >      SocketFdMap;
+    typedef std::map< Fd, IO::Socket >      SocketFdMap;
     /*                fd    session_ctx                          */
-    typedef std::map< fd_t, SessionCtx* >     SessionFdMap;
+    typedef std::map< Fd, SessionCtx* >     SessionFdMap;
     /*               errcode   page_path                         */
     typedef std::map< int,     std::string >  ErrpageMap;
 
     typedef std::map< std::string, std::string > CgiDriverMap;
 
     struct VirtualServer {
-        typedef std::list<std::string> Hostnames;
+        typedef std::list<std::string> HostnameList;
 
-        Hostnames           hostnames;
-        Mime::MimeTypesMap  mime_map;
-        WebRouteList        routes;
-        ErrpageMap          errpages;
+        HostnameList        Hostnames;
+        Mime::MimeTypesMap  MimeMap;
+        WebRouteList        Routes;
+        ErrpageMap          ErrorPages;
 
-        Log::Logger*        access_log;
-        Log::Logger*        error_log;
+        Log::Logger*        AccessLog;
+        Log::Logger*        ErrorLog;
     };
 
 private:
     /*                    listen_fd   server                     */
-    typedef std::multimap< fd_t,     VirtualServer > VirtualServerMap;
+    typedef std::multimap< Fd,     VirtualServer > VirtualServerMap;
     typedef std::map< pid_t, CgiEntry >              CgiPidMap;
 
  private:
     /// Event basics logic
     void                __EvaluateIoEvents();
     IO::Poller::Result  __PollEvent();
-    Event::IEventPtr    __SwitchEventSpawners(IO::Poller::PollEvent pev, fd_t fd);
+    Event::IEventPtr    __SwitchEventSpawners(IO::Poller::PollEvent pev, Fd fd);
 
     Event::IEventPtr    __SpawnPollerHook();
     class  EvPollerHook;
@@ -190,11 +190,11 @@ private:
     void                __HandleDeleteFile(SessionCtx* ss, const std::string& filepath);
     
     /// Sessions Logic
-    SessionCtx*         __NewSessionCtx(const IO::Socket& sock, fd_t fd);
+    SessionCtx*         __NewSessionCtx(const IO::Socket& sock, Fd fd);
     void                __StartSessionCtx(SessionCtx* ss);
     void                __DeleteSessionCtx(SessionCtx* ss);
 
-    VirtualServer*      __GetVirtualServer(fd_t lfd, const std::string& hostname);
+    VirtualServer*      __GetVirtualServer(Fd lfd, const std::string& hostname);
 
     /// Sessions I/O handling
     Event::IEventPtr    __SpawnSessionEvent(IO::Poller::PollEvent ev, SessionCtx* ss);
@@ -241,7 +241,7 @@ private:
     void                __OnCgiInput(SessionCtx* ss);
     void                __OnCgiError(SessionCtx* ss);
     void                __OnCgiHup(SessionCtx* ss);
-    void                __CgiWorker(fd_t ipip[2], fd_t opip[2],
+    void                __CgiWorker(Fd ipip[2], Fd opip[2],
                                     SessionCtx* ss, const std::string& filepath);
 
     bool                __IsUpload(SessionCtx* ss, const WebRoute& rt);
@@ -250,7 +250,7 @@ private:
                                       const std::list<UploadReq>& files);
 
  public:
-    void  SetTimeout(u64 msec);
+    void  SetTimeout(UInt64 msec);
     void  SetSystemLogger(Log::Logger* s);
     void  AddVritualServer(const IO::SockInfo& si, const VirtualServer& vs);
 
@@ -259,22 +259,22 @@ private:
     void  ServeForever();
 
  private:
-    Log::Logger*        __system_log;
+    Log::Logger*        SystemLog_;
 
-    IO::Poller          __poller;
-    Event::Loop         __evloop;
+    IO::Poller          Poller_;
+    Event::Loop         EventLoop_;
 
-    VirtualServerMap    __vservers_map;
-    SocketFdMap         __listeners_map;
-    SessionFdMap        __sessions_map;
-    SessionFdMap        __stat_files_read_map;
-    SessionFdMap        __cgi_fd_map;
-    CgiPidMap           __cgi_pid_map;
+    VirtualServerMap    VirtualServers_;
+    SocketFdMap         Listeners_;
+    SessionFdMap        WebSessions_;
+    SessionFdMap        StatfileSessions_;
+    SessionFdMap        CgiSessions_;
+    CgiPidMap           CgiPids_;
 
-    Cgi::Envs           __envs;
-    CgiDriverMap        __cgi_drivers;
-    u64                 __session_timeout;
-    usize               __max_body_size;
+    Cgi::Envs           Envs_;
+    CgiDriverMap        CgiDrivers_;
+    UInt64              SessionTimeout_;
+    USize               MaxBodySize_;
 };
 
 }

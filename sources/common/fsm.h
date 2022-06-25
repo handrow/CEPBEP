@@ -14,22 +14,22 @@ class FSM {
     typedef TransitionStateFunc TransitionsMatrix[STATES_NUM][STATES_NUM];
 
  private:
-    const Triggers *const             __triggers;
-    const TransitionsMatrix *const    __transition_matrix;
+    const Triggers *const             Trigers_;
+    const TransitionsMatrix *const    TransitionMatrix_;
 
  public:
     FSM(const Triggers* triggers, const TransitionsMatrix* tmatrix)
-    : __triggers(triggers)
-    , __transition_matrix(tmatrix) {
+    : Trigers_(triggers)
+    , TransitionMatrix_(tmatrix) {
     }
 
     StateIdx    Process(StateData* data, StateIdx state) const {
         StateIdx             next_state;
         TransitionStateFunc  transition_func;
 
-        while (data->Run()) {
-            next_state = (*__triggers)[state](data);
-            transition_func = (*__transition_matrix)[state][next_state];
+        while (data->GetRun()) {
+            next_state = (*Trigers_)[state](data);
+            transition_func = (*TransitionMatrix_)[state][next_state];
             if (transition_func != NULL)
                 transition_func(data);
             state = next_state;

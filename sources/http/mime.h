@@ -11,7 +11,7 @@ namespace Mime {
 typedef std::map<std::string, std::string> MimeTypesMap;
 
 std::string MapType(const MimeTypesMap& map, const std::string& filename,
-                                             const std::string& default_type = "text/plain");
+                                             const std::string& defaultType = "text/plain");
 
 };
 

@@ -6,21 +6,21 @@ void  HttpServer::__OnListenerAccept(IO::Socket* lstn_sock) {
     Error err;
     IO::Socket conn = IO::Socket::AcceptNewConnection(lstn_sock, &err);
     if (err.IsError()) {
-        error(__system_log, "ServerSock[%d]: acception failed: %s (%d)", lstn_sock->GetFd(), err.message.c_str(), err.errcode);
+        error(SystemLog_, "ServerSock[%d]: acception failed: %s (%d)", lstn_sock->GetFd(), err.Description.c_str(), err.ErrorCode);
     } else {
-        info(__system_log, "ServerSock[%d]: accepted new connection:\n"
+        info(SystemLog_, "ServerSock[%d]: accepted new connection:\n"
                         ">  connection_info: (%s:%u)\n"
                         ">      server_info: (%s:%u)",
                                 lstn_sock->GetFd(),
-                                std::string(conn.GetSockInfo().addr_BE).c_str(),
-                                u16(conn.GetSockInfo().port_BE),
-                                std::string(lstn_sock->GetSockInfo().addr_BE).c_str(),
-                                u16(lstn_sock->GetSockInfo().port_BE));
+                                std::string(conn.GetSockInfo().Addr_BE).c_str(),
+                                UInt16(conn.GetSockInfo().Port_BE),
+                                std::string(lstn_sock->GetSockInfo().Addr_BE).c_str(),
+                                UInt16(lstn_sock->GetSockInfo().Port_BE));
 
         SessionCtx* session = __NewSessionCtx(conn, lstn_sock->GetFd());
-        info(__system_log, "ServerSock[%d]: session (fd: %d) created",
+        info(SystemLog_, "ServerSock[%d]: session (fd: %d) created",
                                 lstn_sock->GetFd(),
-                                session->conn_sock.GetFd());
+                                session->ConnectionSock.GetFd());
 
         __StartSessionCtx(session);
     }
@@ -28,23 +28,23 @@ void  HttpServer::__OnListenerAccept(IO::Socket* lstn_sock) {
 
 class HttpServer::EvListenerNewConnection : public Event::IEvent {
  private:
-    HttpServer* __http_server;
-    IO::Socket* __sock;
+    HttpServer* HttpServer_;
+    IO::Socket* Socket_;
  public:
     explicit EvListenerNewConnection(HttpServer* server, IO::Socket* sock)
-    : __http_server(server)
-    , __sock(sock) {
+    : HttpServer_(server)
+    , Socket_(sock) {
     }
 
     void Handle() {
-        __http_server->__OnListenerAccept(__sock);
+        HttpServer_->__OnListenerAccept(Socket_);
     }
 };
 
 Event::IEventPtr    HttpServer::__SpawnListenerEvent(IO::Poller::PollEvent ev, IO::Socket* sock) {
     if (ev == IO::Poller::POLL_READ)
         return new EvListenerNewConnection(this, sock);
-    return new DebugEvent(__system_log, ev, sock->GetFd());
+    return new DebugEvent(SystemLog_, ev, sock->GetFd());
 }
 
 }  // namespace Webserver

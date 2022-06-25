@@ -16,38 +16,38 @@ namespace IO {
 // IpAddrV4(0x7f000001) -> [0x7f, 0x0, 0x0, 0x1]
 // IpAddrV4("127.0.0.1") -> [0x7f, 0x0, 0x0, 0x1]
 // std::string(ipaddr) -> "127.0.0.1"
-// u32(ipaddr) -> 0x7f000001
+// UInt32(ipaddr) -> 0x7f000001
 
 struct IpAddrV4 {
     union {
-        u32 raw;
-        u8  bytes[4];
-    } __val;
+        UInt32 raw;
+        UInt8  bytes[4];
+    } Val;
 
-             IpAddrV4(u32 addr);                // NOLINT(*)
+             IpAddrV4(UInt32 addr);                // NOLINT(*)
              IpAddrV4(const std::string& str);  // NOLINT(*)
     operator std::string() const;
-    operator u32() const;
+    operator UInt32() const;
 };
 
 struct Port {
     union {
-        u16 raw;
-        u8  bytes[2];
-    } __val;
+        UInt16 raw;
+        UInt8  bytes[2];
+    } Val;
 
-             Port(u16 addr);                    // NOLINT(*)
+             Port(UInt16 addr);                    // NOLINT(*)
              Port(const std::string& str);      // NOLINT(*)
     operator std::string() const;
-    operator u16() const;
+    operator UInt16() const;
 
 };
 
 struct SockInfo {
-    IpAddrV4    addr_BE;
-    Port        port_BE;
+    IpAddrV4    Addr_BE;
+    Port        Port_BE;
 
-    explicit SockInfo(IpAddrV4 ip = u32(-1), Port port = u16(-1));
+    explicit SockInfo(IpAddrV4 ip = UInt32(-1), Port port = UInt16(-1));
     explicit SockInfo(const sockaddr_in& sin);
     operator struct sockaddr_in() const;
     bool operator==(const SockInfo& si) const;
@@ -56,10 +56,10 @@ struct SockInfo {
 
 class Socket : public File {
  protected:
-    SockInfo  __info;
+    SockInfo  Info_;
 
  public:
-    explicit Socket(const SockInfo& sinfo = SockInfo(), fd_t fd = -1);
+    explicit Socket(const SockInfo& sinfo = SockInfo(), Fd fd = -1);
     SockInfo GetSockInfo() const;
 
     static Socket CreateListenSocket(const SockInfo& info, Error* err);

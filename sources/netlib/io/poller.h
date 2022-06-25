@@ -12,9 +12,9 @@ namespace IO {
 
 class Poller {
  public:
-    static const usize npos = 0ull - 1ull;
+    static const USize npos = 0ull - 1ull;
 
-    typedef u8 EventSet;
+    typedef UInt8 EventSet;
 
     enum PollEvent {
         POLL_NONE       = 0x0,
@@ -27,33 +27,33 @@ class Poller {
     };
 
     struct Result {
-        fd_t fd;
-        EventSet ev;
+        Fd FileDesc;
+        EventSet EvSet;
     };
 
  public:
-    Poller() : __timeout_ms(0), __i(0) {}
+    Poller() : TimeoutMs_(0), I_(0) {}
 
     Result Poll(Error* err);
 
-    void AddFd(fd_t fd, EventSet event_mask = POLL_NONE);
-    void RmFd(fd_t fd);
+    void AddFd(Fd fd, EventSet event_mask = POLL_NONE);
+    void RmFd(Fd fd);
 
-    void SetEvMask(fd_t fd, EventSet event_mask);
-    void AddEvMask(fd_t fd, EventSet event_mask);
-    void RmEvMask(fd_t fd, EventSet event_mask);
-    EventSet GetEvMask(fd_t fd) const;
+    void SetEvMask(Fd fd, EventSet event_mask);
+    void AddEvMask(Fd fd, EventSet event_mask);
+    void RmEvMask(Fd fd, EventSet event_mask);
+    EventSet GetEvMask(Fd fd) const;
 
-    void SetPollTimeout(u32 msec);
-
- private:
-    usize __FindPollFd(fd_t fd) const;
-    usize __FindEventFd();
+    void SetPollTimeout(UInt32 msec);
 
  private:
-    mut_std::vector<pollfd>  __pfds;
-    int                      __timeout_ms;
-    int                      __i;
+    USize __FindPollFd(Fd fd) const;
+    USize __FindEventFd();
+
+ private:
+    mut_std::vector<pollfd>  FilePool_;
+    int                      TimeoutMs_;
+    int                      I_;
 };
 
 }  // namespace IO

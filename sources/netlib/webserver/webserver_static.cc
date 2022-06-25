@@ -5,60 +5,60 @@ namespace Webserver {
 /// Basics
 void  HttpServer::__SendStaticFileResponse(IO::File file, SessionCtx* ss) {
     StaticFile stfile = {
-        .closed = false,
-        .file = file
+        .IsClosed = false,
+        .File = file
     };
-    ss->__link_stfile = stfile;
-    __stat_files_read_map[file.GetFd()] = ss;
+    ss->StatfilePtr = stfile;
+    StatfileSessions_[file.GetFd()] = ss;
 
-    __poller.AddFd(file.GetFd(), IO::Poller::POLL_READ |
+    Poller_.AddFd(file.GetFd(), IO::Poller::POLL_READ |
                                  IO::Poller::POLL_ERROR);
 }
 
 void  HttpServer::__RemoveStaticFileCtx(SessionCtx* ss) {
-    StaticFile* stfile = &ss->__link_stfile;
-    if (!stfile->closed) {
-        __poller.RmFd(stfile->file.GetFd());
-        __stat_files_read_map.erase(stfile->file.GetFd());
-        stfile->file.Close();
-        stfile->closed = true;
+    StaticFile* stfile = &ss->StatfilePtr;
+    if (!stfile->IsClosed) {
+        Poller_.RmFd(stfile->File.GetFd());
+        StatfileSessions_.erase(stfile->File.GetFd());
+        stfile->File.Close();
+        stfile->IsClosed = true;
     }
 }
 
 /// Handlers
 void  HttpServer::__OnStaticFileRead(SessionCtx* ss) {
-    const static usize READ_FILE_BUF_SZ = 10000;
-    StaticFile& stfile = ss->__link_stfile;
+    const static USize READ_FILE_BUF_SZ = 10000;
+    StaticFile& stfile = ss->StatfilePtr;
 
-    std::string file_part = stfile.file.Read(READ_FILE_BUF_SZ);
+    std::string file_part = stfile.File.Read(READ_FILE_BUF_SZ);
 
-    info(__system_log, "StaticFile[%d][%d]: read %zu bytes",
-                         ss->conn_sock.GetFd(), stfile.file.GetFd(), file_part.size());
+    info(SystemLog_, "StaticFile[%d][%d]: read %zu bytes",
+                         ss->ConnectionSock.GetFd(), stfile.File.GetFd(), file_part.size());
 
-    debug(__system_log, "StaticFile[%d][%d]: read content:\n"
+    debug(SystemLog_, "StaticFile[%d][%d]: read content:\n"
                          "```\n%s\n```",
-                          ss->conn_sock.GetFd(), stfile.file.GetFd(), file_part.c_str());
+                          ss->ConnectionSock.GetFd(), stfile.File.GetFd(), file_part.c_str());
 
     if (file_part.empty()) {
         __OnStaticFileReadEnd(ss);
     } else {
-        ss->http_writer.Write(file_part);
+        ss->ResponseWriter.Write(file_part);
     }
 }
 
 void  HttpServer::__OnStaticFileReadError(SessionCtx* ss) {
-    StaticFile& stfile = ss->__link_stfile;
-    error(__system_log, "StaticFile[%d][%d]: file IO error, sending response 500",
-                          ss->conn_sock.GetFd(), stfile.file.GetFd());
+    StaticFile& stfile = ss->StatfilePtr;
+    error(SystemLog_, "StaticFile[%d][%d]: file IO error, sending response 500",
+                          ss->ConnectionSock.GetFd(), stfile.File.GetFd());
     __RemoveStaticFileCtx(ss);
-    ss->res_code = 500;
+    ss->ResponseCode = 500;
     __OnHttpError(ss);
 }
 
 void  HttpServer::__OnStaticFileReadEnd(SessionCtx* ss) {
-    StaticFile& stfile = ss->__link_stfile;
-    info(__system_log, "StaticFile[%d][%d]: nothing to read, file closed, preparing HTTP response",
-                        ss->conn_sock.GetFd(), stfile.file.GetFd());
+    StaticFile& stfile = ss->StatfilePtr;
+    info(SystemLog_, "StaticFile[%d][%d]: nothing to read, file closed, preparing HTTP response",
+                        ss->ConnectionSock.GetFd(), stfile.File.GetFd());
     __RemoveStaticFileCtx(ss);
     __OnHttpResponse(ss);
 }
@@ -67,33 +67,33 @@ void  HttpServer::__OnStaticFileReadEnd(SessionCtx* ss) {
 /// Events
 class HttpServer::EvStaticFileRead : public Event::IEvent {
  private:
-    HttpServer* __server;
-    SessionCtx* __session;
+    HttpServer* Server_;
+    SessionCtx* SessionCtx_;
 
  public:
     EvStaticFileRead(HttpServer *srv, SessionCtx* ss)
-    : __server(srv)
-    , __session(ss) {
+    : Server_(srv)
+    , SessionCtx_(ss) {
     }
 
     void  Handle() {
-        __server->__OnStaticFileRead(__session);
+        Server_->__OnStaticFileRead(SessionCtx_);
     }
 };
 
 class HttpServer::EvStaticFileReadError : public Event::IEvent {
  private:
-    HttpServer* __server;
-    SessionCtx* __session;
+    HttpServer* Server_;
+    SessionCtx* SessionCtx_;
 
  public:
     EvStaticFileReadError(HttpServer *srv, SessionCtx* ss)
-    : __server(srv)
-    , __session(ss) {
+    : Server_(srv)
+    , SessionCtx_(ss) {
     }
 
     void  Handle() {
-        __server->__OnStaticFileReadError(__session);
+        Server_->__OnStaticFileReadError(SessionCtx_);
     }
 };
 

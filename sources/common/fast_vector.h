@@ -24,14 +24,14 @@ class vector : public ::std::vector<T> {
 
  private:
     inline static
-    void __fast_swap_elements(pointer el1, pointer el2) {
+    void __FastSwapElems(pointer el1, pointer el2) {
         static const size_t VALUE_SIZE = sizeof(value_type);
-        uint8_t tmp_mem[VALUE_SIZE];  // ignore
+        uint8_t tmpBuff[VALUE_SIZE];  // ignore
 
         if (el1 != el2) {
-            ::memmove(tmp_mem, el1, VALUE_SIZE);
+            ::memmove(tmpBuff, el1, VALUE_SIZE);
             ::memmove(el1, el2, VALUE_SIZE);
-            ::memmove(el2, tmp_mem, VALUE_SIZE);
+            ::memmove(el2, tmpBuff, VALUE_SIZE);
         }
     }
 
@@ -41,7 +41,7 @@ class vector : public ::std::vector<T> {
         pointer p = position.base();
         pointer last = this->end().base() - 1;
 
-        __fast_swap_elements(p, last);
+        __FastSwapElems(p, last);
         this->pop_back();
         return position;
     }

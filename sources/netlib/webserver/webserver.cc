@@ -4,17 +4,17 @@
 namespace Webserver {
 
 void  HttpServer::SetSystemLogger(Log::Logger* logger) {
-    __system_log = logger;
+    SystemLog_ = logger;
 }
 
 void  HttpServer::AddVritualServer(const IO::SockInfo& si, const VirtualServer& vs) {
-    VirtualServerMap::iterator vit = __vservers_map.begin();
-    for (;vit != __vservers_map.end(); ++vit) {
-        fd_t lfd = vit->first;
+    VirtualServerMap::iterator vit = VirtualServers_.begin();
+    for (;vit != VirtualServers_.end(); ++vit) {
+        Fd lfd = vit->first;
 
-        if (__listeners_map[lfd].GetSockInfo() == si) {
+        if (Listeners_[lfd].GetSockInfo() == si) {
             // listener already exists
-            __vservers_map.insert(std::make_pair(lfd, vs));
+            VirtualServers_.insert(std::make_pair(lfd, vs));
             return;
         }
     }
@@ -23,60 +23,60 @@ void  HttpServer::AddVritualServer(const IO::SockInfo& si, const VirtualServer& 
     Error err;
     IO::Socket sock = IO::Socket::CreateListenSocket(si, &err);
     if (err.IsError())
-        throw std::runtime_error("Socket creation failed: " + err.message);
+        throw std::runtime_error("Socket creation failed: " + err.Description);
 
-    __listeners_map[sock.GetFd()] = sock;
-    __poller.AddFd(sock.GetFd(), IO::Poller::POLL_READ);
-    __vservers_map.insert( std::make_pair(sock.GetFd(), vs) );
+    Listeners_[sock.GetFd()] = sock;
+    Poller_.AddFd(sock.GetFd(), IO::Poller::POLL_READ);
+    VirtualServers_.insert( std::make_pair(sock.GetFd(), vs) );
 }
 
-void  HttpServer::SetTimeout(u64 msec) {
-    __session_timeout = msec;
+void  HttpServer::SetTimeout(UInt64 msec) {
+    SessionTimeout_ = msec;
 }
 
 void  HttpServer::ServeForever() {
     signal(SIGPIPE, SIG_IGN);
-    __evloop.AddDefaultEvent(__SpawnPollerHook());
-    __evloop.AddDefaultEvent(__SpawnTimeoutHook());
-    __evloop.AddDefaultEvent(__SpawnCgiHook());
-    __evloop.Run();
+    EventLoop_.AddDefaultEvent(__SpawnPollerHook());
+    EventLoop_.AddDefaultEvent(__SpawnTimeoutHook());
+    EventLoop_.AddDefaultEvent(__SpawnCgiHook());
+    EventLoop_.Run();
 }
 
 
 
-Log::Logger::LogLvl ReadLoggerLvl(const std::string& lvl_token) {
-    if (lvl_token == "DEBUG")
+Log::Logger::LogLvl ReadLoggerLvl(const std::string& levelToken) {
+    if (levelToken == "DEBUG")
         return Log::Logger::DEBUG;
-    if (lvl_token == "CRITICAL")
+    if (levelToken == "CRITICAL")
         return Log::Logger::CRITICAL;
-    if (lvl_token == "WARNING")
+    if (levelToken == "WARNING")
         return Log::Logger::WARNING;
-    if (lvl_token == "INFO")
+    if (levelToken == "INFO")
         return Log::Logger::INFO;
-    if (lvl_token == "ERROR")
+    if (levelToken == "ERROR")
         return Log::Logger::ERROR;
     
-    throw std::runtime_error("Config: " + lvl_token + ": unknown logger lvl");
+    throw std::runtime_error("Config: " + levelToken + ": unknown logger lvl");
 }
 
 HttpServer::WebRedirect
-ReadRedirect(const std::string& redir_token) {
+ReadRedirect(const std::string& redirToken) {
     HttpServer::WebRedirect rd;
-    rd.enabled = true;
-    rd.code = 302;
+    rd.Enabled = true;
+    rd.Code = 302;
 
-    usize space = redir_token.find_first_of(" ");
+    USize space = redirToken.find_first_of(" ");
     
-    rd.location = redir_token.substr(0, space);
+    rd.Location = redirToken.substr(0, space);
     
     if (space != std::string::npos) {
-        usize code_begin = redir_token.find_first_not_of(" ", space);
-        usize code_end = redir_token.find_first_of(" ", code_begin);
+        USize code_begin = redirToken.find_first_not_of(" ", space);
+        USize code_end = redirToken.find_first_of(" ", code_begin);
 
-        rd.code = Convert<int>(redir_token.substr(code_begin, code_end - code_begin));
+        rd.Code = Convert<int>(redirToken.substr(code_begin, code_end - code_begin));
     }
 
-    if (Trim(rd.location, ' ').empty())
+    if (Trim(rd.Location, ' ').empty())
         throw std::runtime_error("Config: redirect location cant be empty");
 
     return rd;
@@ -105,26 +105,26 @@ bool ReadYes(const std::string& str) {
 }
 
 IO::SockInfo ReadListen(const std::string& str) {
-    usize port_d = str.find_first_of(":");
+    USize portD = str.find_first_of(":");
 
-    if (port_d == std::string::npos || port_d + 1 > str.length())
+    if (portD == std::string::npos || portD + 1 > str.length())
         throw std::runtime_error("Config: Invalid listen field format: must be `D.D.D.D:P`");
 
-    const std::string ipaddr_str = str.substr(0, port_d);
-    const std::string port_str = str.substr(port_d + 1);
+    const std::string ipaddr_str = str.substr(0, portD);
+    const std::string port_str = str.substr(portD + 1);
 
-    IO::SockInfo si(ipaddr_str, Convert<u16>(port_str));
+    IO::SockInfo si(ipaddr_str, Convert<UInt16>(port_str));
 
-    if (si.addr_BE == INADDR_NONE)
+    if (si.Addr_BE == INADDR_NONE)
         throw std::runtime_error("Config: Bad ipv4 address");
 
     return si;
 }
 
-HttpServer::VirtualServer::Hostnames
+HttpServer::VirtualServer::HostnameList
 ReadHostnames(const std::string& str) {
 
-    HttpServer::VirtualServer::Hostnames hstn;
+    HttpServer::VirtualServer::HostnameList hstn;
 
     Tokenizator tkz(str);
     bool run = true;
@@ -140,36 +140,36 @@ ReadHostnames(const std::string& str) {
 
 void  HttpServer::Config(const Config::Category& cat, Cgi::Envs evs) {
 
-    __envs = evs;
+    Envs_ = evs;
 
     /// GLOBAL configs
-    usize           GLOBAL_max_body = 10000; // 10 KB
-    u64             GLOBAL_timeout = 10000; // 10 seconds
-    std::string     GLOBAL_cwd = "./";
-    std::string     GLOBAL_logger_key;
+    USize           gMaxBody = 10000; // 10 KB
+    UInt64          gTimeout = 10000; // 10 seconds
+    std::string     gCwd = "./";
+    std::string     gLoggerKey;
     {
         if (cat.HasCategory("GLOBAL")) {
-            const Config::Category& global_cat = cat.GetSubcategoryRef("GLOBAL");
+            const Config::Category& globalCtg = cat.GetSubcategoryRef("GLOBAL");
 
-            if (global_cat.HasField("cwd"))      GLOBAL_cwd = global_cat.GetFieldValue("cwd");
-            if (global_cat.HasField("timeout"))  GLOBAL_timeout = Convert<u64>(global_cat.GetFieldValue("timeout"));
-            if (global_cat.HasField("max_body")) GLOBAL_max_body = Convert<u64>(global_cat.GetFieldValue("max_body"));
-            if (global_cat.HasField("logger"))   GLOBAL_logger_key = global_cat.GetFieldValue("logger");
+            if (globalCtg.HasField("cwd"))      gCwd = globalCtg.GetFieldValue("cwd");
+            if (globalCtg.HasField("timeout"))  gTimeout = Convert<UInt64>(globalCtg.GetFieldValue("timeout"));
+            if (globalCtg.HasField("max_body")) gMaxBody = Convert<UInt64>(globalCtg.GetFieldValue("max_body"));
+            if (globalCtg.HasField("logger"))   gLoggerKey = globalCtg.GetFieldValue("logger");
         }
 
-        if (GLOBAL_logger_key.empty())
+        if (gLoggerKey.empty())
             throw std::runtime_error("config: specify logger key");
-        if (chdir(GLOBAL_cwd.c_str()))
+        if (chdir(gCwd.c_str()))
             throw std::runtime_error("config: cwd - failed");
 
-        __session_timeout = GLOBAL_timeout;
-        __max_body_size = GLOBAL_max_body;
+        SessionTimeout_ = gTimeout;
+        MaxBodySize_ = gMaxBody;
     }
 
-    SetTimeout(GLOBAL_timeout);
+    SetTimeout(gTimeout);
 
     /// MIMES configs
-    Mime::MimeTypesMap MIMES_map;
+    Mime::MimeTypesMap mimesMap;
     {
         if (cat.HasCategory("MIMES")) {
             const Config::Category& mimes_cat = cat.GetSubcategoryRef("MIMES");
@@ -179,13 +179,13 @@ void  HttpServer::Config(const Config::Category& cat, Cgi::Envs evs) {
             Config::Category::FieldsConstIter it2 = itrange.second;
 
             for (;it1 != it2; ++it1) {
-                MIMES_map[it1->first] = it1->second;
+                mimesMap[it1->first] = it1->second;
             }
         }
     }
 
     /// MIMES configs
-    std::map< std::string, std::string>  CGI_driver_map;
+    std::map< std::string, std::string>  cgiDrivers;
     {
         if (cat.HasCategory("CGI")) {
             const Config::Category& cgi_cat = cat.GetSubcategoryRef("CGI");
@@ -195,14 +195,14 @@ void  HttpServer::Config(const Config::Category& cat, Cgi::Envs evs) {
             Config::Category::FieldsConstIter it2 = itrange.second;
 
             for (;it1 != it2; ++it1) {
-                CGI_driver_map[it1->first] = it1->second;
+                cgiDrivers[it1->first] = it1->second;
             }
         }
 
-        __cgi_drivers = CGI_driver_map;
+        CgiDrivers_ = cgiDrivers;
     }
 
-    HttpServer::ErrpageMap ERRORS_map;
+    HttpServer::ErrpageMap errorPages;
     {
         if (cat.HasCategory("ERRORS")) {
             const Config::Category& errs_cat = cat.GetSubcategoryRef("ERRORS");
@@ -212,42 +212,42 @@ void  HttpServer::Config(const Config::Category& cat, Cgi::Envs evs) {
             Config::Category::FieldsConstIter it2 = itrange.second;
 
             for (;it1 != it2; ++it1) {
-                ERRORS_map[Convert<int>(it1->first)] = it1->second;
+                errorPages[Convert<int>(it1->first)] = it1->second;
             }
         }
     }
 
     /// LOGGERS registry
-    std::map<std::string, Log::Logger> LOGGERS_registry;
+    std::map<std::string, Log::Logger> loggers;
     {
         if (cat.HasCategory("LOGGERS")) {
-            const Config::Category& loggers_cat = cat.GetSubcategoryRef("LOGGERS");
+            const Config::Category& loggerCtg = cat.GetSubcategoryRef("LOGGERS");
 
-            Config::Category::SubcategoryConstRange itrange = loggers_cat.GetSubcatoryIterRange();
+            Config::Category::SubcategoryConstRange itrange = loggerCtg.GetSubcatoryIterRange();
             Config::Category::SubcategoryConstIter  it1 = itrange.first;
             Config::Category::SubcategoryConstIter  it2 = itrange.second;
 
             for (; it1 != it2; ++it1) {
-                const Config::Category& logger_cat = it1->second;
+                const Config::Category& loggerCtg = it1->second;
 
                 Log::Logger::LogLvl lvl = Log::Logger::INFO;
                 std::string path = "/dev/stdout";
 
-                if (logger_cat.HasField("path"))    path = logger_cat.GetFieldValue("path");
-                if (logger_cat.HasField("lvl"))     lvl = ReadLoggerLvl(logger_cat.GetFieldValue("lvl"));
+                if (loggerCtg.HasField("path"))    path = loggerCtg.GetFieldValue("path");
+                if (loggerCtg.HasField("lvl"))     lvl = ReadLoggerLvl(loggerCtg.GetFieldValue("lvl"));
 
-                LOGGERS_registry[it1->first] = Log::Logger(lvl, path.c_str());
+                loggers[it1->first] = Log::Logger(lvl, path.c_str());
             }
         }
     }
 
-    if (LOGGERS_registry.count(GLOBAL_logger_key) <= 0)
-        throw std::runtime_error("Config: " + GLOBAL_logger_key + ": no such logger");
-    LOGGERS_registry[GLOBAL_logger_key].Open();
-    SetSystemLogger(&LOGGERS_registry[GLOBAL_logger_key]);
+    if (loggers.count(gLoggerKey) <= 0)
+        throw std::runtime_error("Config: " + gLoggerKey + ": no such logger");
+    loggers[gLoggerKey].Open();
+    SetSystemLogger(&loggers[gLoggerKey]);
 
     /// ROUTES registry
-    std::map<std::string, WebRoute> ROUTES_registry;
+    std::map<std::string, WebRoute> webRoutes;
     {
         if (cat.HasCategory("ROUTES")) {
             const Config::Category& routes_cat = cat.GetSubcategoryRef("ROUTES");
@@ -257,7 +257,7 @@ void  HttpServer::Config(const Config::Category& cat, Cgi::Envs evs) {
             Config::Category::SubcategoryConstIter  it2 = itrange.second;
 
             for (; it1 != it2; ++it1) {
-                std::string errmsg_pre = "Config: Route \"" + it1->first + "\": ";
+                std::string errMsgPre = "Config: Route \"" + it1->first + "\": ";
 
                 std::string location;  // required
                 std::string root;  // required
@@ -268,46 +268,46 @@ void  HttpServer::Config(const Config::Category& cat, Cgi::Envs evs) {
                 std::string index_page = "";
 
                 // redirection handling
-                WebRedirect redirect = {.enabled = false, .location = "", .code = 302};
+                WebRedirect redirect = {.Enabled = false, .Location = "", .Code = 302};
 
-                MethodSet   allowed_methods;
+                MethodSet   allowedMethods;
 
                 /// parsing
-                const Config::Category& route_cat = it1->second;
+                const Config::Category& routeCtg = it1->second;
 
-                if (route_cat.HasField("location"))
-                    location = route_cat.GetFieldValue("location");
+                if (routeCtg.HasField("location"))
+                    location = routeCtg.GetFieldValue("location");
                 else
-                    throw std::runtime_error(errmsg_pre + "location field is required");
+                    throw std::runtime_error(errMsgPre + "location field is required");
 
-                if (route_cat.HasField("redirect")) {
-                    redirect = ReadRedirect(route_cat.GetFieldValue("redirect"));
+                if (routeCtg.HasField("redirect")) {
+                    redirect = ReadRedirect(routeCtg.GetFieldValue("redirect"));
                 } else {
-                    if (route_cat.HasField("root"))
-                        root = route_cat.GetFieldValue("root");
+                    if (routeCtg.HasField("root"))
+                        root = routeCtg.GetFieldValue("root");
                     else
-                        throw std::runtime_error(errmsg_pre + "root field is required");
+                        throw std::runtime_error(errMsgPre + "root field is required");
 
-                    if (route_cat.HasField("allowed_methods"))
-                        allowed_methods = ReadAllowedMethods(route_cat.GetFieldValue("allowed_methods"));
+                    if (routeCtg.HasField("allowed_methods"))
+                        allowedMethods = ReadAllowedMethods(routeCtg.GetFieldValue("allowed_methods"));
                     else
-                        throw std::runtime_error(errmsg_pre + "allowed_methods field is required");
+                        throw std::runtime_error(errMsgPre + "allowed_methods field is required");
 
-                    if (route_cat.HasField("index"))         index_page = route_cat.GetFieldValue("index");
-                    if (route_cat.HasField("listing"))       listing_enabled = ReadYes(route_cat.GetFieldValue("listing"));
-                    if (route_cat.HasField("upload"))        upload_enabled = ReadYes(route_cat.GetFieldValue("upload"));
-                    if (route_cat.HasField("cgi"))           cgi_enabled = ReadYes(route_cat.GetFieldValue("cgi"));
+                    if (routeCtg.HasField("index"))         index_page = routeCtg.GetFieldValue("index");
+                    if (routeCtg.HasField("listing"))       listing_enabled = ReadYes(routeCtg.GetFieldValue("listing"));
+                    if (routeCtg.HasField("upload"))        upload_enabled = ReadYes(routeCtg.GetFieldValue("upload"));
+                    if (routeCtg.HasField("cgi"))           cgi_enabled = ReadYes(routeCtg.GetFieldValue("cgi"));
                 }
 
-                ROUTES_registry[it1->first] = (WebRoute){
-                    .pattern = location,
-                    .root_directory = root,
-                    .index_page = index_page,
-                    .reditect = redirect,
-                    .allowed_methods = allowed_methods,
-                    .cgi_enabled = cgi_enabled,
-                    .upload_enabled = upload_enabled,
-                    .listing_enabled = listing_enabled,
+                webRoutes[it1->first] = (WebRoute){
+                    .Pattern = location,
+                    .RootDir = root,
+                    .IndexPage = index_page,
+                    .Redirect = redirect,
+                    .AllowedMethods = allowedMethods,
+                    .CgiEnabled = cgi_enabled,
+                    .UploadEnabled = upload_enabled,
+                    .ListingEnabled = listing_enabled,
                 };
             }
 
@@ -316,70 +316,70 @@ void  HttpServer::Config(const Config::Category& cat, Cgi::Envs evs) {
 
     /// SERVERS registry
     {
-        bool one_server_flag = false;
+        bool oneServerFlag = false;
         if (cat.HasCategory("SERVERS")) {
-            const Config::Category& servers_cat = cat.GetSubcategoryRef("SERVERS");
+            const Config::Category& serversCtg = cat.GetSubcategoryRef("SERVERS");
 
-            Config::Category::SubcategoryConstRange itrange = servers_cat.GetSubcatoryIterRange();
+            Config::Category::SubcategoryConstRange itrange = serversCtg.GetSubcatoryIterRange();
             Config::Category::SubcategoryConstIter  it1 = itrange.first;
             Config::Category::SubcategoryConstIter  it2 = itrange.second;
 
             for (;it1 != it2; ++it1) {
-                one_server_flag = true;
+                oneServerFlag = true;
 
-                std::string errmsg_pre = "Config: Server \"" + it1->first + "\": ";
-                const Config::Category&  server_cat = it1->second;
+                std::string errorMsgPre = "Config: Server \"" + it1->first + "\": ";
+                const Config::Category&  serverCtg = it1->second;
 
                 VirtualServer               vs;
                 IO::SockInfo                si;
 
-                if (server_cat.HasField("listen"))
-                    si = ReadListen(server_cat.GetFieldValue("listen"));
+                if (serverCtg.HasField("listen"))
+                    si = ReadListen(serverCtg.GetFieldValue("listen"));
                 else
-                    throw std::runtime_error(errmsg_pre + "listen field is required");
+                    throw std::runtime_error(errorMsgPre + "listen field is required");
 
-                if (server_cat.HasField("names"))
-                    vs.hostnames = ReadHostnames(server_cat.GetFieldValue("names"));
+                if (serverCtg.HasField("names"))
+                    vs.Hostnames = ReadHostnames(serverCtg.GetFieldValue("names"));
                 else
-                    throw std::runtime_error(errmsg_pre + "names field is required");
+                    throw std::runtime_error(errorMsgPre + "names field is required");
 
-                if (server_cat.HasField("routes")) {
-                    std::string routes_str = server_cat.GetFieldValue("routes");
+                if (serverCtg.HasField("routes")) {
+                    std::string webRoutesStr = serverCtg.GetFieldValue("routes");
 
-                    Tokenizator tkz(routes_str);
+                    Tokenizator tkz(webRoutesStr);
                     bool run = true;
                     std::string token;
 
                     while (token = tkz.Next(" \t", &run), run) {
-                        if (ROUTES_registry.count(token) <= 0)
-                            throw std::runtime_error(errmsg_pre + token + ": no such route");
-                        vs.routes.push_back(ROUTES_registry[token]);
+                        if (webRoutes.count(token) <= 0)
+                            throw std::runtime_error(errorMsgPre + token + ": no such route");
+                        vs.Routes.push_back(webRoutes[token]);
                     }
                 }
 
-                if (server_cat.HasField("access_log")) {
-                    std::string logger_key = server_cat.GetFieldValue("access_log");
-                    if (LOGGERS_registry.count(logger_key) <= 0)
-                        throw std::runtime_error(errmsg_pre + logger_key + ": no such logger");
-                    LOGGERS_registry[logger_key].Open();
-                    vs.access_log = &LOGGERS_registry[logger_key];
+                if (serverCtg.HasField("access_log")) {
+                    std::string loggerKey = serverCtg.GetFieldValue("access_log");
+                    if (loggers.count(loggerKey) <= 0)
+                        throw std::runtime_error(errorMsgPre + loggerKey + ": no such logger");
+                    loggers[loggerKey].Open();
+                    vs.AccessLog = &loggers[loggerKey];
                 }
 
-                if (server_cat.HasField("error_log")) {
-                    std::string logger_key = server_cat.GetFieldValue("error_log");
-                    if (LOGGERS_registry.count(logger_key) <= 0)
-                        throw std::runtime_error(errmsg_pre + logger_key + ": no such logger");
-                    LOGGERS_registry[logger_key].Open();
-                    vs.error_log = &LOGGERS_registry[logger_key];
+                if (serverCtg.HasField("error_log")) {
+                    std::string loggerKey = serverCtg.GetFieldValue("error_log");
+                    if (loggers.count(loggerKey) <= 0)
+                        throw std::runtime_error(errorMsgPre + loggerKey + ": no such logger");
+                    loggers[loggerKey].Open();
+                    vs.ErrorLog = &loggers[loggerKey];
                 }
 
-                vs.mime_map = MIMES_map;
-                vs.errpages = ERRORS_map;
+                vs.MimeMap = mimesMap;
+                vs.ErrorPages = errorPages;
                 AddVritualServer(si, vs);
             }
         }
         
-        if (one_server_flag == false) {
+        if (oneServerFlag == false) {
             throw std::runtime_error("Config: at least one server must be specified");
         }
     }

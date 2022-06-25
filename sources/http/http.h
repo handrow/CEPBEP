@@ -21,7 +21,7 @@ enum ProtocolVersion {
     HTTP_1_1,
 };
 
-ProtocolVersion ProtocolVersionFromString(const std::string& version_str);
+ProtocolVersion ProtocolVersionFromString(const std::string& versionStr);
 std::string     ProtocolVersionToString(const ProtocolVersion& ver);
 
 
@@ -33,7 +33,7 @@ enum Method {
     METHODS_NUM
 };
 
-Method          MethodFromString(const std::string& method_str);
+Method          MethodFromString(const std::string& methodStr);
 std::string     MethodToString(const Method& method);
 
 struct Headers {
@@ -42,11 +42,11 @@ struct Headers {
     typedef HeaderMap::value_type                                   HeaderPair;
 
  private:
-    HeaderMap       __map;
+    HeaderMap       Map_;
 
  public:
     /// HELPER FUNCTIONS
-    static usize    GetContentLength(const Headers& hdrs);
+    static USize    GetContentLength(const Headers& hdrs);
     static bool     IsContentLengthed(const Headers& hdrs);
     static bool     IsChunkedEncoding(const Headers& hdrs);
     static std::string CurrentDate();
@@ -66,21 +66,21 @@ struct Headers {
 };
 
 struct Request {
-    ProtocolVersion version;
-    URI             uri;
-    Method          method;
-    Headers         headers;
-    std::string     body;
+    ProtocolVersion Version;
+    URI             Uri;
+    Method          Method;
+    Headers         Headers;
+    std::string     Body;
 
     std::string     ToString() const;
 };
 
 struct Response {
-    ProtocolVersion version;
-    int             code;
-    std::string     code_message;
-    Headers         headers;
-    std::string     body;
+    ProtocolVersion Version;
+    int             Code;
+    std::string     CodeMessage;
+    Headers         Headers;
+    std::string     Body;
 
     std::string     ToString() const;
 };

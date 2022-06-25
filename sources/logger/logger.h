@@ -46,14 +46,14 @@ class Logger {
     void Send(LogLvl lvl, const char* str, ...);
 
     void Open() {
-        __fout = fopen(__path.c_str(), "w");
-        if (!__fout)
+        OutStream_ = fopen(Path_.c_str(), "w");
+        if (!OutStream_)
             throw std::runtime_error("fopen() failed");
     }
 
     void Close() {
-        if (__fout)
-            fclose(__fout);
+        if (OutStream_)
+            fclose(OutStream_);
     }
 
  protected:
@@ -64,9 +64,9 @@ class Logger {
     static const char* LVL_TO_STR[];
     static const size_t SIZE_OF_DATE_STR;
 
-    LogLvl __min_log_lvl;
-    std::string __path;
-    FILE* __fout;
+    LogLvl LogLevel_;
+    std::string Path_;
+    FILE* OutStream_;
 };
 
 }  // namespace ft

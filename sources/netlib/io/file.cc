@@ -2,52 +2,52 @@
 
 namespace IO {
 
-File::File(fd_t fd): __fd(fd) {
+File::File(Fd fd): Fd_(fd) {
 }
 
 void    File::AddFileFlag(int flag, Error* err) {
-    int flags = fcntl(__fd, F_GETFL);
+    int flags = fcntl(Fd_, F_GETFL);
     if (flags < 0)
         *err = SystemError(errno);
-    else if (fcntl(__fd, F_SETFL, flags | flag) < 0)
+    else if (fcntl(Fd_, F_SETFL, flags | flag) < 0)
         *err = SystemError(errno);
 }
 
 void    File::Close() {
-    close(__fd);
+    close(Fd_);
 }
 
-fd_t    File::GetFd() {
-    return __fd;
+Fd    File::GetFd() {
+    return Fd_;
 }
 
-std::string File::Read(usize nbytes, Error* err) {
-    isize rc;
+std::string File::Read(USize nbytes, Error* err) {
+    ISize rc;
     std::string s;
 
     s.resize(nbytes);
 
-    rc = read(__fd, const_cast<char*>(s.data()), nbytes);
+    rc = read(Fd_, const_cast<char*>(s.data()), nbytes);
     if (rc < 0)
-        safe_pointer_assign(err, Error(NET_SYSTEM_ERR, "Syscall error: read"));
+        AssignPtrSafely(err, Error(NET_SYSTEM_ERR, "Syscall error: read"));
     else
         s.resize(rc);
     return s;
 }
 
-isize   File::Write(const std::string& s, Error* err) {
-    isize rc = write(__fd, const_cast<char*>(s.data()), s.size());
+ISize   File::Write(const std::string& s, Error* err) {
+    ISize rc = write(Fd_, const_cast<char*>(s.data()), s.size());
 
     if (rc < 0)
-        safe_pointer_assign(err, Error(NET_SYSTEM_ERR, "Syscall error: write"));
+        AssignPtrSafely(err, Error(NET_SYSTEM_ERR, "Syscall error: write"));
     return rc;
 }
 
 IO::File  File::OpenFile(const std::string& path, int oflags, Error* err) {
     IO::File    file;
 
-    file.__fd = open(path.c_str(), oflags, 0644);
-    if (file.__fd < 0) {
+    file.Fd_ = open(path.c_str(), oflags, 0644);
+    if (file.Fd_ < 0) {
         *err = SystemError(errno);
     }
     return file;

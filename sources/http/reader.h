@@ -21,7 +21,7 @@ enum  ReaderErrorCodes {
 
 namespace __CommonHelpers {
 
-usize       IsWhiteSpace(const std::string& s, usize i);
+USize       IsWhiteSpace(const std::string& s, USize i);
 bool        IsSeparator(char sym);
 bool        IsValidHdrKey(char sym);
 bool        IsValidHdrValue(char sym);
@@ -41,7 +41,7 @@ Error  ParseRequestLine(const std::string& buff, Method* mtd, URI* uri, Protocol
 Error  ParseHeaders(const std::string& buff, Headers* hdrs);
 
 // VALID: *(HEX) (CRLF)
-Error  ParseChunkSize(const std::string& buff, usize* chunk_size);
+Error  ParseChunkSize(const std::string& buff, USize* chunk_size);
 Error  ParseCgiStatus(const Headers& hdrs, ProtocolVersion* ver, int* rcode, std::string* phrase);
 
 }  // namespace __CommonParsers
@@ -66,12 +66,12 @@ class RequestReader {
         STT_ERROR_OCCURED,  // makes self-pause
     };
 
-    usize           __i;
-    Error           __err;
-    State           __state;
-    Request         __req_data;
-    usize           __chunk_size;
-    std::string     __buffer;
+    USize           I_;
+    Error           Error_;
+    State           State_;
+    Request         Result_;
+    USize           ChunkSize_;
+    std::string     Buffer_;
 
  private:
     static bool     __IsMetaState(State stt);
@@ -130,12 +130,12 @@ class ResponseReader {
         STT_ERROR_OCCURED,  // makes self-pause
     };
 
-    usize           __i;
-    Error           __err;
-    State           __state;
-    Response        __res_data;
-    usize           __chunk_size;
-    std::string     __buffer;
+    USize           I_;
+    Error           Error_;
+    State           State_;
+    Response        Result_;
+    USize           ChunkSize_;
+    std::string     Buffer_;
 
  private:
     static bool     __IsMetaState(State stt);

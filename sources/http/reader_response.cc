@@ -7,239 +7,239 @@ using namespace __CommonParsers;
 
 ResponseReader::State
 ResponseReader::STT_SkipEmptyLines(bool*) {
-    State next_state = STT_SKIP_EMPTY_LINES;
+    State nextState = STT_SKIP_EMPTY_LINES;
 
-    if (__buffer[__i] == '\n') {
-        __i += 1;
-    } else if (__buffer[__i] == '\r') {
-        next_state = STT_SKIP_CRLF_EMPTY_LINES;
-        __i += 1;
+    if (Buffer_[I_] == '\n') {
+        I_ += 1;
+    } else if (Buffer_[I_] == '\r') {
+        nextState = STT_SKIP_CRLF_EMPTY_LINES;
+        I_ += 1;
     } else {
-        next_state = STT_BUFF_RES_LINE;
+        nextState = STT_BUFF_RES_LINE;
         __FlushParsedBuffer();
     }
-    return next_state;
+    return nextState;
 }
 
 ResponseReader::State
 ResponseReader::STT_SkipCrlfEmptyLines(bool*) {
-    State next_state;
+    State nextState;
 
-    if (__buffer[__i] == '\n') {
-        next_state = STT_SKIP_EMPTY_LINES;
-        __i += 1;
+    if (Buffer_[I_] == '\n') {
+        nextState = STT_SKIP_EMPTY_LINES;
+        I_ += 1;
     } else {
-        next_state = STT_BUFF_RES_LINE;
+        nextState = STT_BUFF_RES_LINE;
         __FlushParsedBuffer();
     }
 
-    return next_state;
+    return nextState;
 }
 
 ResponseReader::State
 ResponseReader::STT_BuffResLine(bool*) {
-    State next_state = STT_BUFF_RES_LINE;
+    State nextState = STT_BUFF_RES_LINE;
 
-    if (__buffer[__i] == '\n') {
-        next_state = STT_PARSE_RES_LINE;
+    if (Buffer_[I_] == '\n') {
+        nextState = STT_PARSE_RES_LINE;
     }
-    __i += 1;
+    I_ += 1;
 
-    return next_state;
+    return nextState;
 }
 
 ResponseReader::State
 ResponseReader::STT_ParseResLine(bool* run) {
-    State next_state = STT_BUFF_HEADERS;
-    __err = ParseResponseLine(__GetParsedBuffer(),
-                            &__res_data.version,
-                            &__res_data.code,
-                            &__res_data.code_message);
+    State nextState = STT_BUFF_HEADERS;
+    Error_ = ParseResponseLine(__GetParsedBuffer(),
+                            &Result_.Version,
+                            &Result_.Code,
+                            &Result_.CodeMessage);
     __FlushParsedBuffer();
-    if (__err.IsError()) {
-        next_state = STT_ERROR_OCCURED;
+    if (Error_.IsError()) {
+        nextState = STT_ERROR_OCCURED;
         *run = false;
     }
 
-    return next_state;
+    return nextState;
 }
 
 ResponseReader::State
 ResponseReader::STT_BuffHeaders(bool*) {
-    State next_state = STT_BUFF_HEADER_PAIR;
+    State nextState = STT_BUFF_HEADER_PAIR;
 
-    if (__buffer[__i] == '\n') {
-        next_state = STT_PARSE_HEADERS;
-        __i += 1;
-    } else if (__buffer[__i] == '\r') {
-        next_state = STT_BUFF_HEADERS;
-        __i += 1;
+    if (Buffer_[I_] == '\n') {
+        nextState = STT_PARSE_HEADERS;
+        I_ += 1;
+    } else if (Buffer_[I_] == '\r') {
+        nextState = STT_BUFF_HEADERS;
+        I_ += 1;
     }
 
-    return next_state;
+    return nextState;
 }
 
 ResponseReader::State
 ResponseReader::STT_BuffHeaderPair(bool*) {
-    State next_state = STT_BUFF_HEADER_PAIR;
+    State nextState = STT_BUFF_HEADER_PAIR;
 
-    if (__buffer[__i] == '\n') {
-        next_state = STT_BUFF_HEADERS;
+    if (Buffer_[I_] == '\n') {
+        nextState = STT_BUFF_HEADERS;
     }
-    __i += 1;
+    I_ += 1;
 
-    return next_state;
+    return nextState;
 }
 
 ResponseReader::State
 ResponseReader::STT_ParseHeaders(bool* run) {
-    State next_state;
+    State nextState;
 
-    __err = ParseHeaders(__GetParsedBuffer(), &__res_data.headers);
+    Error_ = ParseHeaders(__GetParsedBuffer(), &Result_.Headers);
     __FlushParsedBuffer();
 
-    if (__err.IsError()) {
-        next_state = STT_ERROR_OCCURED;
+    if (Error_.IsError()) {
+        nextState = STT_ERROR_OCCURED;
         *run = false;
-    } else if (Headers::IsChunkedEncoding(__res_data.headers)) {
-        next_state = STT_BUFF_CHUNK_SIZE;
-    } else if (Headers::GetContentLength(__res_data.headers) > 0) {
-        next_state = STT_READ_BODY_CONTENT_LENGTH;
+    } else if (Headers::IsChunkedEncoding(Result_.Headers)) {
+        nextState = STT_BUFF_CHUNK_SIZE;
+    } else if (Headers::GetContentLength(Result_.Headers) > 0) {
+        nextState = STT_READ_BODY_CONTENT_LENGTH;
     } else {
-        next_state = STT_HAVE_MESSAGE;
+        nextState = STT_HAVE_MESSAGE;
         *run = false;
     }
 
-    return next_state;
+    return nextState;
 }
 
 ResponseReader::State
 ResponseReader::STT_BuffChunkSize(bool*) {
-    State next_state = STT_BUFF_CHUNK_SIZE;
+    State nextState = STT_BUFF_CHUNK_SIZE;
 
-    if (__buffer[__i] == '\n') {
-        next_state = STT_PARSE_CHUNK_SIZE;
+    if (Buffer_[I_] == '\n') {
+        nextState = STT_PARSE_CHUNK_SIZE;
     }
-    __i += 1;
+    I_ += 1;
 
-    return next_state;
+    return nextState;
 }
 
 ResponseReader::State
 ResponseReader::STT_ParseChunkSize(bool* run) {
-    State next_state = STT_READ_CHUNK_DATA;
-    __err = ParseChunkSize(__GetParsedBuffer(),
-                          &__chunk_size);
+    State nextState = STT_READ_CHUNK_DATA;
+    Error_ = ParseChunkSize(__GetParsedBuffer(),
+                          &ChunkSize_);
     __FlushParsedBuffer();
 
-    if (__err.IsError()) {
-        next_state = STT_ERROR_OCCURED;
+    if (Error_.IsError()) {
+        nextState = STT_ERROR_OCCURED;
         *run = false;
     }
 
-    return next_state;
+    return nextState;
 }
 
 ResponseReader::State
 ResponseReader::STT_ReadChunkData(bool* run) {
-    State next_state = STT_READ_CHUNK_DATA;
+    State nextState = STT_READ_CHUNK_DATA;
 
-    if (__buffer.size() >= __chunk_size) {
-        next_state = STT_SKIP_CRLF_CHUNK_DATA;
-        __i = __chunk_size;
-        __res_data.body += __GetParsedBuffer();
+    if (Buffer_.size() >= ChunkSize_) {
+        nextState = STT_SKIP_CRLF_CHUNK_DATA;
+        I_ = ChunkSize_;
+        Result_.Body += __GetParsedBuffer();
         __FlushParsedBuffer();
     } else {
         *run = false;
     }
 
-    return next_state;
+    return nextState;
 }
 
 ResponseReader::State
 ResponseReader::STT_SkipCrlfChunkData(bool* run) {
-    State next_state = STT_SKIP_CRLF_CHUNK_DATA;
+    State nextState = STT_SKIP_CRLF_CHUNK_DATA;
 
-    if (__buffer.substr(0, 2) == "\r\n") {
-        next_state = (__chunk_size == 0) ? STT_HAVE_MESSAGE
+    if (Buffer_.substr(0, 2) == "\r\n") {
+        nextState = (ChunkSize_ == 0) ? STT_HAVE_MESSAGE
                                          : STT_BUFF_CHUNK_SIZE;
-        __i += 2;
+        I_ += 2;
         __FlushParsedBuffer();
-    } else if (__buffer.substr(0, 1) == "\n") {
-        next_state = (__chunk_size == 0) ? STT_HAVE_MESSAGE
+    } else if (Buffer_.substr(0, 1) == "\n") {
+        nextState = (ChunkSize_ == 0) ? STT_HAVE_MESSAGE
                                          : STT_BUFF_CHUNK_SIZE;
-        __i += 1;
+        I_ += 1;
         __FlushParsedBuffer();
-    } else if (__buffer.size() == 0 || __buffer.substr(0, 1) == "\r") {
+    } else if (Buffer_.size() == 0 || Buffer_.substr(0, 1) == "\r") {
         *run = false;
     } else {
-        next_state = STT_ERROR_OCCURED;
-        __err = Error(HTTP_READER_NO_CHUNK_CRLF_END, "No linefeed at the end of the chunk-data");
+        nextState = STT_ERROR_OCCURED;
+        Error_ = Error(HTTP_READER_NO_CHUNK_CRLF_END, "No linefeed at the end of the chunk-data");
         *run = false;
     }
 
-    if (next_state == STT_HAVE_MESSAGE)
+    if (nextState == STT_HAVE_MESSAGE)
         *run = false;
 
-    return next_state;
+    return nextState;
 }
 
 ResponseReader::State
 ResponseReader::STT_ReadBodyContentLength(bool* run) {
-    const usize content_len = Headers::GetContentLength(__res_data.headers);
-    State next_state = STT_READ_BODY_CONTENT_LENGTH;
+    const USize contentLength = Headers::GetContentLength(Result_.Headers);
+    State nextState = STT_READ_BODY_CONTENT_LENGTH;
 
-    if (__buffer.size() >= content_len) {
-        next_state = STT_HAVE_MESSAGE;
-        __i = content_len;
-        __res_data.body = __GetParsedBuffer();
+    if (Buffer_.size() >= contentLength) {
+        nextState = STT_HAVE_MESSAGE;
+        I_ = contentLength;
+        Result_.Body = __GetParsedBuffer();
         __FlushParsedBuffer();
     }
 
     *run = false;
 
-    return next_state;
+    return nextState;
 }
 
 ResponseReader::State
 ResponseReader::STT_HaveMessage(bool*) {
-    State next_state = STT_SKIP_EMPTY_LINES;
+    State nextState = STT_SKIP_EMPTY_LINES;
 
     __ClearResponse();
-    __err = Error(0);
-    return next_state;
+    Error_ = Error(0);
+    return nextState;
 }
 
 ResponseReader::State
 ResponseReader::STT_ErrorOccured(bool*) {
-    State next_state = STT_SKIP_EMPTY_LINES;
+    State nextState = STT_SKIP_EMPTY_LINES;
 
     __ClearResponse();
-    __err = Error(0);
-    return next_state;
+    Error_ = Error(0);
+    return nextState;
 }
 
 void            ResponseReader::Process() {
     bool run = true;
 
     while (run) {
-        if (__i >= __buffer.size() && !__IsMetaState(__state))
+        if (I_ >= Buffer_.size() && !__IsMetaState(State_))
             break;
-        switch (__state) {
-            case STT_SKIP_EMPTY_LINES:          __state = STT_SkipEmptyLines(&run); break;
-            case STT_SKIP_CRLF_EMPTY_LINES:     __state = STT_SkipCrlfEmptyLines(&run); break;
-            case STT_BUFF_RES_LINE:             __state = STT_BuffResLine(&run); break;
-            case STT_PARSE_RES_LINE:            __state = STT_ParseResLine(&run); break;
-            case STT_BUFF_HEADERS:              __state = STT_BuffHeaders(&run); break;
-            case STT_BUFF_HEADER_PAIR:          __state = STT_BuffHeaderPair(&run); break;
-            case STT_PARSE_HEADERS:             __state = STT_ParseHeaders(&run); break;
-            case STT_READ_BODY_CONTENT_LENGTH:  __state = STT_ReadBodyContentLength(&run); break;
-            case STT_BUFF_CHUNK_SIZE:           __state = STT_BuffChunkSize(&run); break;
-            case STT_PARSE_CHUNK_SIZE:          __state = STT_ParseChunkSize(&run); break;
-            case STT_READ_CHUNK_DATA:           __state = STT_ReadChunkData(&run); break;
-            case STT_SKIP_CRLF_CHUNK_DATA:      __state = STT_SkipCrlfChunkData(&run); break;
-            case STT_HAVE_MESSAGE:              __state = STT_HaveMessage(&run); break;
-            case STT_ERROR_OCCURED:             __state = STT_ErrorOccured(&run); break;
+        switch (State_) {
+            case STT_SKIP_EMPTY_LINES:          State_ = STT_SkipEmptyLines(&run); break;
+            case STT_SKIP_CRLF_EMPTY_LINES:     State_ = STT_SkipCrlfEmptyLines(&run); break;
+            case STT_BUFF_RES_LINE:             State_ = STT_BuffResLine(&run); break;
+            case STT_PARSE_RES_LINE:            State_ = STT_ParseResLine(&run); break;
+            case STT_BUFF_HEADERS:              State_ = STT_BuffHeaders(&run); break;
+            case STT_BUFF_HEADER_PAIR:          State_ = STT_BuffHeaderPair(&run); break;
+            case STT_PARSE_HEADERS:             State_ = STT_ParseHeaders(&run); break;
+            case STT_READ_BODY_CONTENT_LENGTH:  State_ = STT_ReadBodyContentLength(&run); break;
+            case STT_BUFF_CHUNK_SIZE:           State_ = STT_BuffChunkSize(&run); break;
+            case STT_PARSE_CHUNK_SIZE:          State_ = STT_ParseChunkSize(&run); break;
+            case STT_READ_CHUNK_DATA:           State_ = STT_ReadChunkData(&run); break;
+            case STT_SKIP_CRLF_CHUNK_DATA:      State_ = STT_SkipCrlfChunkData(&run); break;
+            case STT_HAVE_MESSAGE:              State_ = STT_HaveMessage(&run); break;
+            case STT_ERROR_OCCURED:             State_ = STT_ErrorOccured(&run); break;
         }
     }
 }
@@ -254,44 +254,44 @@ bool            ResponseReader::__IsMetaState(State stt) {
 }
 
 void            ResponseReader::__ClearResponse() {
-    __res_data = Response();
+    Result_ = Response();
 }
 
 void            ResponseReader::__FlushParsedBuffer() {
-    __buffer = __buffer.substr(__i);
-    __i = 0;
+    Buffer_ = Buffer_.substr(I_);
+    I_ = 0;
 }
 
 std::string     ResponseReader::__GetParsedBuffer() const {
-    return __buffer.substr(0, __i);
+    return Buffer_.substr(0, I_);
 }
 
 void            ResponseReader::Read(const std::string& bytes) {
-    __buffer += bytes;
+    Buffer_ += bytes;
 }
 
 void            ResponseReader::Reset() {
-    __i = 0;
-    __err = Error(0);
-    __state = STT_SKIP_EMPTY_LINES;
-    __buffer.clear();
+    I_ = 0;
+    Error_ = Error(0);
+    State_ = STT_SKIP_EMPTY_LINES;
+    Buffer_.clear();
     __ClearResponse();
 }
 
 bool            ResponseReader::HasMessage() const {
-    return __state == STT_HAVE_MESSAGE;
+    return State_ == STT_HAVE_MESSAGE;
 }
 
 bool            ResponseReader::HasError() const {
-    return __state == STT_ERROR_OCCURED;
+    return State_ == STT_ERROR_OCCURED;
 }
 
 Error           ResponseReader::GetError() const {
-    return __err;
+    return Error_;
 }
 
 Response         ResponseReader::GetMessage() const {
-    return __res_data;
+    return Result_;
 }
 
 }  // namespace Http

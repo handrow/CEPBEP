@@ -76,37 +76,37 @@ std::string SearchCodeMap(int code) {
 
 
 void        ResponseWriter::Reset() {
-    __hdrs = Headers();
-    __body = std::string();
+    Headers_ = Headers();
+    Body_ = std::string();
 }
 
 Headers&    ResponseWriter::Header() {
-    return __hdrs;
+    return Headers_;
 }
 
 const Headers&  ResponseWriter::Header() const {
-    return __hdrs;
+    return Headers_;
 }
 
 bool  ResponseWriter::HasBody() const {
-    return !__body.empty();
+    return !Body_.empty();
 }
 
 void            ResponseWriter::Write(const std::string& body_appendix) {
-    __body += body_appendix;
+    Body_ += body_appendix;
 }
 
 std::string     ResponseWriter::SendToString(int code, ProtocolVersion ver) {
     Response res;
 
-    __hdrs.Set("Content-Length", Convert<std::string>(__body.size()));
-    __hdrs.Set("Date", Headers::CurrentDate());
+    Headers_.Set("Content-Length", Convert<std::string>(Body_.size()));
+    Headers_.Set("Date", Headers::CurrentDate());
 
-    res.headers = __hdrs;
-    res.code_message = SearchCodeMap(code);
-    res.code = code;
-    res.version = ver;
-    res.body = __body;
+    res.Headers = Headers_;
+    res.CodeMessage = SearchCodeMap(code);
+    res.Code = code;
+    res.Version = ver;
+    res.Body = Body_;
 
     Reset();
 

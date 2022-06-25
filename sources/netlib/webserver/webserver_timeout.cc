@@ -3,33 +3,33 @@
 namespace Webserver {
 
 void                HttpServer::__EvaluateIoTimeouts() {
-    u64  current_time_ms = tv_to_msec(GetTimeOfDay());
-    SessionFdMap::iterator  it = __sessions_map.begin();
+    UInt64  currentMS = tv_to_msec(GetTimeOfDay());
+    SessionFdMap::iterator  it = WebSessions_.begin();
 
-    while (it != __sessions_map.end()) {
+    while (it != WebSessions_.end()) {
         SessionFdMap::iterator del = it;
         ++it;
 
-        if (current_time_ms >= del->second->__timeout_ms)
+        if (currentMS >= del->second->TimeoutMs_)
             __OnSessionTimeout(del->second);
     }
 }
 
 void                HttpServer::__OnSessionTimeout(SessionCtx* ss) {
-    debug(__system_log, "Session[%d]: Timeout occured, disconnecting", ss->conn_sock.GetFd());
+    debug(SystemLog_, "Session[%d]: Timeout occured, disconnecting", ss->ConnectionSock.GetFd());
     __DeleteSessionCtx(ss);
 }
 
 class  HttpServer::EvTimeoutHook : public Event::IEvent {
  private:
-    HttpServer*     __server;
+    HttpServer*     Server_;
 
  public:
-    EvTimeoutHook(HttpServer* s) : __server(s) {
+    EvTimeoutHook(HttpServer* s) : Server_(s) {
     }
 
     void Handle() {
-        __server->__EvaluateIoTimeouts();
+        Server_->__EvaluateIoTimeouts();
     }
 };
 

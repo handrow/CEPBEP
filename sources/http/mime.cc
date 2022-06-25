@@ -4,23 +4,23 @@
 namespace Mime {
 
 std::string MapType(const MimeTypesMap& tmap, const std::string& filename,
-                                             const std::string& default_type) {
+                                             const std::string& defaultType) {
 
-    std::string  mime_type = default_type;
-    usize  dot_position = filename.find_last_of('.');
+    std::string  mimeType = defaultType;
+    USize  dotPos = filename.find_last_of('.');
 
-    if (dot_position != std::string::npos) {
-        std::string file_extension = filename.substr(dot_position + 1);
+    if (dotPos != std::string::npos) {
+        std::string fileExt = filename.substr(dotPos + 1);
 
-        if (!file_extension.empty()) {
-            MimeTypesMap::const_iterator mime_it = tmap.find(file_extension);
+        if (!fileExt.empty()) {
+            MimeTypesMap::const_iterator mime_it = tmap.find(fileExt);
             if (mime_it != tmap.end()) {
-                mime_type = mime_it->second;
+                mimeType = mime_it->second;
             }
         }
     }
 
-    return mime_type;
+    return mimeType;
 }
 
 }  // namespace Mime

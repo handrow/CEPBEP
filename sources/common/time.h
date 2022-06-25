@@ -7,34 +7,34 @@
 
 #include "common/types.h"
 
-inline timeval_t
-usec_to_tv(u64 usec) {
-    timeval_t tv;
+inline TimeVal
+usec_to_tv(UInt64 usec) {
+    TimeVal tv;
     tv.tv_sec = usec / 1000000;
     tv.tv_usec = usec % 1000000;
     return tv;
 }
 
-inline timeval_t
-msec_to_tv(u64 msec) {
-    timeval_t tv;
+inline TimeVal
+msec_to_tv(UInt64 msec) {
+    TimeVal tv;
     tv.tv_sec = msec / 1000;
     tv.tv_usec = msec % 1000;
     return tv;
 }
 
-inline u64
-tv_to_usec(const timeval_t& tv) {
+inline UInt64
+tv_to_usec(const TimeVal& tv) {
     return tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
-inline u64
-tv_to_msec(const timeval_t& tv) {
+inline UInt64
+tv_to_msec(const TimeVal& tv) {
     return tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
 
-inline u64 now_ms() {
-    timeval_t tv;
+inline UInt64 now_ms() {
+    TimeVal tv;
     gettimeofday(&tv, NULL);
     return tv_to_msec(tv);
 }
@@ -47,9 +47,9 @@ GetTimeOfDay() {
 }
 
 inline std::string
-FormatTimeToStr(const std::string& format, const std::tm& tm, usize buff_size = 512) {
+FormatTimeToStr(const std::string& format, const std::tm& tm, USize buff_size = 512) {
     std::string buff;
-    usize len;
+    USize len;
 
     do {
         buff.resize(buff_size);
@@ -66,14 +66,14 @@ FormatTimeToStr(const std::string& format, const std::tm& tm, usize buff_size = 
 }
 
 inline std::string
-FormatTimeToStr(const std::string& format, time_t sec, usize BUFF_SZ = 512) {
+FormatTimeToStr(const std::string& format, time_t sec, USize BUFF_SZ = 512) {
     std::tm tm;
     localtime_r(&sec, &tm);
     return FormatTimeToStr(format, tm, BUFF_SZ);
 }
 
 inline std::string
-FormatTimeToStr(const std::string& format, const timeval_t& tv, usize BUFF_SZ = 512) {
+FormatTimeToStr(const std::string& format, const TimeVal& tv, USize BUFF_SZ = 512) {
     std::tm tm;
     localtime_r(&(tv.tv_sec), &tm);
     return FormatTimeToStr(format, tm, BUFF_SZ);

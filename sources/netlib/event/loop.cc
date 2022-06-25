@@ -3,42 +3,42 @@
 namespace Event {
 
     Loop::~Loop() {
-        while (!__hooks.empty()) {
-            delete __hooks.back();
-            __hooks.pop_back();
+        while (!Hooks_.empty()) {
+            delete Hooks_.back();
+            Hooks_.pop_back();
         }
     }
 
-    u64  Loop::GetTimeToNextEventMS() const {
-        if (__q.empty())
+    UInt64  Loop::GetTimeToNextEventMS() const {
+        if (EventQueue_.empty())
             return INFINITE_TIME;
-        return __q.top()->GetTimeToHandleMs();
+        return EventQueue_.top()->GetTimeToHandleMs();
     }
 
     void Loop::PushEvent(IEventPtr ev) {
-        __q.push(ev);
+        EventQueue_.push(ev);
     }
 
     void Loop::AddDefaultEvent(IEventPtr ev) {
-        __hooks.push_front(ev);
+        Hooks_.push_front(ev);
     }
 
     void Loop::Stop() {
-        __run = false;
+        Run_ = false;
     }
 
     void Loop::Run() {
-        while (__run) {
+        while (Run_) {
             // Release all ready events
             while (GetTimeToNextEventMS() == 0) {
-                __q.top()->Handle();
-                delete __q.top();
-                __q.pop();
+                EventQueue_.top()->Handle();
+                delete EventQueue_.top();
+                EventQueue_.pop();
             }
 
             // Proccess all hooks
-            for (HookList::iterator hook_it =  __hooks.begin();
-                                    hook_it != __hooks.end();
+            for (HookList::iterator hook_it =  Hooks_.begin();
+                                    hook_it != Hooks_.end();
                                     ++hook_it) {
                 (*hook_it)->Handle();
             }

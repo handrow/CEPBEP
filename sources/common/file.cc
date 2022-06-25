@@ -24,7 +24,7 @@ std::string AppendPath(const std::string& dirname, const std::string& basename) 
                                      ? dirname
                                      : dirname + "/";
 
-    const usize last_sep_pos = normalized_dirname.find_last_not_of("/") + 1;
+    const USize last_sep_pos = normalized_dirname.find_last_not_of("/") + 1;
 
     return normalized_dirname.substr(0, last_sep_pos + 1) + basename;
 }

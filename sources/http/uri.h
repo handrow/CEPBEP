@@ -21,7 +21,7 @@ enum UriErrorCode {
 };
 
 namespace __pct_encode_inner {
-inline std::string  ByteToHexStr(u8 byte) {
+inline std::string  ByteToHexStr(UInt8 byte) {
     static const char* hex_alphabet = "0123456789ABCDEF";
     return std::string(1, hex_alphabet[byte / 16])
             + std::string(1, hex_alphabet[byte % 16]);
@@ -34,7 +34,7 @@ std::string PercentEncode(const std::string& decoded_str, SafePredicate is_safe_
 
     std::string encoded_str;
 
-    for (usize sym_idx = 0; sym_idx < decoded_str.length(); ++sym_idx) {
+    for (USize sym_idx = 0; sym_idx < decoded_str.length(); ++sym_idx) {
         if (!is_safe_sym(decoded_str[sym_idx]))
             encoded_str += ("%" + ByteToHexStr(decoded_str[sym_idx]));
         else
@@ -50,11 +50,11 @@ bool IsUnrsvdSym(char c);
 bool IsPathSafeSym(char c);
 
 struct URI {
-    std::string userinfo;
-    std::string hostname;
-    std::string path;
-    std::string query_str;
-    std::string fragment;
+    std::string UserInfo;
+    std::string Hostname;
+    std::string Path;
+    std::string QueryStr;
+    std::string Fragment;
 
     std::string         ToString() const;
 
@@ -65,11 +65,11 @@ struct Query {
     typedef std::map<std::string, std::string>  ParamMap;
     typedef ParamMap::value_type                ParamPair;
 
-    ParamMap    param_map;
+    ParamMap    Params;
 
     std::string         ToString() const;
 
-    static Query        Parse(const std::string& query_str, Error* err);
+    static Query        Parse(const std::string& queryStr, Error* err);
 };
 
 }  // namespace Http

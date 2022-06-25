@@ -11,51 +11,51 @@ namespace C {
 
 class string {
  private:
-    char* __data;
+    char* Data_;
 
  public:
-    ~string() { free(__data); }
+    ~string() { free(Data_); }
 
     string& operator=(const string& source) {
         if (&source != this) {
-            if (source.__data == NULL)
-                __data = NULL;
+            if (source.Data_ == NULL)
+                Data_ = NULL;
             else
-                __data = ::strdup(source.__data);
+                Data_ = ::strdup(source.Data_);
         }
         return *this;
     }
 
     string(const string& source)
-    : __data( NULL ) {
-        if (source.__data == NULL)
-            __data = NULL;
+    : Data_( NULL ) {
+        if (source.Data_ == NULL)
+            Data_ = NULL;
         else
-            __data = ::strdup(source.__data);
+            Data_ = ::strdup(source.Data_);
     }
 
     string()
-    : __data( NULL ) {
+    : Data_( NULL ) {
     }
 
     string(const std::string& str) // NOLINT(*)
-    : __data( ::strdup(str.c_str()) ) {
+    : Data_( ::strdup(str.c_str()) ) {
     }
 
     string(const char* str) { // NOLINT(*)
         if (str == NULL) {
-            __data = NULL;
+            Data_ = NULL;
         } else {
-            __data = ::strdup(str);
+            Data_ = ::strdup(str);
         }
     }
 
     operator std::string() const {
-        return std::string(__data == NULL ? "" : __data);
+        return std::string(Data_ == NULL ? "" : Data_);
     }
 
     operator const char*() const {
-        return __data;
+        return Data_;
     }
 };
 
@@ -70,7 +70,7 @@ Envs CastToEnvs(const CStringVec& vec);
 
 class Metavars {
  private:
-    std::map<std::string, std::string>  __map;
+    std::map<std::string, std::string>  Map_;
 
  public:
     void AddHttpHeaders(const Http::Headers& hdrs);

@@ -5,72 +5,72 @@
 namespace Config {
 
 bool                  Category::HasField(const std::string& fname) const {
-    FieldsConstIter element = __fields.find(fname);
-    return element != __fields.end();
+    FieldsConstIter element = Fields_.find(fname);
+    return element != Fields_.end();
 }
 
 bool                  Category::HasCategory(const std::string& cname) const {
-    SubcategoryConstIter element = __subs.find(cname);
-    return element != __subs.end();
+    SubcategoryConstIter element = SubCategories_.find(cname);
+    return element != SubCategories_.end();
 }
 
 void Category::SetField(const std::string& fname, const std::string& fvalue) {
-    __fields[fname] = fvalue;
+    Fields_[fname] = fvalue;
 }
 
 void Category::RemoveField(const std::string& fname) {
-    __fields.erase(fname);
+    Fields_.erase(fname);
 }
 
 Category::Field& Category::GetFieldRef(const std::string& fname) {
-    return *__fields.find(fname);
+    return *Fields_.find(fname);
 }
 
 const Category::Field& Category::GetFieldRef(const std::string& fname) const {
-    return *__fields.find(fname);
+    return *Fields_.find(fname);
 }
 
 std::string         Category::GetFieldValue(const std::string& fname) const {
-    return __fields.find(fname)->second;
+    return Fields_.find(fname)->second;
 }
 
 void Category::SetSubcategory(const std::string& cname, const Category& subcat) {
-    __subs[cname] = subcat;
+    SubCategories_[cname] = subcat;
 }
 
 void Category::RemoveSubcategory(const std::string& fname) {
-    __subs.erase(fname);
+    SubCategories_.erase(fname);
 }
 
 Category& Category::GetSubcategoryRef(const std::string& fname) {
-    return __subs.find(fname)->second;
+    return SubCategories_.find(fname)->second;
 }
 
 const Category& Category::GetSubcategoryRef(const std::string& fname) const {
-    return __subs.find(fname)->second;
+    return SubCategories_.find(fname)->second;
 }
 
-usize               Category::CountSubcategories() const {
-    return __subs.size();
+USize               Category::CountSubcategories() const {
+    return SubCategories_.size();
 }
-usize               Category::CountFields() const {
-    return __fields.size();
+USize               Category::CountFields() const {
+    return Fields_.size();
 }
 
 Category::SubcategoryRange    Category::GetSubcatoryIterRange() {
-    return SubcategoryRange(__subs.begin(), __subs.end());
+    return SubcategoryRange(SubCategories_.begin(), SubCategories_.end());
 }
 
 Category::SubcategoryConstRange Category::GetSubcatoryIterRange() const {
-    return SubcategoryConstRange(__subs.begin(), __subs.end());
+    return SubcategoryConstRange(SubCategories_.begin(), SubCategories_.end());
 }
 
 Category::FieldsRange         Category::GetFieldsIterRange() {
-    return FieldsRange(__fields.begin(), __fields.end());
+    return FieldsRange(Fields_.begin(), Fields_.end());
 }
 
 Category::FieldsConstRange    Category::GetFieldsIterRange() const {
-    return FieldsConstRange(__fields.begin(), __fields.end());
+    return FieldsConstRange(Fields_.begin(), Fields_.end());
 }
 
 
@@ -87,15 +87,15 @@ static const char* ASSGINATION_SYM = "=";
 }  // namespace
 
 bool Category::IsCategory(const std::string& str) {
-    usize tok_begin = str.find_first_of(CAT_OPEN_SYM);
-    usize tok_end = str.find_last_of(CAT_CLOSE_SYM);
+    USize tokBegin = str.find_first_of(CAT_OPEN_SYM);
+    USize tokEnd = str.find_last_of(CAT_CLOSE_SYM);
 
-    if (tok_begin == std::string::npos || tok_end == std::string::npos)
+    if (tokBegin == std::string::npos || tokEnd == std::string::npos)
         return false;
 
-    tok_begin += 1;
+    tokBegin += 1;
 
-    std::string raw_name = Trim(Trim(str.substr(tok_begin, tok_end - tok_begin), ' '), '\t');
+    std::string raw_name = Trim(Trim(str.substr(tokBegin, tokEnd - tokBegin), ' '), '\t');
 
     if (raw_name.empty())
         return false;
@@ -113,15 +113,15 @@ bool Category::IsCategory(const std::string& str) {
 
 bool Category::IsField(const std::string& str) {
     std::string trimmed = Trim(Trim(str, ' '), '\t');
-    usize assign_sym_pos = trimmed.find_first_of(ASSGINATION_SYM);
+    USize assignSymPos = trimmed.find_first_of(ASSGINATION_SYM);
 
-    if (assign_sym_pos == std::string::npos || assign_sym_pos == 0)
+    if (assignSymPos == std::string::npos || assignSymPos == 0)
         return false;
 
     const std::string restricted_syms = "[]";
 
     for (std::string::iterator it = trimmed.begin(),
-                               end = trimmed.begin() + assign_sym_pos;
+                               end = trimmed.begin() + assignSymPos;
                                it != end; ++it) {
         if (restricted_syms.find_first_of(*it) != std::string::npos)
             return false;
@@ -131,78 +131,78 @@ bool Category::IsField(const std::string& str) {
 }
 
 void Category::ParseField(const std::string& str, Category* cat) {
-    const usize delim_pos = str.find(*ASSGINATION_SYM);
-    cat->SetField(Trim(str.substr(0, delim_pos), ' '),
-                  Trim(str.substr(delim_pos + 1), ' '));
+    const USize delimPos = str.find(*ASSGINATION_SYM);
+    cat->SetField(Trim(str.substr(0, delimPos), ' '),
+                  Trim(str.substr(delimPos + 1), ' '));
 }
 
-Category* Category::ParseLine(const std::string& str, Category* root_category, Category* current_category_level, bool is_empty_line) {
-    if (!is_empty_line) {
+Category* Category::ParseLine(const std::string& str, Category* rootCategory, Category* currentCategoryLvl, bool isEmptyLine) {
+    if (!isEmptyLine) {
         if (IsCategory(str)) {
-            return SwitchCurrentCategory(str, root_category);
+            return SwitchCurrentCategory(str, rootCategory);
         } else if (IsField(str)) {
-            ParseField(str, current_category_level);
+            ParseField(str, currentCategoryLvl);
         } else if (!str.empty()) {
             // TODO: Undefiend line, throw error
         }
     } else {
-        current_category_level = root_category;
+        currentCategoryLvl = rootCategory;
     }
-    return current_category_level;
+    return currentCategoryLvl;
 }
 
-Category* Category::SwitchCurrentCategory(const std::string& str, Category* root_category) {
-    Category* sub_cat = root_category;
+Category* Category::SwitchCurrentCategory(const std::string& str, Category* rootCategory) {
+    Category* sub_cat = rootCategory;
     std::string rmdr = str.substr(1, str.size() - 2);  // deleting '[' and ']' from the beginning and end of the line("[server]" -> "server")
 
-    for (usize i = rmdr.find(*CAT_PATH_DELIM_SYM);
+    for (USize i = rmdr.find(*CAT_PATH_DELIM_SYM);
                i != std::string::npos;
                i = rmdr.find(*CAT_PATH_DELIM_SYM)) {
 
         std::string sub = rmdr.substr(0, i);
         std::pair<std::string, Category> pair(sub, Category());
-        sub_cat = &(sub_cat->__subs.insert(pair)
+        sub_cat = &(sub_cat->SubCategories_.insert(pair)
                                    .first /* get iterator */
                                    ->second /* get category ref */);
         rmdr = rmdr.substr(sub.size() + 1);
     }
-    sub_cat = &(sub_cat->__subs.insert(std::make_pair(rmdr, Category())).first->second);
+    sub_cat = &(sub_cat->SubCategories_.insert(std::make_pair(rmdr, Category())).first->second);
 
     return sub_cat;
 }
 
 Category       Category::ParseFromINI(const std::string& filepath, Error *err) {
     std::ifstream file(filepath.c_str());
-    Category root_category;
-    Category* current_category_level = &root_category;
+    Category rootCategory;
+    Category* currentCategoryLvl = &rootCategory;
     if (!file.is_open()) {
         *err = Error(CONF_FILE_NOT_FOUND_ERR, "File open failed");
-        return root_category;
+        return rootCategory;
     }
     while (true) {
         std::string line;
         if (!getline(file, line))
-            return root_category;
+            return rootCategory;
         
         line = Trim(Trim(line, ' '), '\t');
 
-        bool is_empty = line.empty();
+        bool isEmpty = line.empty();
 
         line = line.substr(0, line.find(*COMMENT_SYM));
         line = Trim(Trim(line, ' '), '\t');
 
-        current_category_level = ParseLine(line,
-                                           &root_category,
-                                           current_category_level,
-                                           is_empty);
+        currentCategoryLvl = ParseLine(line,
+                                           &rootCategory,
+                                           currentCategoryLvl,
+                                           isEmpty);
     }
 }
 
 void Category::WriteToFile(const Category& subcat, std::ofstream* out, const std::string& catpath) {
-    const bool is_global_space = catpath.empty();
+    const bool isGlobalScope = catpath.empty();
 
     (*out) << std::endl;
-    if (!is_global_space) {
+    if (!isGlobalScope) {
         (*out) << CAT_OPEN_SYM
                << catpath
                << CAT_CLOSE_SYM << std::endl;
@@ -220,7 +220,7 @@ void Category::WriteToFile(const Category& subcat, std::ofstream* out, const std
     for (SubcategoryConstIter it = subs.first;
                               it != subs.second; ++it) {
         std::string subpath = catpath
-                            + (is_global_space ? "" : CAT_PATH_DELIM_SYM)
+                            + (isGlobalScope ? "" : CAT_PATH_DELIM_SYM)
                             + it->first;
 
         subcat.WriteToFile(it->second, out, subpath);

@@ -6,12 +6,12 @@ namespace Http {
 const char TO_STRING_OPTIONS::CRLF_SYM[] = "\r\n";
 
 
-Method      MethodFromString(const std::string& method_str) {
-    if (StrToUpper(method_str) == "GET")
+Method      MethodFromString(const std::string& methodStr) {
+    if (StrToUpper(methodStr) == "GET")
         return METHOD_GET;
-    if (StrToUpper(method_str) == "POST")
+    if (StrToUpper(methodStr) == "POST")
         return METHOD_POST;
-    if (StrToUpper(method_str) == "DELETE")
+    if (StrToUpper(methodStr) == "DELETE")
         return METHOD_DELETE;
     else
         return METHOD_UNKNOWN;
@@ -28,10 +28,10 @@ std::string     MethodToString(const Method& method) {
         return "";
 }
 
-ProtocolVersion ProtocolVersionFromString(const std::string& version_str) {
-    if (StrToUpper(version_str) == "HTTP/1.1")
+ProtocolVersion ProtocolVersionFromString(const std::string& versionStr) {
+    if (StrToUpper(versionStr) == "HTTP/1.1")
         return HTTP_1_1;
-    if (StrToUpper(version_str) == "HTTP/1.0")
+    if (StrToUpper(versionStr) == "HTTP/1.0")
         return HTTP_1_0;
     else
         return HTTP_NO_VERSION;
@@ -47,19 +47,19 @@ std::string     ProtocolVersionToString(const ProtocolVersion& ver) {
 }
 
 std::string     Request::ToString() const {
-    return   MethodToString(method) + " "
-           + uri.ToString() + " "
-           + ProtocolVersionToString(version) + " "
-           + headers.ToString() + TO_STRING_OPTIONS::CRLF_SYM
-           + body;
+    return   MethodToString(Method) + " "
+           + Uri.ToString() + " "
+           + ProtocolVersionToString(Version) + " "
+           + Headers.ToString() + TO_STRING_OPTIONS::CRLF_SYM
+           + Body;
 }
 
 std::string     Response::ToString() const {
-    return   ProtocolVersionToString(version) + " "
-           + Convert<std::string>(code) + " "
-           + code_message + TO_STRING_OPTIONS::CRLF_SYM
-           + headers.ToString() + TO_STRING_OPTIONS::CRLF_SYM
-           + body;
+    return   ProtocolVersionToString(Version) + " "
+           + Convert<std::string>(Code) + " "
+           + CodeMessage + TO_STRING_OPTIONS::CRLF_SYM
+           + Headers.ToString() + TO_STRING_OPTIONS::CRLF_SYM
+           + Body;
 }
 
 }  // namespace Http

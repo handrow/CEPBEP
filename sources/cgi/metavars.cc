@@ -5,16 +5,16 @@
 namespace Cgi {
 namespace {
 
-std::string  TransformToMetavarStyle(const std::string& hkey) {
+std::string  TransformToMetavarStyle(const std::string& headerKey) {
     std::string transformed;
 
     transformed += "HTTP_";
-    for (usize i = 0; i < hkey.length(); ++i) {
-        if (hkey[i] == '-') {
+    for (USize i = 0; i < headerKey.length(); ++i) {
+        if (headerKey[i] == '-') {
             transformed += '_';
             ++i;
         }
-        transformed += toupper(hkey[i]);
+        transformed += toupper(headerKey[i]);
     }
     return transformed;
 }
@@ -26,58 +26,58 @@ Envs CastToEnvs(const CStringVec& vec) {
 }
 
 void Metavars::AddHttpHeaders(const Http::Headers& hdrs) {
-    std::string hkey;
-    std::string hval;
+    std::string headerKey;
+    std::string headerValue;
 
     Http::Headers::HeaderMap map = hdrs.GetMap();
     for (std::map<std::string, std::string>::iterator it = map.begin();
                                                       it != map.end(); ++it) {
-        hkey = TransformToMetavarStyle(it->first);
-        hval = it->second;
-        __map.insert(Http::Headers::HeaderPair(hkey, hval));
+        headerKey = TransformToMetavarStyle(it->first);
+        headerValue = it->second;
+        Map_.insert(Http::Headers::HeaderPair(headerKey, headerValue));
     }
 }
 
 void Metavars::AddEnvs(const Envs& envs) {
-    char* const* env_cstr = envs;
-    usize tok_begin;
-    usize tok_end;
+    char* const* envCStr = envs;
+    USize tokBegin;
+    USize tokEnd;
 
-    while (*env_cstr != NULL) {
-        std::string env_str = *env_cstr;
+    while (*envCStr != NULL) {
+        std::string envStr = *envCStr;
         std::string k, v;
-        tok_begin = tok_end = 0;
-        env_str = Trim(env_str, ' ');
+        tokBegin = tokEnd = 0;
+        envStr = Trim(envStr, ' ');
 
-        tok_end = env_str.find_first_of('=');
+        tokEnd = envStr.find_first_of('=');
 
-        if (tok_end == std::string::npos) {
-            k = env_str;
+        if (tokEnd == std::string::npos) {
+            k = envStr;
             v = "";
         } else {
-            k = env_str.substr(tok_begin, tok_end - tok_begin);
-            tok_begin = ++tok_end;
-            tok_end = env_str.length();
-            v = env_str.substr(tok_begin, tok_end - tok_begin);
+            k = envStr.substr(tokBegin, tokEnd - tokBegin);
+            tokBegin = ++tokEnd;
+            tokEnd = envStr.length();
+            v = envStr.substr(tokBegin, tokEnd - tokBegin);
         }
 
         if (!k.empty())
-            __map[k] = v;
+            Map_[k] = v;
 
-        ++env_cstr;
+        ++envCStr;
     }
 }
 
 void Metavars::AddMetavars(const Metavars& mtvrs) {
-    for (std::map<std::string, std::string>::const_iterator it =  mtvrs.__map.begin();
-                                                            it != mtvrs.__map.end(); ++it) {
-        __map[it->first] = __map[it->second];
+    for (std::map<std::string, std::string>::const_iterator it =  mtvrs.Map_.begin();
+                                                            it != mtvrs.Map_.end(); ++it) {
+        Map_[it->first] = Map_[it->second];
     }
 }
 
 CStringVec
 Metavars::ToEnvVector() const {
-    std::map<std::string, std::string> metamap(__map);
+    std::map<std::string, std::string> metamap(Map_);
     CStringVec vec;
 
     /// Patch Content length
@@ -98,12 +98,12 @@ Metavars::ToEnvVector() const {
 
 std::map<std::string, std::string>&
 Metavars::GetMapRef() {
-    return __map;
+    return Map_;
 }
 
 const std::map<std::string, std::string>&
 Metavars::GetMapRef() const {
-    return __map;
+    return Map_;
 }
 
 }  // namespace Cgi

@@ -7,59 +7,59 @@ using namespace __CommonParsers;
 
 RequestReader::State
 RequestReader::STT_SkipEmptyLines(bool*) {
-    State next_state = STT_SKIP_EMPTY_LINES;
+    State nextState = STT_SKIP_EMPTY_LINES;
 
-    if (__buffer[__i] == '\n') {
-        __i += 1;
-    } else if (__buffer[__i] == '\r') {
-        next_state = STT_SKIP_CRLF_EMPTY_LINES;
-        __i += 1;
+    if (Buffer_[I_] == '\n') {
+        I_ += 1;
+    } else if (Buffer_[I_] == '\r') {
+        nextState = STT_SKIP_CRLF_EMPTY_LINES;
+        I_ += 1;
     } else {
-        next_state = STT_BUFF_META;
+        nextState = STT_BUFF_META;
         __FlushParsedBuffer();
     }
-    return next_state;
+    return nextState;
 }
 
 RequestReader::State
 RequestReader::STT_SkipCrlfEmptyLines(bool*) {
-    State next_state;
+    State nextState;
 
-    if (__buffer[__i] == '\n') {
-        next_state = STT_SKIP_EMPTY_LINES;
-        __i += 1;
+    if (Buffer_[I_] == '\n') {
+        nextState = STT_SKIP_EMPTY_LINES;
+        I_ += 1;
     } else {
-        next_state = STT_BUFF_META;
+        nextState = STT_BUFF_META;
         __FlushParsedBuffer();
     }
 
-    return next_state;
+    return nextState;
 }
 
 RequestReader::State
 RequestReader::STT_ParseMeta(bool* run) {
-    std::string meta_buff = __GetParsedBuffer();
+    std::string metaBuffer = __GetParsedBuffer();
     __FlushParsedBuffer();
 
-    usize delim = meta_buff.find_first_of("\n") + 1;
+    USize delim = metaBuffer.find_first_of("\n") + 1;
 
-    std::string  req_line_buff = meta_buff.substr(0, delim);
-    std::string  headers_buff = meta_buff.substr(delim);
+    std::string  requestLineBuffer = metaBuffer.substr(0, delim);
+    std::string  headersBuff = metaBuffer.substr(delim);
 
-    __err = ParseRequestLine(req_line_buff,
-                            &__req_data.method,
-                            &__req_data.uri,
-                            &__req_data.version);
-    if (__err.IsError())
+    Error_ = ParseRequestLine(requestLineBuffer,
+                            &Result_.Method,
+                            &Result_.Uri,
+                            &Result_.Version);
+    if (Error_.IsError())
         return *run = false, STT_ERROR_OCCURED;
 
-    __err = ParseHeaders(headers_buff, &__req_data.headers);
+    Error_ = ParseHeaders(headersBuff, &Result_.Headers);
 
-    if (__err.IsError()) {
+    if (Error_.IsError()) {
         return *run = false, STT_ERROR_OCCURED;
-    } else if (__req_data.method != METHOD_GET && Headers::IsChunkedEncoding(__req_data.headers)) {
+    } else if (Result_.Method != METHOD_GET && Headers::IsChunkedEncoding(Result_.Headers)) {
         return STT_BUFF_CHUNK_SIZE;
-    } else if (__req_data.method != METHOD_GET && Headers::GetContentLength(__req_data.headers) > 0) {
+    } else if (Result_.Method != METHOD_GET && Headers::GetContentLength(Result_.Headers) > 0) {
         return STT_READ_BODY_CONTENT_LENGTH;
     }
 
@@ -68,157 +68,157 @@ RequestReader::STT_ParseMeta(bool* run) {
 
 RequestReader::State
 RequestReader::STT_BuffMeta(bool*) {
-    State next_state = STT_BUFF_META_LINE;
+    State nextState = STT_BUFF_META_LINE;
 
-    if (__buffer[__i] == '\n') {
-        next_state = STT_PARSE_META;
-        __i += 1;
-    } else if (__buffer[__i] == '\r') {
-        next_state = STT_BUFF_META;
-        __i += 1;
+    if (Buffer_[I_] == '\n') {
+        nextState = STT_PARSE_META;
+        I_ += 1;
+    } else if (Buffer_[I_] == '\r') {
+        nextState = STT_BUFF_META;
+        I_ += 1;
     }
 
-    return next_state;
+    return nextState;
 }
 
 RequestReader::State
 RequestReader::STT_BuffMetaLine(bool*) {
-    State next_state = STT_BUFF_META_LINE;
+    State nextState = STT_BUFF_META_LINE;
 
-    if (__buffer[__i] == '\n') {
-        next_state = STT_BUFF_META;
+    if (Buffer_[I_] == '\n') {
+        nextState = STT_BUFF_META;
     }
-    __i += 1;
+    I_ += 1;
 
-    return next_state;
+    return nextState;
 }
 
 RequestReader::State
 RequestReader::STT_BuffChunkSize(bool*) {
-    State next_state = STT_BUFF_CHUNK_SIZE;
+    State nextState = STT_BUFF_CHUNK_SIZE;
 
-    if (__buffer[__i] == '\n') {
-        next_state = STT_PARSE_CHUNK_SIZE;
+    if (Buffer_[I_] == '\n') {
+        nextState = STT_PARSE_CHUNK_SIZE;
     }
-    __i += 1;
+    I_ += 1;
 
-    return next_state;
+    return nextState;
 }
 
 RequestReader::State
 RequestReader::STT_ParseChunkSize(bool* run) {
-    State next_state = STT_READ_CHUNK_DATA;
-    __err = ParseChunkSize(__GetParsedBuffer(),
-                          &__chunk_size);
+    State nextState = STT_READ_CHUNK_DATA;
+    Error_ = ParseChunkSize(__GetParsedBuffer(),
+                          &ChunkSize_);
     __FlushParsedBuffer();
 
-    if (__err.IsError()) {
-        next_state = STT_ERROR_OCCURED;
+    if (Error_.IsError()) {
+        nextState = STT_ERROR_OCCURED;
         *run = false;
     }
 
-    return next_state;
+    return nextState;
 }
 
 RequestReader::State
 RequestReader::STT_ReadChunkData(bool* run) {
-    State next_state = STT_READ_CHUNK_DATA;
+    State nextState = STT_READ_CHUNK_DATA;
 
-    if (__buffer.size() >= __chunk_size) {
-        next_state = STT_SKIP_CRLF_CHUNK_DATA;
-        __i = __chunk_size;
-        __req_data.body += __GetParsedBuffer();
+    if (Buffer_.size() >= ChunkSize_) {
+        nextState = STT_SKIP_CRLF_CHUNK_DATA;
+        I_ = ChunkSize_;
+        Result_.Body += __GetParsedBuffer();
         __FlushParsedBuffer();
     } else {
         *run = false;
     }
 
-    return next_state;
+    return nextState;
 }
 
 RequestReader::State
 RequestReader::STT_SkipCrlfChunkData(bool* run) {
-    State next_state = STT_SKIP_CRLF_CHUNK_DATA;
+    State nextState = STT_SKIP_CRLF_CHUNK_DATA;
 
-    if (__buffer.substr(0, 2) == "\r\n") {
-        next_state = (__chunk_size == 0) ? STT_HAVE_MESSAGE
+    if (Buffer_.substr(0, 2) == "\r\n") {
+        nextState = (ChunkSize_ == 0) ? STT_HAVE_MESSAGE
                                          : STT_BUFF_CHUNK_SIZE;
-        __i += 2;
+        I_ += 2;
         __FlushParsedBuffer();
-    } else if (__buffer.substr(0, 1) == "\n") {
-        next_state = (__chunk_size == 0) ? STT_HAVE_MESSAGE
+    } else if (Buffer_.substr(0, 1) == "\n") {
+        nextState = (ChunkSize_ == 0) ? STT_HAVE_MESSAGE
                                          : STT_BUFF_CHUNK_SIZE;
-        __i += 1;
+        I_ += 1;
         __FlushParsedBuffer();
-    } else if (__buffer.size() == 0 || __buffer.substr(0, 1) == "\r") {
+    } else if (Buffer_.size() == 0 || Buffer_.substr(0, 1) == "\r") {
         *run = false;
     } else {
-        next_state = STT_ERROR_OCCURED;
-        __err = Error(HTTP_READER_NO_CHUNK_CRLF_END, "No linefeed at the end of the chunk-data");
+        nextState = STT_ERROR_OCCURED;
+        Error_ = Error(HTTP_READER_NO_CHUNK_CRLF_END, "No linefeed at the end of the chunk-data");
         *run = false;
     }
 
-    if (next_state == STT_HAVE_MESSAGE)
+    if (nextState == STT_HAVE_MESSAGE)
         *run = false;
 
-    return next_state;
+    return nextState;
 }
 
 
 RequestReader::State
 RequestReader::STT_ReadBodyContentLength(bool* run) {
-    const usize content_len = Headers::GetContentLength(__req_data.headers);
-    State next_state = STT_READ_BODY_CONTENT_LENGTH;
+    const USize contentLength = Headers::GetContentLength(Result_.Headers);
+    State nextState = STT_READ_BODY_CONTENT_LENGTH;
 
-    if (__buffer.size() >= content_len) {
-        next_state = STT_HAVE_MESSAGE;
-        __i = content_len;
-        __req_data.body = __GetParsedBuffer();
+    if (Buffer_.size() >= contentLength) {
+        nextState = STT_HAVE_MESSAGE;
+        I_ = contentLength;
+        Result_.Body = __GetParsedBuffer();
         __FlushParsedBuffer();
     }
 
     *run = false;
 
-    return next_state;
+    return nextState;
 }
 
 RequestReader::State
 RequestReader::STT_HaveMessage(bool*) {
-    State next_state = STT_SKIP_EMPTY_LINES;
+    State nextState = STT_SKIP_EMPTY_LINES;
 
     __ClearRequest();
-    __err = Error(0);
-    return next_state;
+    Error_ = Error(0);
+    return nextState;
 }
 
 RequestReader::State
 RequestReader::STT_ErrorOccured(bool*) {
-    State next_state = STT_SKIP_EMPTY_LINES;
+    State nextState = STT_SKIP_EMPTY_LINES;
 
     __ClearRequest();
-    __err = Error(0);
-    return next_state;
+    Error_ = Error(0);
+    return nextState;
 }
 
 void            RequestReader::Process() {
     bool run = true;
 
     while (run) {
-        if (__i >= __buffer.size() && !__IsMetaState(__state))
+        if (I_ >= Buffer_.size() && !__IsMetaState(State_))
             break;
-        switch (__state) {
-            case STT_SKIP_EMPTY_LINES:          __state = STT_SkipEmptyLines(&run); break;
-            case STT_SKIP_CRLF_EMPTY_LINES:     __state = STT_SkipCrlfEmptyLines(&run); break;
-            case STT_PARSE_META:                __state = STT_ParseMeta(&run); break;
-            case STT_BUFF_META:                 __state = STT_BuffMeta(&run); break;
-            case STT_BUFF_META_LINE:            __state = STT_BuffMetaLine(&run); break;
-            case STT_READ_BODY_CONTENT_LENGTH:  __state = STT_ReadBodyContentLength(&run); break;
-            case STT_BUFF_CHUNK_SIZE:           __state = STT_BuffChunkSize(&run); break;
-            case STT_PARSE_CHUNK_SIZE:          __state = STT_ParseChunkSize(&run); break;
-            case STT_READ_CHUNK_DATA:           __state = STT_ReadChunkData(&run); break;
-            case STT_SKIP_CRLF_CHUNK_DATA:      __state = STT_SkipCrlfChunkData(&run); break;
-            case STT_HAVE_MESSAGE:              __state = STT_HaveMessage(&run); break;
-            case STT_ERROR_OCCURED:             __state = STT_ErrorOccured(&run); break;
+        switch (State_) {
+            case STT_SKIP_EMPTY_LINES:          State_ = STT_SkipEmptyLines(&run); break;
+            case STT_SKIP_CRLF_EMPTY_LINES:     State_ = STT_SkipCrlfEmptyLines(&run); break;
+            case STT_PARSE_META:                State_ = STT_ParseMeta(&run); break;
+            case STT_BUFF_META:                 State_ = STT_BuffMeta(&run); break;
+            case STT_BUFF_META_LINE:            State_ = STT_BuffMetaLine(&run); break;
+            case STT_READ_BODY_CONTENT_LENGTH:  State_ = STT_ReadBodyContentLength(&run); break;
+            case STT_BUFF_CHUNK_SIZE:           State_ = STT_BuffChunkSize(&run); break;
+            case STT_PARSE_CHUNK_SIZE:          State_ = STT_ParseChunkSize(&run); break;
+            case STT_READ_CHUNK_DATA:           State_ = STT_ReadChunkData(&run); break;
+            case STT_SKIP_CRLF_CHUNK_DATA:      State_ = STT_SkipCrlfChunkData(&run); break;
+            case STT_HAVE_MESSAGE:              State_ = STT_HaveMessage(&run); break;
+            case STT_ERROR_OCCURED:             State_ = STT_ErrorOccured(&run); break;
         }
     }
 }
@@ -231,44 +231,44 @@ bool            RequestReader::__IsMetaState(State stt) {
 }
 
 void            RequestReader::__ClearRequest() {
-    __req_data = Request();
+    Result_ = Request();
 }
 
 void            RequestReader::__FlushParsedBuffer() {
-    __buffer = __buffer.substr(__i);
-    __i = 0;
+    Buffer_ = Buffer_.substr(I_);
+    I_ = 0;
 }
 
 std::string     RequestReader::__GetParsedBuffer() const {
-    return __buffer.substr(0, __i);
+    return Buffer_.substr(0, I_);
 }
 
 void            RequestReader::Read(const std::string& bytes) {
-    __buffer += bytes;
+    Buffer_ += bytes;
 }
 
 void            RequestReader::Reset() {
-    __i = 0;
-    __err = Error(0);
-    __state = STT_SKIP_EMPTY_LINES;
-    __buffer.clear();
+    I_ = 0;
+    Error_ = Error(0);
+    State_ = STT_SKIP_EMPTY_LINES;
+    Buffer_.clear();
     __ClearRequest();
 }
 
 bool            RequestReader::HasMessage() const {
-    return __state == STT_HAVE_MESSAGE;
+    return State_ == STT_HAVE_MESSAGE;
 }
 
 bool            RequestReader::HasError() const {
-    return __state == STT_ERROR_OCCURED;
+    return State_ == STT_ERROR_OCCURED;
 }
 
 Error           RequestReader::GetError() const {
-    return __err;
+    return Error_;
 }
 
 Request         RequestReader::GetMessage() const {
-    return __req_data;
+    return Result_;
 }
 
 }  // namespace Http

@@ -13,11 +13,11 @@
 namespace Webserver {
 
 void HttpServer::__EvaluateCgiWorkers() {
-    for (CgiPidMap::iterator it = __cgi_pid_map.begin();
-                             it != __cgi_pid_map.end();) {
+    for (CgiPidMap::iterator it = CgiPids_.begin();
+                             it != CgiPids_.end();) {
         CgiEntry& ce = it->second;
 
-        int rc = waitpid(ce.pid, NULL, WNOHANG);
+        int rc = waitpid(ce.Pid, NULL, WNOHANG);
         // not dead
         if (rc == 0) {
             ++it;
@@ -25,34 +25,34 @@ void HttpServer::__EvaluateCgiWorkers() {
         }
         
         if (rc < 0) {
-            debug(__system_log, "Cgi[%d]: waitpid error, killing worker", ce.pid);
+            debug(SystemLog_, "Cgi[%d]: waitpid error, killing worker", ce.Pid);
             __StopCgiWorker(&ce);
         }
 
-        debug(__system_log, "Cgi[%d]: worker exited", ce.pid);
+        debug(SystemLog_, "Cgi[%d]: worker exited", ce.Pid);
 
         __StopCgiRead(&ce);
         __StopCgiWrite(&ce);
         CgiPidMap::iterator del = it++;
-        __cgi_pid_map.erase(del);
+        CgiPids_.erase(del);
     }
 }
 
 Cgi::CStringVec
 HttpServer::__FillCgiMetavars(SessionCtx* ss, const std::string& filepath) {
     Cgi::Metavars   metavar;    
-    metavar.AddHttpHeaders(ss->http_req.headers);
-    metavar.GetMapRef()["REMOTE_ADDR"] = std::string(ss->conn_sock.GetSockInfo().addr_BE);
-    metavar.GetMapRef()["CONTENT_TYPE"] = ss->http_req.headers.Get("Content-Type");
-    metavar.GetMapRef()["CONTENT_LENGTH"] = ss->http_req.headers.Get("Content-Length");
-    metavar.GetMapRef()["QUERY_STRING"] = ss->http_req.uri.query_str;
+    metavar.AddHttpHeaders(ss->Request.Headers);
+    metavar.GetMapRef()["REMOTE_ADDR"] = std::string(ss->ConnectionSock.GetSockInfo().Addr_BE);
+    metavar.GetMapRef()["CONTENT_TYPE"] = ss->Request.Headers.Get("Content-Type");
+    metavar.GetMapRef()["CONTENT_LENGTH"] = ss->Request.Headers.Get("Content-Length");
+    metavar.GetMapRef()["QUERY_STRING"] = ss->Request.Uri.QueryStr;
     metavar.GetMapRef()["GATEWAY_INTERFACE"] = "CGI/1.1";
-    metavar.GetMapRef()["SERVER_PORT"] = Convert<std::string>(u16(__listeners_map[ss->__listener_fd].GetSockInfo().port_BE));
-    metavar.GetMapRef()["SERVER_PROTOCOL"] = Http::ProtocolVersionToString(ss->http_req.version);
+    metavar.GetMapRef()["SERVER_PORT"] = Convert<std::string>(UInt16(Listeners_[ss->ListenerFileDesc].GetSockInfo().Port_BE));
+    metavar.GetMapRef()["SERVER_PROTOCOL"] = Http::ProtocolVersionToString(ss->Request.Version);
     metavar.GetMapRef()["SERVER_SOFTWARE"] = "webserv/1.0.0";
-    metavar.GetMapRef()["REQUEST_METHOD"] = Http::MethodToString(ss->http_req.method);
+    metavar.GetMapRef()["REQUEST_METHOD"] = Http::MethodToString(ss->Request.Method);
     metavar.GetMapRef()["SCRIPT_NAME"] = filepath;
-    metavar.GetMapRef()["SERVER_NAME"] = ss->http_req.headers.Get("Host");
+    metavar.GetMapRef()["SERVER_NAME"] = ss->Request.Headers.Get("Host");
     // For php
     metavar.GetMapRef()["SCRIPT_FILENAME"] = filepath;
     metavar.GetMapRef()["REDIRECT_STATUS"] = "200";
@@ -61,20 +61,20 @@ HttpServer::__FillCgiMetavars(SessionCtx* ss, const std::string& filepath) {
 
 bool  HttpServer::__AvaibleCgiDriver(const std::string& filepath) {
     std::string fileext = GetFileExt(filepath);
-    return __cgi_drivers.count(fileext) > 0;
+    return CgiDrivers_.count(fileext) > 0;
 }
 
 std::string  HttpServer::__GetCgiDriver(const std::string& filepath) {
     std::string fileext = GetFileExt(filepath);
 
-    if (__cgi_drivers.count(fileext) > 0) {
-        return __cgi_drivers[fileext];
+    if (CgiDrivers_.count(fileext) > 0) {
+        return CgiDrivers_[fileext];
     }
 
     return "";
 }
 
-void  HttpServer::__CgiWorker(fd_t ipip[], fd_t opip[], SessionCtx* ss, const std::string& filepath) {
+void  HttpServer::__CgiWorker(Fd ipip[], Fd opip[], SessionCtx* ss, const std::string& filepath) {
     if (dup2(ipip[0], STDIN_FILENO) < 0)
         exit(1);
     if (dup2(opip[1], STDOUT_FILENO) < 0)
@@ -103,225 +103,225 @@ void  HttpServer::__CgiWorker(fd_t ipip[], fd_t opip[], SessionCtx* ss, const st
 
 void  HttpServer::__HandleCgiRequest(SessionCtx* ss, const std::string& filepath) {
     CgiEntry    cgi;
-    cgi.in_buf = ss->http_req.body;
+    cgi.InBuffer = ss->Request.Body;
 
-    fd_t ipip[2] = {-1, -1};
-    fd_t opip[2] = {-1, -1};
+    Fd ipip[2] = {-1, -1};
+    Fd opip[2] = {-1, -1};
 
     if (pipe(ipip) < 0)
-        return ss->res_code = 500, __OnHttpError(ss);
+        return ss->ResponseCode = 500, __OnHttpError(ss);
 
     if (pipe(opip) < 0)
         return close(ipip[0]), close(ipip[1]),
-               ss->res_code = 500, __OnHttpError(ss);
+               ss->ResponseCode = 500, __OnHttpError(ss);
 
-    cgi.pid = fork();
-    if (cgi.pid == 0) {
+    cgi.Pid = fork();
+    if (cgi.Pid == 0) {
         // cgi worker
         return __CgiWorker(ipip, opip, ss, filepath);
     }
     // cgi watcher
 
-    if (cgi.pid < 0) {
+    if (cgi.Pid < 0) {
         close(ipip[0]);
         close(ipip[1]);
         close(opip[0]);
         close(opip[1]);
-        return ss->res_code = 500, __OnHttpError(ss);
+        return ss->ResponseCode = 500, __OnHttpError(ss);
     }
 
-    cgi.fd_in = IO::File(ipip[1]);
+    cgi.FileDescIn = IO::File(ipip[1]);
     close(ipip[0]);
-    cgi.fd_out = IO::File(opip[0]);
+    cgi.FileDescOut = IO::File(opip[0]);
     close(opip[1]);
-    debug(__system_log, "Cgi[%d]: forked: (input_fd: %d), (output_fd: %d)",
-                         cgi.pid,
-                         cgi.fd_in.GetFd(),
-                         cgi.fd_out.GetFd());
+    debug(SystemLog_, "Cgi[%d]: forked: (input_fd: %d), (output_fd: %d)",
+                         cgi.Pid,
+                         cgi.FileDescIn.GetFd(),
+                         cgi.FileDescOut.GetFd());
 
     /// Add cgi to our inner structures
-    __cgi_pid_map[cgi.pid] = cgi;
-    ss->__link_cgi = &__cgi_pid_map[cgi.pid];
+    CgiPids_[cgi.Pid] = cgi;
+    ss->CgiPtr = &CgiPids_[cgi.Pid];
 
-    __cgi_fd_map[cgi.fd_in.GetFd()] = ss;
-    __cgi_fd_map[cgi.fd_out.GetFd()] = ss;
+    CgiSessions_[cgi.FileDescIn.GetFd()] = ss;
+    CgiSessions_[cgi.FileDescOut.GetFd()] = ss;
 
-    if (!cgi.in_buf.empty())
-        __poller.AddFd(cgi.fd_in.GetFd(), IO::Poller::POLL_WRITE);
-    __poller.AddFd(cgi.fd_out.GetFd(), IO::Poller::POLL_READ);
+    if (!cgi.InBuffer.empty())
+        Poller_.AddFd(cgi.FileDescIn.GetFd(), IO::Poller::POLL_WRITE);
+    Poller_.AddFd(cgi.FileDescOut.GetFd(), IO::Poller::POLL_READ);
 }
 
 void  HttpServer::__StopCgiWorker(CgiEntry* ce) {
-    kill(ce->pid, SIGKILL);
+    kill(ce->Pid, SIGKILL);
 }
 
 void  HttpServer::__StopCgiRead(CgiEntry* ce) {
-    __poller.RmFd(ce->fd_out.GetFd());
-    __cgi_fd_map.erase(ce->fd_out.GetFd());
+    Poller_.RmFd(ce->FileDescOut.GetFd());
+    CgiSessions_.erase(ce->FileDescOut.GetFd());
 }
 
 void  HttpServer::__StopCgiWrite(CgiEntry* ce) {
-    __poller.RmFd(ce->fd_in.GetFd());
-    __cgi_fd_map.erase(ce->fd_in.GetFd());
+    Poller_.RmFd(ce->FileDescIn.GetFd());
+    CgiSessions_.erase(ce->FileDescIn.GetFd());
 }
 
 void  HttpServer::__OnCgiResponse(SessionCtx* ss) {
-    CgiEntry& ce = *ss->__link_cgi;
+    CgiEntry& ce = *ss->CgiPtr;
     __StopCgiRead(&ce);
-    debug(ss->access_log, "Cgi[%d]: response ready", ce.pid);
-    ss->http_writer.Write(ce.cgi_res.body);
-    ss->http_writer.Header().SetMap(ce.cgi_res.headers.GetMap());
-    return ss->res_code = ce.cgi_res.code, __OnHttpResponse(ss);
+    debug(ss->AccessLog, "Cgi[%d]: response ready", ce.Pid);
+    ss->ResponseWriter.Write(ce.CgiResponse.Body);
+    ss->ResponseWriter.Header().SetMap(ce.CgiResponse.Headers.GetMap());
+    return ss->ResponseCode = ce.CgiResponse.Code, __OnHttpResponse(ss);
 }
 
 void  HttpServer::__OnCgiHup(SessionCtx* ss) {
-    CgiEntry& ce = *ss->__link_cgi;
+    CgiEntry& ce = *ss->CgiPtr;
 
     __StopCgiRead(&ce);
 
-    ce.cgi_rdr.EndRead();
-    ce.cgi_rdr.Process();
+    ce.CgiReader.EndRead();
+    ce.CgiReader.Process();
     
-    if (ce.cgi_rdr.HasError()) {
-        Error err = ce.cgi_rdr.GetError();
-        debug(ss->access_log, "Cgi[%d]: parse error: %s", ce.pid, err.message.c_str());
+    if (ce.CgiReader.HasError()) {
+        Error err = ce.CgiReader.GetError();
+        debug(ss->AccessLog, "Cgi[%d]: parse error: %s", ce.Pid, err.Description.c_str());
         return __OnCgiError(ss);
     }
 
-    if (ce.cgi_rdr.HasMessage()) {
-        ce.cgi_res = ce.cgi_rdr.GetMessage();
+    if (ce.CgiReader.HasMessage()) {
+        ce.CgiResponse = ce.CgiReader.GetMessage();
         return __OnCgiResponse(ss);
     }
 
-    debug(ss->access_log, "Cgi[%d]: no parsed output", ce.pid);
+    debug(ss->AccessLog, "Cgi[%d]: no parsed output", ce.Pid);
     return __OnCgiError(ss);
 }
 
 void  HttpServer::__OnCgiOutput(SessionCtx* ss) {
-    static const usize READ_BUF_SZ = 10000;
-    CgiEntry& ce = *ss->__link_cgi;
-    std::string portion = ce.fd_out.Read(READ_BUF_SZ);
+    static const USize READ_BUF_SZ = 10000;
+    CgiEntry& ce = *ss->CgiPtr;
+    std::string portion = ce.FileDescOut.Read(READ_BUF_SZ);
 
     if (portion.empty()) {
-        ce.cgi_rdr.EndRead();
+        ce.CgiReader.EndRead();
     } else {
-        ce.cgi_rdr.Read(portion);
+        ce.CgiReader.Read(portion);
     }
 
-    ce.cgi_rdr.Process();
+    ce.CgiReader.Process();
 
-    if (ce.cgi_rdr.HasError()) {
-        Error err = ce.cgi_rdr.GetError();
-        debug(ss->access_log, "Cgi[%d]: parse error: %s", ce.pid, err.message.c_str());
+    if (ce.CgiReader.HasError()) {
+        Error err = ce.CgiReader.GetError();
+        debug(ss->AccessLog, "Cgi[%d]: parse error: %s", ce.Pid, err.Description.c_str());
         return __OnCgiError(ss);
     }
 
-    if (ce.cgi_rdr.HasMessage()) {
-        ce.cgi_res = ce.cgi_rdr.GetMessage();
+    if (ce.CgiReader.HasMessage()) {
+        ce.CgiResponse = ce.CgiReader.GetMessage();
         return __OnCgiResponse(ss);
     }
 }
 
 void  HttpServer::__OnCgiInput(SessionCtx* ss) {
-    CgiEntry& ce = *ss->__link_cgi;
-    static const usize  WRITE_BUFF_SZ = 10000;
+    CgiEntry& ce = *ss->CgiPtr;
+    static const USize  WRITE_BUFF_SZ = 10000;
 
-    if (ce.in_buf.empty()) {
-        __StopCgiWrite(ss->__link_cgi);
+    if (ce.InBuffer.empty()) {
+        __StopCgiWrite(ss->CgiPtr);
     } else {
-        std::string  portion = ce.in_buf.substr(0, WRITE_BUFF_SZ);
-        isize trasmitted_bytes = ce.fd_in.Write(portion);
+        std::string  portion = ce.InBuffer.substr(0, WRITE_BUFF_SZ);
+        ISize trasmitted_bytes = ce.FileDescIn.Write(portion);
 
-        ce.in_buf = ce.in_buf.substr(trasmitted_bytes);
+        ce.InBuffer = ce.InBuffer.substr(trasmitted_bytes);
     }
 }
 
 void  HttpServer::__OnCgiError(SessionCtx* ss) {
-    __StopCgiWrite(ss->__link_cgi);
-    __StopCgiRead(ss->__link_cgi);
-    __StopCgiWorker(ss->__link_cgi);
+    __StopCgiWrite(ss->CgiPtr);
+    __StopCgiRead(ss->CgiPtr);
+    __StopCgiWorker(ss->CgiPtr);
 
-    return ss->res_code = 500, __OnHttpError(ss);
+    return ss->ResponseCode = 500, __OnHttpError(ss);
 }
 
 class HttpServer::EvCgiRead : public Event::IEvent {
  private:
-    HttpServer* __server;
-    SessionCtx* __session;
+    HttpServer* Server_;
+    SessionCtx* SessionCtx_;
 
  public:
     EvCgiRead(HttpServer *srv, SessionCtx* ss)
-    : __server(srv)
-    , __session(ss)
+    : Server_(srv)
+    , SessionCtx_(ss)
     {
     }
 
     void  Handle() {
-        __server->__OnCgiOutput(__session);
+        Server_->__OnCgiOutput(SessionCtx_);
     }
 };
 
 class HttpServer::EvCgiWrite : public Event::IEvent {
  private:
-    HttpServer* __server;
-    SessionCtx* __session;
+    HttpServer* Server_;
+    SessionCtx* SessionCtx_;
 
  public:
     EvCgiWrite(HttpServer *srv, SessionCtx* ss)
-    : __server(srv)
-    , __session(ss)
+    : Server_(srv)
+    , SessionCtx_(ss)
     {
     }
 
     void  Handle() {
-        __server->__OnCgiInput(__session);
+        Server_->__OnCgiInput(SessionCtx_);
     }
 };
 
 class HttpServer::EvCgiError : public Event::IEvent {
  private:
-    HttpServer* __server;
-    SessionCtx* __session;
+    HttpServer* Server_;
+    SessionCtx* SessionCtx_;
 
  public:
     EvCgiError(HttpServer *srv, SessionCtx* ss)
-    : __server(srv)
-    , __session(ss)
+    : Server_(srv)
+    , SessionCtx_(ss)
     {
     }
 
     void  Handle() {
-        __server->__OnCgiError(__session);
+        Server_->__OnCgiError(SessionCtx_);
     }
 };
 
 class HttpServer::EvCgiHup : public Event::IEvent {
  private:
-    HttpServer* __server;
-    SessionCtx* __session;
+    HttpServer* Server_;
+    SessionCtx* SessionCtx_;
 
  public:
     EvCgiHup(HttpServer *srv, SessionCtx* ss)
-    : __server(srv)
-    , __session(ss)
+    : Server_(srv)
+    , SessionCtx_(ss)
     {
     }
 
     void  Handle() {
-        __server->__OnCgiHup(__session);
+        Server_->__OnCgiHup(SessionCtx_);
     }
 };
 
 class HttpServer::EvCgiHook : public Event::IEvent {
  private:
-    HttpServer* __server;
+    HttpServer* Server_;
 
  public:
-    EvCgiHook(HttpServer *srv) : __server(srv) {
+    EvCgiHook(HttpServer *srv) : Server_(srv) {
     }
 
     void  Handle() {
-        __server->__EvaluateCgiWorkers();
+        Server_->__EvaluateCgiWorkers();
     }
 };
 

@@ -32,8 +32,8 @@ class ResponseWriter {
     bool            HasBody() const; 
 
  protected:
-    Headers         __hdrs;
-    std::string     __body;
+    Headers         Headers_;
+    std::string     Body_;
 };
 
 }  // namespace Http

@@ -27,8 +27,8 @@ namespace {
 //     return full_path.substr(last_path_sep_pos);
 // }
 
-usize        PathDiffer(const std::string& pattern, const std::string& path) {
-    usize i;
+USize        PathDiffer(const std::string& pattern, const std::string& path) {
+    USize i;
     for (i = 0; i < pattern.length() && pattern[i] == path[i]; ++i) {
     }
 
@@ -39,7 +39,7 @@ usize        PathDiffer(const std::string& pattern, const std::string& path) {
 // /abc/adf/, /abc/adf/abg/jhg -> abg/jhg
 // /abc/ad,   /abc/adf/abg/jhg -> adf/abg/jhg
 std::string  GetRelativePathFromPattern(const std::string& pattern, const std::string& path) {
-    usize diff = PathDiffer(pattern, path);
+    USize diff = PathDiffer(pattern, path);
 
     if (path.length() == diff)
         return "";
@@ -53,7 +53,7 @@ std::string  GetRelativePathFromPattern(const std::string& pattern, const std::s
 }
 
 bool  MatchPath(const std::string& pattern, const std::string& path) {
-    usize diff = PathDiffer(pattern, path);
+    USize diff = PathDiffer(pattern, path);
 
     return pattern.length() == diff;
 }
@@ -66,7 +66,7 @@ HttpServer::__FindWebRoute(const Http::Request& req, const WebRouteList& routes)
                                       route_it != routes.end();
                                       ++route_it) {
         const WebRoute& try_route = *route_it;
-        if (MatchPath(try_route.pattern, req.uri.path) == false)
+        if (MatchPath(try_route.Pattern, req.Uri.Path) == false)
             continue;
         return &try_route;
     }
@@ -75,61 +75,61 @@ HttpServer::__FindWebRoute(const Http::Request& req, const WebRouteList& routes)
 }
 
 void  HttpServer::__HandleBadMethod(SessionCtx* ss, const WebRoute& route) {
-    debug(ss->access_log, "Session[%d]: request method (%s) isn't allowed",
-                           ss->conn_sock.GetFd(),
-                           Http::MethodToString(ss->http_req.method).c_str());
+    debug(ss->AccessLog, "Session[%d]: request method (%s) isn't allowed",
+                           ss->ConnectionSock.GetFd(),
+                           Http::MethodToString(ss->Request.Method).c_str());
 
-    ss->http_writer.Reset();
-    for (MethodSet::iterator it = route.allowed_methods.begin();
-                                it != route.allowed_methods.end();
+    ss->ResponseWriter.Reset();
+    for (MethodSet::iterator it = route.AllowedMethods.begin();
+                                it != route.AllowedMethods.end();
                                 ++it) {
-        ss->http_writer.Header().Add("Allow", Http::MethodToString(*it));
+        ss->ResponseWriter.Header().Add("Allow", Http::MethodToString(*it));
     }
-    return ss->res_code = 405, __OnHttpError(ss, false);
+    return ss->ResponseCode = 405, __OnHttpError(ss, false);
 }
 
 void  HttpServer::__HandleDirectoryResource(SessionCtx* ss,
                                             const WebRoute& route,
                                             const std::string& filepath) {
 
-    debug(ss->access_log, "Session[%d]: resource (%s) found, it's a directory",
-                          ss->conn_sock.GetFd(),
+    debug(ss->AccessLog, "Session[%d]: resource (%s) found, it's a directory",
+                          ss->ConnectionSock.GetFd(),
                           filepath.c_str());
 
-    if (!route.index_page.empty()) {
-        std::string indexpath = AppendPath(filepath, route.index_page);
+    if (!route.IndexPage.empty()) {
+        std::string indexpath = AppendPath(filepath, route.IndexPage);
         if (!IsDirectory(indexpath) && IsExist(indexpath)) {
-            std::string redirect_link = AppendPath(ss->http_req.uri.path, route.index_page);
-            debug(ss->access_log, "Session[%d]: Found index page (%s), redirecting to (%s)",
-                                    ss->conn_sock.GetFd(),
+            std::string redirect_link = AppendPath(ss->Request.Uri.Path, route.IndexPage);
+            debug(ss->AccessLog, "Session[%d]: Found index page (%s), redirecting to (%s)",
+                                    ss->ConnectionSock.GetFd(),
                                     indexpath.c_str(),
                                     redirect_link.c_str());
             return __OnHttpRedirect(ss, redirect_link, 302);
         } else {
-            return ss->res_code = 404, __OnHttpError(ss);
+            return ss->ResponseCode = 404, __OnHttpError(ss);
         }
 
     } else if (Back(filepath) != '/') {
-        std::string full_dir_redirect = AppendPath(ss->http_req.uri.path, route.index_page);
-        debug(ss->access_log, "Session[%d]: Found directory (%s), redirecting to (%s)",
-                                ss->conn_sock.GetFd(),
+        std::string fullDirRedirect = AppendPath(ss->Request.Uri.Path, route.IndexPage);
+        debug(ss->AccessLog, "Session[%d]: Found directory (%s), redirecting to (%s)",
+                                ss->ConnectionSock.GetFd(),
                                 filepath.c_str(),
-                                full_dir_redirect.c_str());
-        return __OnHttpRedirect(ss, full_dir_redirect, 302);
+                                fullDirRedirect.c_str());
+        return __OnHttpRedirect(ss, fullDirRedirect, 302);
 
-    } else if (route.listing_enabled) {
-        debug(ss->access_log, "Session[%d]: Found directory (%s), sending directory listing",
-                                ss->conn_sock.GetFd(),
+    } else if (route.ListingEnabled) {
+        debug(ss->AccessLog, "Session[%d]: Found directory (%s), sending directory listing",
+                                ss->ConnectionSock.GetFd(),
                                 filepath.c_str());
         return __SendDirectoryListing(filepath, ss);
     }
 
-    debug(ss->access_log, "Session[%d]: Found directory (%s), unable to resolve: (index_page: %s, listing: %s)",
-                        ss->conn_sock.GetFd(),
+    debug(ss->AccessLog, "Session[%d]: Found directory (%s), unable to resolve: (index_page: %s, listing: %s)",
+                        ss->ConnectionSock.GetFd(),
                         filepath.c_str(),
-                        (route.index_page.empty() ? "NO" : "YES"),
-                        (route.listing_enabled ? "YES" : "NO"));
-    return ss->res_code = 404, __OnHttpError(ss);
+                        (route.IndexPage.empty() ? "NO" : "YES"),
+                        (route.ListingEnabled ? "YES" : "NO"));
+    return ss->ResponseCode = 404, __OnHttpError(ss);
 }
 
 void  HttpServer::__HandleStaticFile(SessionCtx* ss, const std::string& file_path) {
@@ -137,43 +137,43 @@ void  HttpServer::__HandleStaticFile(SessionCtx* ss, const std::string& file_pat
     IO::File  file = IO::File::OpenFile(file_path, O_RDONLY, &err);
 
     if (err.IsError()) {
-        error(ss->error_log, "Session[%d]: static file \"%s\" couldn't be open: ``%s''",
-                              ss->conn_sock.GetFd(),
+        error(ss->ErrorLOg, "Session[%d]: static file \"%s\" couldn't be open: ``%s''",
+                              ss->ConnectionSock.GetFd(),
                               file_path.c_str(),
-                              err.message.c_str());
-        return ss->res_code = 500, __OnHttpError(ss);
+                              err.Description.c_str());
+        return ss->ResponseCode = 500, __OnHttpError(ss);
     }
 
-    std::string mime_type = Mime::MapType(ss->server->mime_map, file_path);
+    std::string mimeType = Mime::MapType(ss->Server->MimeMap, file_path);
 
-    info(ss->access_log, "Session[%d]: sending static file (%s) with type \"%s\"",
-                          ss->conn_sock.GetFd(),
+    info(ss->AccessLog, "Session[%d]: sending static file (%s) with type \"%s\"",
+                          ss->ConnectionSock.GetFd(),
                           file_path.c_str(),
-                          mime_type.c_str());
+                          mimeType.c_str());
 
-    return ss->res_code = 200,
-           ss->http_writer.Header().Set("Content-type", mime_type),
+    return ss->ResponseCode = 200,
+           ss->ResponseWriter.Header().Set("Content-type", mimeType),
            __SendStaticFileResponse(file, ss);
 }
 
 void  HttpServer::__OnHttpRedirect(SessionCtx* ss, const std::string& location, int code) {
-    ss->http_writer.Header().Set("Location", location);
-    ss->res_code = code;
+    ss->ResponseWriter.Header().Set("Location", location);
+    ss->ResponseCode = code;
     return __OnHttpResponse(ss);
 }
 
 HttpServer::VirtualServer*
-HttpServer::__GetVirtualServer(fd_t lfd, const std::string& hostname) {
+HttpServer::__GetVirtualServer(Fd lfd, const std::string& hostname) {
 
-    std::pair<VirtualServerMap::iterator, VirtualServerMap::iterator> vit_range = __vservers_map.equal_range(lfd);
+    std::pair<VirtualServerMap::iterator, VirtualServerMap::iterator> vit_range = VirtualServers_.equal_range(lfd);
     VirtualServerMap::iterator vit = vit_range.first;
     VirtualServerMap::iterator vit_e = vit_range.second;
 
     for (; vit != vit_e; ++vit) {
         VirtualServer* vs = &vit->second;
-        for (VirtualServer::Hostnames::iterator it = vs->hostnames.begin();
-                                                it != vs->hostnames.end();
-                                                ++it) {
+        for (VirtualServer::HostnameList::iterator it = vs->Hostnames.begin();
+                                                   it != vs->Hostnames.end();
+                                                   ++it) {
             if (Match(*it, hostname)) {
                 return vs;
             }
@@ -185,57 +185,57 @@ HttpServer::__GetVirtualServer(fd_t lfd, const std::string& hostname) {
 
 void  HttpServer::__OnHttpRequest(SessionCtx* ss) {
     /// Max body size check
-    if (ss->http_req.body.size() > __max_body_size)
-            return ss->res_code = 413, __OnHttpError(ss);
+    if (ss->Request.Body.size() > MaxBodySize_)
+            return ss->ResponseCode = 413, __OnHttpError(ss);
 
     /// Virtual server resolving
-    VirtualServer* vs = __GetVirtualServer(ss->__listener_fd, ss->http_req.headers.Get("Host"));
+    VirtualServer* vs = __GetVirtualServer(ss->ListenerFileDesc, ss->Request.Headers.Get("Host"));
     if (vs == NULL) {
-        ss->server = NULL;
-        ss->error_log = __system_log;
-        ss->access_log = __system_log;
-        info(__system_log, "Session[%d]: can't identify virtual server", ss->conn_sock.GetFd());
-        return ss->res_code = 400, __OnHttpError(ss);
+        ss->Server = NULL;
+        ss->ErrorLOg = SystemLog_;
+        ss->AccessLog = SystemLog_;
+        info(SystemLog_, "Session[%d]: can't identify virtual server", ss->ConnectionSock.GetFd());
+        return ss->ResponseCode = 400, __OnHttpError(ss);
     }
 
-    ss->server = vs;
-    ss->access_log = vs->access_log;
-    ss->error_log = vs->error_log;
+    ss->Server = vs;
+    ss->AccessLog = vs->AccessLog;
+    ss->ErrorLOg = vs->ErrorLog;
 
-    info(ss->access_log, "Session[%d]: new HTTP request:\n"
+    info(ss->AccessLog, "Session[%d]: new HTTP request:\n"
                          ">   http_method: %s\n"
                          ">  http_version: %s\n"
                          ">           uri: %s\n"
                          ">          host: %s",
-                            ss->conn_sock.GetFd(),
-                            Http::MethodToString(ss->http_req.method).c_str(),
-                            Http::ProtocolVersionToString(ss->http_req.version).c_str(),
-                            ss->http_req.uri.ToString().c_str(),
-                            ss->http_req.headers.Get("Host").c_str());
+                            ss->ConnectionSock.GetFd(),
+                            Http::MethodToString(ss->Request.Method).c_str(),
+                            Http::ProtocolVersionToString(ss->Request.Version).c_str(),
+                            ss->Request.Uri.ToString().c_str(),
+                            ss->Request.Headers.Get("Host").c_str());
 
-    info(ss->access_log, "Session[%d]: virtual server identified", ss->conn_sock.GetFd());
+    info(ss->AccessLog, "Session[%d]: virtual server identified", ss->ConnectionSock.GetFd());
 
     /// Resolving Web Route
-    const WebRoute*  route = __FindWebRoute(ss->http_req, vs->routes);
+    const WebRoute*  route = __FindWebRoute(ss->Request, vs->Routes);
     if (route == NULL) {
-        debug(ss->access_log, "Session[%d]: no web route", ss->conn_sock.GetFd());
-        return ss->res_code = 404, __OnHttpError(ss);
+        debug(ss->AccessLog, "Session[%d]: no web route", ss->ConnectionSock.GetFd());
+        return ss->ResponseCode = 404, __OnHttpError(ss);
     }
 
-    debug(ss->access_log, "Session[%d]: choosen web route with pattern \"%s\"",
-                            ss->conn_sock.GetFd(),
-                            route->pattern.c_str());
+    debug(ss->AccessLog, "Session[%d]: choosen web route with pattern \"%s\"",
+                            ss->ConnectionSock.GetFd(),
+                            route->Pattern.c_str());
 
     /// Resolving redirections
-    if (route->reditect.enabled) {
-        debug(ss->access_log, "Session[%d]: redirection is enabled, redirecting to \"%s\"",
-                                ss->conn_sock.GetFd(),
-                                route->reditect.location.c_str());
-        return __OnHttpRedirect(ss, route->reditect.location, route->reditect.code);
+    if (route->Redirect.Enabled) {
+        debug(ss->AccessLog, "Session[%d]: redirection is enabled, redirecting to \"%s\"",
+                                ss->ConnectionSock.GetFd(),
+                                route->Redirect.Location.c_str());
+        return __OnHttpRedirect(ss, route->Redirect.Location, route->Redirect.Code);
     }
 
     /// Check HTTP method is allowed
-    if (route->allowed_methods.count(ss->http_req.method) <= 0) {
+    if (route->AllowedMethods.count(ss->Request.Method) <= 0) {
         return __HandleBadMethod(ss, *route);
     }
 
@@ -243,15 +243,15 @@ void  HttpServer::__OnHttpRequest(SessionCtx* ss) {
         return __HandleUploadRequest(ss, *route);
 
     /// Getting pathes
-    std::string  relpath = GetRelativePathFromPattern(route->pattern, ss->http_req.uri.path);
-    std::string  filepath = AppendPath(route->root_directory, relpath);
+    std::string  relpath = GetRelativePathFromPattern(route->Pattern, ss->Request.Uri.Path);
+    std::string  filepath = AppendPath(route->RootDir, relpath);
 
     /// Check for existent
     if (!IsExist(filepath)) {
-        debug(ss->access_log, "Session[%d]: resource (\"%s\") not found",
-                              ss->conn_sock.GetFd(),
+        debug(ss->AccessLog, "Session[%d]: resource (\"%s\") not found",
+                              ss->ConnectionSock.GetFd(),
                               filepath.c_str());
-        return ss->res_code = 404, __OnHttpError(ss);
+        return ss->ResponseCode = 404, __OnHttpError(ss);
     }
 
     /// Handle directory accesses
@@ -259,10 +259,10 @@ void  HttpServer::__OnHttpRequest(SessionCtx* ss) {
         return __HandleDirectoryResource(ss, *route, filepath);
     }
 
-    if (ss->http_req.method == Http::METHOD_DELETE)
+    if (ss->Request.Method == Http::METHOD_DELETE)
         return __HandleDeleteFile(ss, filepath);
 
-    if (route->cgi_enabled && __AvaibleCgiDriver(filepath)) {
+    if (route->CgiEnabled && __AvaibleCgiDriver(filepath)) {
         return __HandleCgiRequest(ss, filepath);
     }
 
@@ -272,21 +272,21 @@ void  HttpServer::__OnHttpRequest(SessionCtx* ss) {
 
 void  HttpServer::__HandleDeleteFile(SessionCtx* ss, const std::string& filepath) {
     if (std::remove(filepath.c_str()))
-        return ss->res_code = 500, __OnHttpError(ss);
-    return ss->res_code = 200, __OnHttpResponse(ss);
+        return ss->ResponseCode = 500, __OnHttpError(ss);
+    return ss->ResponseCode = 200, __OnHttpResponse(ss);
 }
 
 void  HttpServer::__OnHttpError(SessionCtx* ss, bool reset) {
-    info(ss->access_log, "Session[%d]: sending HTTP error",
-                         ss->conn_sock.GetFd(),
-                         ss->res_code);
+    info(ss->AccessLog, "Session[%d]: sending HTTP error",
+                         ss->ConnectionSock.GetFd(),
+                         ss->ResponseCode);
     if (reset) {
-        ss->http_writer.Reset();
+        ss->ResponseWriter.Reset();
     }
-    if (ss->server != NULL &&
-        ss->server->errpages.find(ss->res_code) != ss->server->errpages.end()) {
+    if (ss->Server != NULL &&
+        ss->Server->ErrorPages.find(ss->ResponseCode) != ss->Server->ErrorPages.end()) {
 
-        IO::File file = __GetErrPage(ss->res_code, ss);
+        IO::File file = __GetErrPage(ss->ResponseCode, ss);
         if (file.GetFd() != -1) {
             return __SendStaticFileResponse(file, ss);
         }
@@ -295,38 +295,38 @@ void  HttpServer::__OnHttpError(SessionCtx* ss, bool reset) {
 }
 
 void  HttpServer::__OnHttpResponse(SessionCtx* ss) {
-    if (ss->http_req.version != Http::HTTP_1_1 &&
-        ss->http_req.version != Http::HTTP_1_0)
-        ss->http_req.version = Http::HTTP_1_1;
+    if (ss->Request.Version != Http::HTTP_1_1 &&
+        ss->Request.Version != Http::HTTP_1_0)
+        ss->Request.Version = Http::HTTP_1_1;
 
-    if (ss->http_req.version == Http::HTTP_1_1) {
+    if (ss->Request.Version == Http::HTTP_1_1) {
         // Set default connection
-        if (ss->conn_close == true) {
-            ss->http_writer.Header().Set("Connection", "close");
-        } else if (!ss->http_writer.Header().Has("Connection")) {
-            ss->http_writer.Header().Set("Connection", "keep-alive");
+        if (ss->IsConnectionClosed == true) {
+            ss->ResponseWriter.Header().Set("Connection", "close");
+        } else if (!ss->ResponseWriter.Header().Has("Connection")) {
+            ss->ResponseWriter.Header().Set("Connection", "keep-alive");
         }
-    } else if (ss->http_req.version == Http::HTTP_1_0) {
-        ss->conn_close = true;
+    } else if (ss->Request.Version == Http::HTTP_1_0) {
+        ss->IsConnectionClosed = true;
     }
 
     // Set default Content-Type
-    if (!ss->http_writer.Header().Has("Content-Type") && ss->http_writer.HasBody()) {
-        ss->http_writer.Header().Set("Content-Type", "text/plain");
+    if (!ss->ResponseWriter.Header().Has("Content-Type") && ss->ResponseWriter.HasBody()) {
+        ss->ResponseWriter.Header().Set("Content-Type", "text/plain");
     }
 
     // Set server name
-    ss->http_writer.Header().Set("Server", "not-ngnix/1.16");
+    ss->ResponseWriter.Header().Set("Server", "not-ngnix/1.16");
 
     // Append to response buffer and enable writing in poller
-    ss->res_buff += ss->http_writer.SendToString(ss->res_code, ss->http_req.version);
-    ss->http_writer.Reset();
+    ss->ResultBuffer += ss->ResponseWriter.SendToString(ss->ResponseCode, ss->Request.Version);
+    ss->ResponseWriter.Reset();
 
-    info(ss->access_log, "Session[%d]: sending HTTP response (code: %d)",
-                         ss->conn_sock.GetFd(),
-                         ss->res_code);
+    info(ss->AccessLog, "Session[%d]: sending HTTP response (code: %d)",
+                         ss->ConnectionSock.GetFd(),
+                         ss->ResponseCode);
 
-    __poller.AddEvMask(ss->conn_sock.GetFd(), IO::Poller::POLL_WRITE);
+    Poller_.AddEvMask(ss->ConnectionSock.GetFd(), IO::Poller::POLL_WRITE);
 }
 
 }  // namespace Webserver

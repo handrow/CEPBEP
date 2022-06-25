@@ -22,7 +22,7 @@ int main(int ac, Cgi::Envs av, Cgi::Envs ev) {
         Error err;
         config = Config::Category::ParseFromINI(config_path, &err);
         if (err.IsError())
-            throw std::runtime_error("Config file parsing failed: " + err.message);
+            throw std::runtime_error("Config file parsing failed: " + err.Description);
         server.Config(config, ev);
     } catch (std::exception& e) {
         std::cerr << "Fatal error: " << e.what() << "\n";

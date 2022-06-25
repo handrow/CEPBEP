@@ -18,7 +18,7 @@ const char* Logger::LVL_TO_STR[] = {
 
 const size_t Logger::SIZE_OF_DATE_STR = 20;
 
-Logger::Logger(Logger::LogLvl lvl, const std::string& logfile_path) : __min_log_lvl(lvl), __path(logfile_path), __fout(NULL) {
+Logger::Logger(Logger::LogLvl lvl, const std::string& logfile_path) : LogLevel_(lvl), Path_(logfile_path), OutStream_(NULL) {
 }
 
 Logger::~Logger() {
@@ -40,16 +40,16 @@ std::string Logger::FormatMessage(const char* message, Logger::LogLvl lvl) {
     // const size_t LOG_LVL_MAX_LEN = 8;
     // const size_t log_level_len = strlen(LVL_TO_STR[lvl]);
     // const size_t log_level_padding = LOG_LVL_MAX_LEN - log_level_len;
-    std::string fmt_string = "[" + GetCurrentTime() + "] (" + std::string(LVL_TO_STR[lvl]) + ")\n" + message + "\n\n";
-    return fmt_string;
+    std::string formatStr = "[" + GetCurrentTime() + "] (" + std::string(LVL_TO_STR[lvl]) + ")\n" + message + "\n\n";
+    return formatStr;
 }
 
 void Logger::Send(Logger::LogLvl lvl, const char* message, ...) {
-    if (lvl >= __min_log_lvl) {
+    if (lvl >= LogLevel_) {
         va_list vl;
         va_start(vl, message);
-        vfprintf(__fout, FormatMessage(message, lvl).c_str(), vl);
-        if (fflush(__fout))
+        vfprintf(OutStream_, FormatMessage(message, lvl).c_str(), vl);
+        if (fflush(OutStream_))
             throw std::runtime_error("fflush failed");
         va_end(vl);
     }

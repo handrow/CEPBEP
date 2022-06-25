@@ -5,65 +5,65 @@ namespace IO {
 
 // IPADDRV4
 
-IpAddrV4::IpAddrV4(u32 addr) {
-    __val.raw = htonl(addr);
+IpAddrV4::IpAddrV4(UInt32 addr) {
+    Val.raw = htonl(addr);
 }
 
 IpAddrV4::IpAddrV4(const std::string& str) {
-    __val.raw = inet_addr(str.c_str());
+    Val.raw = inet_addr(str.c_str());
 }
 
 IpAddrV4::operator std::string() const {
     struct in_addr l;
-    l.s_addr = __val.raw;
+    l.s_addr = Val.raw;
     return inet_ntoa(l);
 }
 
-IpAddrV4::operator u32() const {
-    return ntohl(__val.raw);
+IpAddrV4::operator UInt32() const {
+    return ntohl(Val.raw);
 }
 
 // PORT
 
-Port::Port(u16 addr) {
-    __val.raw = htons(addr);
+Port::Port(UInt16 addr) {
+    Val.raw = htons(addr);
 }
 
 Port::Port(const std::string& str) {
-    u16 i = Convert<u16>(str);
-    __val.raw = htons(i);
+    UInt16 i = Convert<UInt16>(str);
+    Val.raw = htons(i);
 }
 
 Port::operator std::string() const {
-    return Convert<std::string>(ntohs(__val.raw));
+    return Convert<std::string>(ntohs(Val.raw));
 }
 
-Port::operator u16() const {
-    return ntohs(__val.raw);
+Port::operator UInt16() const {
+    return ntohs(Val.raw);
 }
 
 // SOCKIONFO
 
 SockInfo::SockInfo(IpAddrV4 ip, Port port)
-: addr_BE(ip)
-, port_BE(port) {
+: Addr_BE(ip)
+, Port_BE(port) {
 }
 
 SockInfo::SockInfo(const sockaddr_in& sin)
-: addr_BE(ntohl(sin.sin_addr.s_addr))
-, port_BE(ntohs(sin.sin_port)) {
+: Addr_BE(ntohl(sin.sin_addr.s_addr))
+, Port_BE(ntohs(sin.sin_port)) {
 }
 
 SockInfo::operator sockaddr_in() const {
     sockaddr_in saddr;
     saddr.sin_family = AF_INET;
-    saddr.sin_port = port_BE.__val.raw;
-    saddr.sin_addr.s_addr = addr_BE.__val.raw;
+    saddr.sin_port = Port_BE.Val.raw;
+    saddr.sin_addr.s_addr = Addr_BE.Val.raw;
     return saddr;
 }
 
 bool SockInfo::operator==(const SockInfo& si) const {
-    return (addr_BE == si.addr_BE) && (port_BE == si.port_BE);
+    return (Addr_BE == si.Addr_BE) && (Port_BE == si.Port_BE);
 }
 
 bool SockInfo::operator!=(const SockInfo& si) const {
@@ -72,7 +72,7 @@ bool SockInfo::operator!=(const SockInfo& si) const {
 
 // SOCKET
 
-Socket::Socket(const SockInfo& sinfo, fd_t fd) : File(fd), __info(sinfo) {
+Socket::Socket(const SockInfo& sinfo, Fd fd) : File(fd), Info_(sinfo) {
 }
 
 Socket Socket::CreateListenSocket(const SockInfo& sinfo, Error* err) {
@@ -82,15 +82,15 @@ Socket Socket::CreateListenSocket(const SockInfo& sinfo, Error* err) {
     rc = socket(AF_INET, SOCK_STREAM, 0);
     if (rc < 0)
         return *err = SystemError(errno), sock;
-    sock.__fd = rc;
+    sock.Fd_ = rc;
 
     sockaddr_in addr = sinfo;
-    rc = bind(sock.__fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr));
+    rc = bind(sock.Fd_, reinterpret_cast<sockaddr*>(&addr), sizeof(addr));
     if (rc < 0)
         return *err = SystemError(errno), sock;
-    sock.__info = sinfo;
+    sock.Info_ = sinfo;
 
-    rc = listen(sock.__fd, 0);
+    rc = listen(sock.Fd_, 0);
     if (rc < 0)
         return *err = SystemError(errno), sock;
 
@@ -98,7 +98,7 @@ Socket Socket::CreateListenSocket(const SockInfo& sinfo, Error* err) {
 }
 
 SockInfo Socket::GetSockInfo() const {
-    return __info;
+    return Info_;
 }
 
 Socket Socket::AcceptNewConnection(Socket* listen_sock, Error* err) {
@@ -107,7 +107,7 @@ Socket Socket::AcceptNewConnection(Socket* listen_sock, Error* err) {
 
     socklen_t   slen;
     sockaddr    sa;
-    rc = accept(listen_sock->__fd, &sa, &slen);
+    rc = accept(listen_sock->Fd_, &sa, &slen);
 
     if (rc < 0)
         *err = SystemError(errno);

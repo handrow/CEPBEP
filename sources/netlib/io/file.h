@@ -14,15 +14,15 @@ namespace IO {
 
 class File {
  protected:
-    fd_t __fd;
+    Fd Fd_;
 
  public:
-    explicit    File(fd_t fd = -1);
+    explicit    File(Fd fd = -1);
     void        AddFileFlag(int flag, Error* err);
     void        Close();
-    fd_t        GetFd();
-    std::string Read(usize nbytes, Error* err = NULL);
-    isize       Write(const std::string& s, Error* err = NULL);
+    Fd          GetFd();
+    std::string Read(USize nbytes, Error* err = NULL);
+    ISize       Write(const std::string& s, Error* err = NULL);
 
     static File  OpenFile(const std::string& path, int oflags, Error* err);
 };
