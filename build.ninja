@@ -14,21 +14,21 @@ rule link
 build build/main.o : cc sources/main.cc
 build build/logger-logger.o : cc sources/logger/logger.cc
 build build/config-config.o : cc sources/config/config.cc
-build build/netlib-io-socket.o : cc sources/netlib/io/socket.cc
-build build/netlib-io-poller.o : cc sources/netlib/io/poller.cc
-build build/netlib-io-file.o : cc sources/netlib/io/file.cc
-build build/netlib-webserver-webserver_http.o : cc sources/netlib/webserver/webserver_http.cc
-build build/netlib-webserver-webserver_cgi.o : cc sources/netlib/webserver/webserver_cgi.cc
-build build/netlib-webserver-webserver_static.o : cc sources/netlib/webserver/webserver_static.cc
-build build/netlib-webserver-webserver_poll.o : cc sources/netlib/webserver/webserver_poll.cc
-build build/netlib-webserver-webserver_listener_event.o : cc sources/netlib/webserver/webserver_listener_event.cc
-build build/netlib-webserver-webserver_err.o : cc sources/netlib/webserver/webserver_err.cc
-build build/netlib-webserver-webserver_sessions.o : cc sources/netlib/webserver/webserver_sessions.cc
-build build/netlib-webserver-webserver_upload.o : cc sources/netlib/webserver/webserver_upload.cc
-build build/netlib-webserver-webserver_timeout.o : cc sources/netlib/webserver/webserver_timeout.cc
-build build/netlib-webserver-webserver.o : cc sources/netlib/webserver/webserver.cc
-build build/netlib-webserver-webserver_listing.o : cc sources/netlib/webserver/webserver_listing.cc
-build build/netlib-event-loop.o : cc sources/netlib/event/loop.cc
+build build/io-socket.o : cc sources/io/socket.cc
+build build/io-poller.o : cc sources/io/poller.cc
+build build/io-file.o : cc sources/io/file.cc
+build build/webserver-http.o : cc sources/webserver/http.cc
+build build/webserver-cgi.o : cc sources/webserver/cgi.cc
+build build/webserver-static.o : cc sources/webserver/static.cc
+build build/webserver-poll.o : cc sources/webserver/poll.cc
+build build/webserver-listener_event.o : cc sources/webserver/listener_event.cc
+build build/webserver-err.o : cc sources/webserver/err.cc
+build build/webserver-sessions.o : cc sources/webserver/sessions.cc
+build build/webserver-upload.o : cc sources/webserver/upload.cc
+build build/webserver-timeout.o : cc sources/webserver/timeout.cc
+build build/webserver-webserver.o : cc sources/webserver/webserver.cc
+build build/webserver-listing.o : cc sources/webserver/listing.cc
+build build/event-loop.o : cc sources/event/loop.cc
 build build/cgi-metavars.o : cc sources/cgi/metavars.cc
 build build/cgi-response_reader.o : cc sources/cgi/response_reader.cc
 build build/common-match.o : cc sources/common/match.cc
@@ -48,21 +48,21 @@ build bin/webserver: link $
     build/main.o $
     build/logger-logger.o $
     build/config-config.o $
-    build/netlib-io-socket.o $
-    build/netlib-io-poller.o $
-    build/netlib-io-file.o $
-    build/netlib-webserver-webserver_http.o $
-    build/netlib-webserver-webserver_cgi.o $
-    build/netlib-webserver-webserver_static.o $
-    build/netlib-webserver-webserver_poll.o $
-    build/netlib-webserver-webserver_listener_event.o $
-    build/netlib-webserver-webserver_err.o $
-    build/netlib-webserver-webserver_sessions.o $
-    build/netlib-webserver-webserver_upload.o $
-    build/netlib-webserver-webserver_timeout.o $
-    build/netlib-webserver-webserver.o $
-    build/netlib-webserver-webserver_listing.o $
-    build/netlib-event-loop.o $
+    build/io-socket.o $
+    build/io-poller.o $
+    build/io-file.o $
+    build/webserver-http.o $
+    build/webserver-cgi.o $
+    build/webserver-static.o $
+    build/webserver-poll.o $
+    build/webserver-listener_event.o $
+    build/webserver-err.o $
+    build/webserver-sessions.o $
+    build/webserver-upload.o $
+    build/webserver-timeout.o $
+    build/webserver-webserver.o $
+    build/webserver-listing.o $
+    build/event-loop.o $
     build/cgi-metavars.o $
     build/cgi-response_reader.o $
     build/common-match.o $

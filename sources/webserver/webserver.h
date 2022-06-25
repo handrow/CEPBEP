@@ -12,12 +12,12 @@
 #include "http/writer.h"
 #include "http/mime.h"
 
-#include "netlib/io/socket.h"
+#include "io/socket.h"
 
-#include "netlib/io/poller.h"
+#include "io/poller.h"
 
-#include "netlib/event/event.h"
-#include "netlib/event/loop.h"
+#include "event/event.h"
+#include "event/loop.h"
 
 #include "config/config.h"
 

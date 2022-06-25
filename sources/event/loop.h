@@ -3,8 +3,8 @@
 
 #include <list>
 
-#include "netlib/event/event.h"
-#include "netlib/event/queue.h"
+#include "event/event.h"
+#include "event/queue.h"
 
 namespace Event {
 

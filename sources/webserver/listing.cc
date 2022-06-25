@@ -5,7 +5,7 @@
 
 #include <dirent.h>
 
-#include "netlib/webserver/webserver.h"
+#include "webserver/webserver.h"
 
 #ifdef __linux__
     #define st_mtim st_mtim

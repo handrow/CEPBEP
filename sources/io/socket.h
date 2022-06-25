@@ -8,8 +8,8 @@
 
 #include "common/types.h"
 
-#include "netlib/io/errors.h"
-#include "netlib/io/file.h"
+#include "io/errors.h"
+#include "io/file.h"
 
 namespace IO {
 

@@ -1,7 +1,7 @@
 #include "common/types.h"
 #include "common/error.h"
 
-#include "netlib/webserver/webserver.h"
+#include "webserver/webserver.h"
 
 #include "cgi/cgi.h"
 
