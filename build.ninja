@@ -1,0 +1,78 @@
+cflags = -Wall -Werror -Wextra -std=c++98
+inc = -I sources/
+lflags =
+
+rule cc
+    depfile = $out.d
+    command = clang++ -MD -MF $out.d $cflags $inc -c -o $out $in
+    description = [CC] $out
+ 
+rule link
+    command = clang++ $lflags -o $out $in
+    description = [LD] $out
+ 
+build build/main.o : cc sources/main.cc
+build build/logger-logger.o : cc sources/logger/logger.cc
+build build/config-config.o : cc sources/config/config.cc
+build build/netlib-io-socket.o : cc sources/netlib/io/socket.cc
+build build/netlib-io-poller.o : cc sources/netlib/io/poller.cc
+build build/netlib-io-file.o : cc sources/netlib/io/file.cc
+build build/netlib-webserver-webserver_http.o : cc sources/netlib/webserver/webserver_http.cc
+build build/netlib-webserver-webserver_cgi.o : cc sources/netlib/webserver/webserver_cgi.cc
+build build/netlib-webserver-webserver_static.o : cc sources/netlib/webserver/webserver_static.cc
+build build/netlib-webserver-webserver_poll.o : cc sources/netlib/webserver/webserver_poll.cc
+build build/netlib-webserver-webserver_listener_event.o : cc sources/netlib/webserver/webserver_listener_event.cc
+build build/netlib-webserver-webserver_err.o : cc sources/netlib/webserver/webserver_err.cc
+build build/netlib-webserver-webserver_sessions.o : cc sources/netlib/webserver/webserver_sessions.cc
+build build/netlib-webserver-webserver_upload.o : cc sources/netlib/webserver/webserver_upload.cc
+build build/netlib-webserver-webserver_timeout.o : cc sources/netlib/webserver/webserver_timeout.cc
+build build/netlib-webserver-webserver.o : cc sources/netlib/webserver/webserver.cc
+build build/netlib-webserver-webserver_listing.o : cc sources/netlib/webserver/webserver_listing.cc
+build build/netlib-event-loop.o : cc sources/netlib/event/loop.cc
+build build/cgi-metavars.o : cc sources/cgi/metavars.cc
+build build/cgi-response_reader.o : cc sources/cgi/response_reader.cc
+build build/common-match.o : cc sources/common/match.cc
+build build/common-file.o : cc sources/common/file.cc
+build build/common-tokenizer.o : cc sources/common/tokenizer.cc
+build build/http-reader_request.o : cc sources/http/reader_request.cc
+build build/http-headers.o : cc sources/http/headers.cc
+build build/http-writer.o : cc sources/http/writer.cc
+build build/http-uri.o : cc sources/http/uri.cc
+build build/http-http.o : cc sources/http/http.cc
+build build/http-mime.o : cc sources/http/mime.cc
+build build/http-reader_response.o : cc sources/http/reader_response.cc
+build build/http-reader_common.o : cc sources/http/reader_common.cc
+
+
+build bin/webserver: link $
+    build/main.o $
+    build/logger-logger.o $
+    build/config-config.o $
+    build/netlib-io-socket.o $
+    build/netlib-io-poller.o $
+    build/netlib-io-file.o $
+    build/netlib-webserver-webserver_http.o $
+    build/netlib-webserver-webserver_cgi.o $
+    build/netlib-webserver-webserver_static.o $
+    build/netlib-webserver-webserver_poll.o $
+    build/netlib-webserver-webserver_listener_event.o $
+    build/netlib-webserver-webserver_err.o $
+    build/netlib-webserver-webserver_sessions.o $
+    build/netlib-webserver-webserver_upload.o $
+    build/netlib-webserver-webserver_timeout.o $
+    build/netlib-webserver-webserver.o $
+    build/netlib-webserver-webserver_listing.o $
+    build/netlib-event-loop.o $
+    build/cgi-metavars.o $
+    build/cgi-response_reader.o $
+    build/common-match.o $
+    build/common-file.o $
+    build/common-tokenizer.o $
+    build/http-reader_request.o $
+    build/http-headers.o $
+    build/http-writer.o $
+    build/http-uri.o $
+    build/http-http.o $
+    build/http-mime.o $
+    build/http-reader_response.o $
+    build/http-reader_common.o
