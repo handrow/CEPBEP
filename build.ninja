@@ -11,37 +11,37 @@ rule link
     command = clang++ $lflags -o $out $in
     description = [LD] $out
  
-build build/main.o : cc sources/main.cc
-build build/logger-logger.o : cc sources/logger/logger.cc
-build build/config-config.o : cc sources/config/config.cc
-build build/io-socket.o : cc sources/io/socket.cc
-build build/io-poller.o : cc sources/io/poller.cc
-build build/io-file.o : cc sources/io/file.cc
-build build/webserver-http.o : cc sources/webserver/http.cc
-build build/webserver-cgi.o : cc sources/webserver/cgi.cc
-build build/webserver-static.o : cc sources/webserver/static.cc
-build build/webserver-poll.o : cc sources/webserver/poll.cc
-build build/webserver-listener_event.o : cc sources/webserver/listener_event.cc
-build build/webserver-err.o : cc sources/webserver/err.cc
-build build/webserver-sessions.o : cc sources/webserver/sessions.cc
-build build/webserver-upload.o : cc sources/webserver/upload.cc
-build build/webserver-timeout.o : cc sources/webserver/timeout.cc
-build build/webserver-webserver.o : cc sources/webserver/webserver.cc
-build build/webserver-listing.o : cc sources/webserver/listing.cc
-build build/event-loop.o : cc sources/event/loop.cc
-build build/cgi-metavars.o : cc sources/cgi/metavars.cc
-build build/cgi-response_reader.o : cc sources/cgi/response_reader.cc
-build build/common-match.o : cc sources/common/match.cc
-build build/common-file.o : cc sources/common/file.cc
-build build/common-tokenizer.o : cc sources/common/tokenizer.cc
-build build/http-reader_request.o : cc sources/http/reader_request.cc
-build build/http-headers.o : cc sources/http/headers.cc
-build build/http-writer.o : cc sources/http/writer.cc
-build build/http-uri.o : cc sources/http/uri.cc
-build build/http-http.o : cc sources/http/http.cc
-build build/http-mime.o : cc sources/http/mime.cc
-build build/http-reader_response.o : cc sources/http/reader_response.cc
-build build/http-reader_common.o : cc sources/http/reader_common.cc
+build build/main.o : cc sources/main.cpp
+build build/logger-logger.o : cc sources/logger/logger.cpp
+build build/config-config.o : cc sources/config/config.cpp
+build build/io-socket.o : cc sources/io/socket.cpp
+build build/io-poller.o : cc sources/io/poller.cpp
+build build/io-file.o : cc sources/io/file.cpp
+build build/webserver-http.o : cc sources/webserver/http.cpp
+build build/webserver-cgi.o : cc sources/webserver/cgi.cpp
+build build/webserver-static.o : cc sources/webserver/static.cpp
+build build/webserver-poll.o : cc sources/webserver/poll.cpp
+build build/webserver-listener_event.o : cc sources/webserver/listener_event.cpp
+build build/webserver-err.o : cc sources/webserver/err.cpp
+build build/webserver-sessions.o : cc sources/webserver/sessions.cpp
+build build/webserver-upload.o : cc sources/webserver/upload.cpp
+build build/webserver-timeout.o : cc sources/webserver/timeout.cpp
+build build/webserver-webserver.o : cc sources/webserver/webserver.cpp
+build build/webserver-listing.o : cc sources/webserver/listing.cpp
+build build/event-loop.o : cc sources/event/loop.cpp
+build build/cgi-metavars.o : cc sources/cgi/metavars.cpp
+build build/cgi-response_reader.o : cc sources/cgi/response_reader.cpp
+build build/common-match.o : cc sources/common/match.cpp
+build build/common-file.o : cc sources/common/file.cpp
+build build/common-tokenizer.o : cc sources/common/tokenizer.cpp
+build build/http-reader_request.o : cc sources/http/reader_request.cpp
+build build/http-headers.o : cc sources/http/headers.cpp
+build build/http-writer.o : cc sources/http/writer.cpp
+build build/http-uri.o : cc sources/http/uri.cpp
+build build/http-http.o : cc sources/http/http.cpp
+build build/http-mime.o : cc sources/http/mime.cpp
+build build/http-reader_response.o : cc sources/http/reader_response.cpp
+build build/http-reader_common.o : cc sources/http/reader_common.cpp
 
 
 build bin/webserver: link $
