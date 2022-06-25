@@ -47,8 +47,8 @@ class Poller {
     void SetPollTimeout(UInt32 msec);
 
  private:
-    USize __FindPollFd(Fd fd) const;
-    USize __FindEventFd();
+    USize FindPollFd(Fd fd) const;
+    USize FindEventFd();
 
  private:
     mut_std::vector<pollfd>  FilePool_;

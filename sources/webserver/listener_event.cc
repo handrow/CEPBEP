@@ -2,7 +2,7 @@
 
 namespace Webserver {
 
-void  HttpServer::__OnListenerAccept(IO::Socket* lstn_sock) {
+void  HttpServer::OnListenerAccept(IO::Socket* lstn_sock) {
     Error err;
     IO::Socket conn = IO::Socket::AcceptNewConnection(lstn_sock, &err);
     if (err.IsError()) {
@@ -17,12 +17,12 @@ void  HttpServer::__OnListenerAccept(IO::Socket* lstn_sock) {
                                 std::string(lstn_sock->GetSockInfo().Addr_BE).c_str(),
                                 UInt16(lstn_sock->GetSockInfo().Port_BE));
 
-        SessionCtx* session = __NewSessionCtx(conn, lstn_sock->GetFd());
+        SessionCtx* session = NewSessionCtx(conn, lstn_sock->GetFd());
         info(SystemLog_, "ServerSock[%d]: session (fd: %d) created",
                                 lstn_sock->GetFd(),
                                 session->ConnectionSock.GetFd());
 
-        __StartSessionCtx(session);
+        StartSessionCtx(session);
     }
 }
 
@@ -37,11 +37,11 @@ class HttpServer::EvListenerNewConnection : public Event::IEvent {
     }
 
     void Handle() {
-        HttpServer_->__OnListenerAccept(Socket_);
+        HttpServer_->OnListenerAccept(Socket_);
     }
 };
 
-Event::IEventPtr    HttpServer::__SpawnListenerEvent(IO::Poller::PollEvent ev, IO::Socket* sock) {
+Event::IEventPtr    HttpServer::SpawnListenerEvent(IO::Poller::PollEvent ev, IO::Socket* sock) {
     if (ev == IO::Poller::POLL_READ)
         return new EvListenerNewConnection(this, sock);
     return new DebugEvent(SystemLog_, ev, sock->GetFd());

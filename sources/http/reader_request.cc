@@ -2,8 +2,8 @@
 
 namespace Http {
 
-using namespace __CommonHelpers;
-using namespace __CommonParsers;
+using namespace CommonHelpers;
+using namespace CommonParsers;
 
 RequestReader::State
 RequestReader::STT_SkipEmptyLines(bool*) {
@@ -16,7 +16,7 @@ RequestReader::STT_SkipEmptyLines(bool*) {
         I_ += 1;
     } else {
         nextState = STT_BUFF_META;
-        __FlushParsedBuffer();
+        FlushParsedBuffer();
     }
     return nextState;
 }
@@ -30,7 +30,7 @@ RequestReader::STT_SkipCrlfEmptyLines(bool*) {
         I_ += 1;
     } else {
         nextState = STT_BUFF_META;
-        __FlushParsedBuffer();
+        FlushParsedBuffer();
     }
 
     return nextState;
@@ -38,8 +38,8 @@ RequestReader::STT_SkipCrlfEmptyLines(bool*) {
 
 RequestReader::State
 RequestReader::STT_ParseMeta(bool* run) {
-    std::string metaBuffer = __GetParsedBuffer();
-    __FlushParsedBuffer();
+    std::string metaBuffer = GetParsedBuffer();
+    FlushParsedBuffer();
 
     USize delim = metaBuffer.find_first_of("\n") + 1;
 
@@ -108,9 +108,9 @@ RequestReader::STT_BuffChunkSize(bool*) {
 RequestReader::State
 RequestReader::STT_ParseChunkSize(bool* run) {
     State nextState = STT_READ_CHUNK_DATA;
-    Error_ = ParseChunkSize(__GetParsedBuffer(),
+    Error_ = ParseChunkSize(GetParsedBuffer(),
                           &ChunkSize_);
-    __FlushParsedBuffer();
+    FlushParsedBuffer();
 
     if (Error_.IsError()) {
         nextState = STT_ERROR_OCCURED;
@@ -127,8 +127,8 @@ RequestReader::STT_ReadChunkData(bool* run) {
     if (Buffer_.size() >= ChunkSize_) {
         nextState = STT_SKIP_CRLF_CHUNK_DATA;
         I_ = ChunkSize_;
-        Result_.Body += __GetParsedBuffer();
-        __FlushParsedBuffer();
+        Result_.Body += GetParsedBuffer();
+        FlushParsedBuffer();
     } else {
         *run = false;
     }
@@ -144,12 +144,12 @@ RequestReader::STT_SkipCrlfChunkData(bool* run) {
         nextState = (ChunkSize_ == 0) ? STT_HAVE_MESSAGE
                                          : STT_BUFF_CHUNK_SIZE;
         I_ += 2;
-        __FlushParsedBuffer();
+        FlushParsedBuffer();
     } else if (Buffer_.substr(0, 1) == "\n") {
         nextState = (ChunkSize_ == 0) ? STT_HAVE_MESSAGE
                                          : STT_BUFF_CHUNK_SIZE;
         I_ += 1;
-        __FlushParsedBuffer();
+        FlushParsedBuffer();
     } else if (Buffer_.size() == 0 || Buffer_.substr(0, 1) == "\r") {
         *run = false;
     } else {
@@ -173,8 +173,8 @@ RequestReader::STT_ReadBodyContentLength(bool* run) {
     if (Buffer_.size() >= contentLength) {
         nextState = STT_HAVE_MESSAGE;
         I_ = contentLength;
-        Result_.Body = __GetParsedBuffer();
-        __FlushParsedBuffer();
+        Result_.Body = GetParsedBuffer();
+        FlushParsedBuffer();
     }
 
     *run = false;
@@ -186,7 +186,7 @@ RequestReader::State
 RequestReader::STT_HaveMessage(bool*) {
     State nextState = STT_SKIP_EMPTY_LINES;
 
-    __ClearRequest();
+    ClearRequest();
     Error_ = Error(0);
     return nextState;
 }
@@ -195,7 +195,7 @@ RequestReader::State
 RequestReader::STT_ErrorOccured(bool*) {
     State nextState = STT_SKIP_EMPTY_LINES;
 
-    __ClearRequest();
+    ClearRequest();
     Error_ = Error(0);
     return nextState;
 }
@@ -204,7 +204,7 @@ void            RequestReader::Process() {
     bool run = true;
 
     while (run) {
-        if (I_ >= Buffer_.size() && !__IsMetaState(State_))
+        if (I_ >= Buffer_.size() && !IsMetaState(State_))
             break;
         switch (State_) {
             case STT_SKIP_EMPTY_LINES:          State_ = STT_SkipEmptyLines(&run); break;
@@ -223,23 +223,23 @@ void            RequestReader::Process() {
     }
 }
 
-bool            RequestReader::__IsMetaState(State stt) {
+bool            RequestReader::IsMetaState(State stt) {
     return stt == STT_PARSE_META      ||
            stt == STT_HAVE_MESSAGE    ||
            stt == STT_READ_CHUNK_DATA ||
            stt == STT_ERROR_OCCURED;
 }
 
-void            RequestReader::__ClearRequest() {
+void            RequestReader::ClearRequest() {
     Result_ = Request();
 }
 
-void            RequestReader::__FlushParsedBuffer() {
+void            RequestReader::FlushParsedBuffer() {
     Buffer_ = Buffer_.substr(I_);
     I_ = 0;
 }
 
-std::string     RequestReader::__GetParsedBuffer() const {
+std::string     RequestReader::GetParsedBuffer() const {
     return Buffer_.substr(0, I_);
 }
 
@@ -252,7 +252,7 @@ void            RequestReader::Reset() {
     Error_ = Error(0);
     State_ = STT_SKIP_EMPTY_LINES;
     Buffer_.clear();
-    __ClearRequest();
+    ClearRequest();
 }
 
 bool            RequestReader::HasMessage() const {

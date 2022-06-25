@@ -31,12 +31,12 @@ class ResponseReader {
 
 
  private:
-    static bool     __IsMetaState(State stt);
+    static bool     IsMetaState(State stt);
 
-    void            __SetStatus();
-    void            __ClearResponse();
-    void            __FlushParsedBuffer();
-    std::string     __GetParsedBuffer() const;
+    void            SetStatus();
+    void            ClearResponse();
+    void            FlushParsedBuffer();
+    std::string     GetParsedBuffer() const;
 
     State   STT_SkipEmptyLines(bool* run);
     State   STT_SkipCrlfEmptyLines(bool* run);

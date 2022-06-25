@@ -97,14 +97,14 @@ std::string         PercentDecode(const std::string& encoded_str) {
 std::string         URI::ToString() const {
     std::string uriString;
 
-    if (!this->Hostname.empty()) {
+    if (!Hostname.empty()) {
         uriString += "http://"
-                  +  ((!this->UserInfo.empty()) ? PercentEncode(this->UserInfo, IsUserSafeSym) + "@" : "")
-                  +  PercentEncode(StrToLower(this->Hostname), IsHostSafeSym);
+                  +  ((!UserInfo.empty()) ? PercentEncode(UserInfo, IsUserSafeSym) + "@" : "")
+                  +  PercentEncode(StrToLower(Hostname), IsHostSafeSym);
     }
-    uriString += PercentEncode(this->Path, IsPathSafeSym)
-              + (!this->QueryStr.empty() ? "?" + this->QueryStr : "")
-              + (!this->Fragment.empty() ? "#" + this->Fragment : "");
+    uriString += PercentEncode(Path, IsPathSafeSym)
+              + (!QueryStr.empty() ? "?" + QueryStr : "")
+              + (!Fragment.empty() ? "#" + Fragment : "");
 
     return uriString;
 }

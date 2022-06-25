@@ -3,7 +3,7 @@
 namespace Webserver {
 
 /// Basics
-HttpServer::SessionCtx*  HttpServer::__NewSessionCtx(const IO::Socket& sock, Fd listen) {
+HttpServer::SessionCtx*  HttpServer::NewSessionCtx(const IO::Socket& sock, Fd listen) {
 
     SessionCtx* ss = new SessionCtx;
 
@@ -25,15 +25,15 @@ HttpServer::SessionCtx*  HttpServer::__NewSessionCtx(const IO::Socket& sock, Fd 
     return ss;
 }
 
-void  HttpServer::__StartSessionCtx(SessionCtx* ss) {
+void  HttpServer::StartSessionCtx(SessionCtx* ss) {
     WebSessions_[ss->ConnectionSock.GetFd()] = ss;
     Poller_.AddFd(ss->ConnectionSock.GetFd(), IO::Poller::POLL_READ |
                                           IO::Poller::POLL_CLOSE |
                                           IO::Poller::POLL_ERROR);
 }
 
-void  HttpServer::__DeleteSessionCtx(SessionCtx* ss) {
-    __RemoveStaticFileCtx(ss);
+void  HttpServer::DeleteSessionCtx(SessionCtx* ss) {
+    RemoveStaticFileCtx(ss);
 
     Poller_.RmFd(ss->ConnectionSock.GetFd());
     ss->ConnectionSock.Close();
@@ -42,14 +42,14 @@ void  HttpServer::__DeleteSessionCtx(SessionCtx* ss) {
 }
 
 /// Handlers
-void  HttpServer::__OnSessionRead(SessionCtx* ss) {
+void  HttpServer::OnSessionRead(SessionCtx* ss) {
     static const USize  READ_SESSION_BUFF_SZ = 10000;
     const std::string  portion = ss->ConnectionSock.Read(READ_SESSION_BUFF_SZ);
 
     ss->UpdateTimeout(SessionTimeout_);
 
     if (portion.empty()) {
-        return __OnSessionHup(ss);
+        return OnSessionHup(ss);
     }
 
     info(SystemLog_, "Session[%d]: read %zu bytes",
@@ -69,17 +69,17 @@ void  HttpServer::__OnSessionRead(SessionCtx* ss) {
         info(SystemLog_, "Session[%d]: HTTP request parsed", ss->ConnectionSock.GetFd());
         ss->Request = ss->RequestReader.GetMessage();
         ss->RequestReader.Reset();
-        return __OnHttpRequest(ss);
+        return OnHttpRequest(ss);
     } else if (ss->RequestReader.HasError()) {
         info(SystemLog_, "Session[%d]: HTTP request is bad (%s), sending error",
                             ss->ConnectionSock.GetFd(),
                             ss->RequestReader.GetError().Description.c_str());
         ss->RequestReader.Reset();
-        return ss->ResponseCode = 400, __OnHttpError(ss);
+        return ss->ResponseCode = 400, OnHttpError(ss);
     }
 }
 
-void  HttpServer::__OnSessionWrite(SessionCtx* ss) {
+void  HttpServer::OnSessionWrite(SessionCtx* ss) {
     static const USize  WRITE_SESSION_BUFF_SZ = 10000;
 
     ss->UpdateTimeout(SessionTimeout_);
@@ -93,7 +93,7 @@ void  HttpServer::__OnSessionWrite(SessionCtx* ss) {
         if (ss->IsConnectionClosed == true) {
             info(SystemLog_, "Session[%d]: connection close is set, closing connetion",
                                ss->ConnectionSock.GetFd());
-            __OnSessionHup(ss);
+            OnSessionHup(ss);
         }
 
     } else {
@@ -110,14 +110,14 @@ void  HttpServer::__OnSessionWrite(SessionCtx* ss) {
     }
 }
 
-void  HttpServer::__OnSessionHup(SessionCtx* ss) {
+void  HttpServer::OnSessionHup(SessionCtx* ss) {
     debug(SystemLog_, "Session[%d]: closing", ss->ConnectionSock.GetFd());
-    __DeleteSessionCtx(ss);
+    DeleteSessionCtx(ss);
 }
 
-void  HttpServer::__OnSessionError(SessionCtx* ss) {
+void  HttpServer::OnSessionError(SessionCtx* ss) {
     error(SystemLog_, "Error occured on session (fd: %d), closing it", ss->ConnectionSock.GetFd());
-    __OnSessionHup(ss);
+    OnSessionHup(ss);
 }
 
 /// Events
@@ -132,7 +132,7 @@ class HttpServer::EvSessionRead : public Event::IEvent {
     }
 
     void Handle() {
-        Server_->__OnSessionRead(SessionCtx_);
+        Server_->OnSessionRead(SessionCtx_);
     }
 };
 
@@ -147,7 +147,7 @@ class HttpServer::EvSessionWrite : public Event::IEvent {
     }
 
     void Handle() {
-        Server_->__OnSessionWrite(SessionCtx_);
+        Server_->OnSessionWrite(SessionCtx_);
     }
 };
 
@@ -162,7 +162,7 @@ class HttpServer::EvSessionError : public Event::IEvent {
     }
 
     void Handle() {
-        Server_->__OnSessionError(SessionCtx_);
+        Server_->OnSessionError(SessionCtx_);
     }
 };
 
@@ -177,11 +177,11 @@ class HttpServer::EvSessionHup : public Event::IEvent {
     }
 
     void Handle() {
-        Server_->__OnSessionHup(SessionCtx_);
+        Server_->OnSessionHup(SessionCtx_);
     }
 };
 
-Event::IEventPtr  HttpServer::__SpawnSessionEvent(IO::Poller::PollEvent pev, SessionCtx* ss) {
+Event::IEventPtr  HttpServer::SpawnSessionEvent(IO::Poller::PollEvent pev, SessionCtx* ss) {
     if (pev == IO::Poller::POLL_READ) {
         return new EvSessionRead(this, ss);
     } else if (pev == IO::Poller::POLL_WRITE) {

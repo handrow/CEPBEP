@@ -13,7 +13,7 @@ ResponseReader::STT_SkipEmptyLines(bool*) {
         Idx_ += 1;
     } else {
         nextState = STT_BUFF_HEADERS;
-        __FlushParsedBuffer();
+        FlushParsedBuffer();
     }
     return nextState;
 }
@@ -27,7 +27,7 @@ ResponseReader::STT_SkipCrlfEmptyLines(bool*) {
         Idx_ += 1;
     } else {
         nextState = STT_BUFF_HEADERS;
-        __FlushParsedBuffer();
+        FlushParsedBuffer();
     }
 
     return nextState;
@@ -64,8 +64,8 @@ ResponseReader::State
 ResponseReader::STT_ParseHeaders(bool* run) {
     State nextState;
 
-    Error_ = Http::__CommonParsers::ParseHeaders(__GetParsedBuffer(), &Result_.Headers);
-    __FlushParsedBuffer();
+    Error_ = Http::CommonParsers::ParseHeaders(GetParsedBuffer(), &Result_.Headers);
+    FlushParsedBuffer();
 
     if (Error_.IsError()) {
         nextState = STT_ERROR_OCCURED;
@@ -79,8 +79,8 @@ ResponseReader::STT_ParseHeaders(bool* run) {
     return nextState;
 }
 
-void ResponseReader::__SetStatus() {
-    Error_ = Http::__CommonParsers::ParseCgiStatus(Result_.Headers,
+void ResponseReader::SetStatus() {
+    Error_ = Http::CommonParsers::ParseCgiStatus(Result_.Headers,
                                                 &Result_.Version,
                                                 &Result_.Code,
                                                 &Result_.CodeMessage);
@@ -95,9 +95,9 @@ ResponseReader::STT_ReadBodyContentLength(bool* run) {
     if (Buffer_.size() >= contentLength) {
         nextState = STT_HAVE_MESSAGE;
         Idx_ = contentLength;
-        Result_.Body = __GetParsedBuffer();
-        __FlushParsedBuffer();
-        __SetStatus();
+        Result_.Body = GetParsedBuffer();
+        FlushParsedBuffer();
+        SetStatus();
         if (Error_.IsError())
             nextState = STT_ERROR_OCCURED;
     }
@@ -114,10 +114,10 @@ ResponseReader::STT_ReadBodyInfinite(bool* run) {
     if (Buffer_.size() >= EndOfRead_) {
         nextState = STT_HAVE_MESSAGE;
         Idx_ = EndOfRead_;
-        Result_.Body = __GetParsedBuffer();
-        __FlushParsedBuffer();
+        Result_.Body = GetParsedBuffer();
+        FlushParsedBuffer();
 
-        __SetStatus();
+        SetStatus();
         Result_.Headers.Set("Content-Length",
                                Convert<std::string>(Result_.Body.size()));
     }
@@ -131,7 +131,7 @@ ResponseReader::State
 ResponseReader::STT_HaveMessage(bool*) {
     State nextState = STT_SKIP_EMPTY_LINES;
 
-    __ClearResponse();
+    ClearResponse();
     return nextState;
 }
 
@@ -139,7 +139,7 @@ ResponseReader::State
 ResponseReader::STT_ErrorOccured(bool*) {
     State nextState = STT_SKIP_EMPTY_LINES;
 
-    __ClearResponse();
+    ClearResponse();
     Error_ = Error(0);
     return nextState;
 }
@@ -148,7 +148,7 @@ void            ResponseReader::Process() {
     bool run = true;
 
     while (run) {
-        if (Idx_ >= Buffer_.size() && !__IsMetaState(State_))
+        if (Idx_ >= Buffer_.size() && !IsMetaState(State_))
             break;
         switch (State_) {
             case STT_SKIP_EMPTY_LINES:          State_ = STT_SkipEmptyLines(&run); break;
@@ -172,7 +172,7 @@ void            ResponseReader::Read(const std::string& bytes) {
     Buffer_ += bytes;
 }
 
-bool            ResponseReader::__IsMetaState(State stt) {
+bool            ResponseReader::IsMetaState(State stt) {
     return stt == STT_PARSE_HEADERS             ||
            stt == STT_HAVE_MESSAGE              ||
            stt == STT_ERROR_OCCURED             ||
@@ -180,16 +180,16 @@ bool            ResponseReader::__IsMetaState(State stt) {
            stt == STT_READ_BODY_CONTENT_LENGTH;
 }
 
-void            ResponseReader::__ClearResponse() {
+void            ResponseReader::ClearResponse() {
     Result_ = Http::Response();
 }
 
-void            ResponseReader::__FlushParsedBuffer() {
+void            ResponseReader::FlushParsedBuffer() {
     Buffer_ = Buffer_.substr(Idx_);
     Idx_ = 0;
 }
 
-std::string     ResponseReader::__GetParsedBuffer() const {
+std::string     ResponseReader::GetParsedBuffer() const {
     return Buffer_.substr(0, Idx_);
 }
 
@@ -199,7 +199,7 @@ void            ResponseReader::Reset() {
     Error_ = Error(0);
     State_ = STT_SKIP_EMPTY_LINES;
     Buffer_.clear();
-    __ClearResponse();
+    ClearResponse();
 }
 
 bool            ResponseReader::HasMessage() const {

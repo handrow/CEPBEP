@@ -4,7 +4,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#ifdef __linux__
+#ifdef linux
 #include <bits/stdint-uintn.h>
 #else
 #include <cstdint>

@@ -20,17 +20,17 @@ enum UriErrorCode {
     URI_BAD_USERINFO
 };
 
-namespace __pct_encode_inner {
+namespace pct_encode_inner {
 inline std::string  ByteToHexStr(UInt8 byte) {
     static const char* hex_alphabet = "0123456789ABCDEF";
     return std::string(1, hex_alphabet[byte / 16])
             + std::string(1, hex_alphabet[byte % 16]);
 }
-}  // namespace __pct_encode_inner
+}  // namespace pct_encode_inner
 
 template <typename SafePredicate>  // bool ()(char c)
 std::string PercentEncode(const std::string& decoded_str, SafePredicate is_safe_sym) {
-    using namespace __pct_encode_inner;
+    using namespace pct_encode_inner;
 
     std::string encoded_str;
 

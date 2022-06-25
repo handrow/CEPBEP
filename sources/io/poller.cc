@@ -7,7 +7,7 @@ Poller::Result Poller::Poll(Error* err) {
     int rc = poll(FilePool_.data(), FilePool_.size(), TimeoutMs_);
 
     if (rc > 0) {
-        USize i = __FindEventFd();
+        USize i = FindEventFd();
         result.EvSet = EventSet(FilePool_[i].revents);
         result.FileDesc = FilePool_[i].fd;
         FilePool_[i].revents = 0;
@@ -17,7 +17,7 @@ Poller::Result Poller::Poll(Error* err) {
     return result;
 }
 
-USize Poller::__FindPollFd(Fd fd) const {
+USize Poller::FindPollFd(Fd fd) const {
     for (size_t i = 0; i < FilePool_.size(); ++i) {
         if (FilePool_[i].fd == fd)
             return i;
@@ -25,7 +25,7 @@ USize Poller::__FindPollFd(Fd fd) const {
     return npos;
 }
 
-USize Poller::__FindEventFd() {
+USize Poller::FindEventFd() {
     for (size_t i = 0; i < FilePool_.size(); ++i) {
         USize rounded_index = (i + I_) % FilePool_.size();
         if (FilePool_[rounded_index].revents != 0x0)
@@ -42,25 +42,25 @@ void Poller::AddFd(Fd fd, EventSet event_mask) {
 }
 
 void Poller::RmFd(Fd fd) {
-    USize off = __FindPollFd(fd);
+    USize off = FindPollFd(fd);
     if (off != npos)
         FilePool_.erase(FilePool_.begin() + off);
 }
 
 void Poller::SetEvMask(Fd fd, EventSet event_mask) {
-    FilePool_[__FindPollFd(fd)].events = event_mask;
+    FilePool_[FindPollFd(fd)].events = event_mask;
 }
 
 void Poller::AddEvMask(Fd fd, EventSet event_mask) {
-    FilePool_[__FindPollFd(fd)].events |= event_mask;
+    FilePool_[FindPollFd(fd)].events |= event_mask;
 }
 
 void Poller::RmEvMask(Fd fd, EventSet event_mask) {
-    FilePool_[__FindPollFd(fd)].events &= ~event_mask;
+    FilePool_[FindPollFd(fd)].events &= ~event_mask;
 }
 
 Poller::EventSet Poller::GetEvMask(Fd fd) const {
-    return FilePool_[__FindPollFd(fd)].events;
+    return FilePool_[FindPollFd(fd)].events;
 }
 
 void Poller::SetPollTimeout(UInt32 msec) {

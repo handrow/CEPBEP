@@ -7,7 +7,7 @@
 
 #include "webserver/webserver.h"
 
-#ifdef __linux__
+#ifdef linux
     #define st_mtim st_mtim
 #else
     #define st_mtim st_mtimespec
@@ -25,7 +25,7 @@ struct DirEntry {
 
 typedef std::list<DirEntry>  DirEntriesList;
 
-static const char* __FMT_SIZE_STR[] = {
+static const char* FMT_SIZE_STR[] = {
     "B",
     "KiB",
     "MiB",
@@ -35,25 +35,25 @@ static const char* __FMT_SIZE_STR[] = {
 };
 
 enum {
-    __FMT_SIZE_B = 0,
-    __FMT_SIZE_KIB,
-    __FMT_SIZE_MIB,
-    __FMT_SIZE_GIB,
-    __FMT_SIZE_TIB,
-    __FMT_SIZE_PIB,
+    FMT_SIZE_B = 0,
+    FMT_SIZE_KIB,
+    FMT_SIZE_MIB,
+    FMT_SIZE_GIB,
+    FMT_SIZE_TIB,
+    FMT_SIZE_PIB,
 };
 
 std::string  FileSizeToStr(USize bytes) {
-    int fsi = __FMT_SIZE_B;
+    int fsi = FMT_SIZE_B;
     float fsz = static_cast<float>(bytes);
 
-    while (fsz >= 1000.0f && fsi < __FMT_SIZE_PIB) {
+    while (fsz >= 1000.0f && fsi < FMT_SIZE_PIB) {
         fsz /= 1024.0f;
         fsi += 1;
     }
 
     std::stringstream  ss;
-    std::string        units = __FMT_SIZE_STR[fsi];
+    std::string        units = FMT_SIZE_STR[fsi];
 
     if (fsz >= 100.0f)
         ss.precision(0);
@@ -115,14 +115,14 @@ struct DirentryCompName {
 
 }  // namespace
 
-void  HttpServer::__SendDirectoryListing(const std::string& resource_path, SessionCtx* ss) {
+void  HttpServer::SendDirectoryListing(const std::string& resource_path, SessionCtx* ss) {
     DirEntriesList  entries;
     struct dirent*  entry;
     DIR*            dp = NULL;
 
     dp = opendir(resource_path.c_str());
     if (dp == NULL)
-        return ss->ResponseCode = 500, __OnHttpError(ss);
+        return ss->ResponseCode = 500, OnHttpError(ss);
 
     while ((entry = readdir(dp)) != NULL) {
         struct stat     st;
@@ -150,7 +150,7 @@ void  HttpServer::__SendDirectoryListing(const std::string& resource_path, Sessi
     ss->ResponseWriter.Header().Set("Content-type", "text/html");
     ss->ResponseWriter.Write(GenerateHtmlListing(ss->Request.Uri.Path, entries));
 
-    return ss->ResponseCode = 200, __OnHttpResponse(ss);
+    return ss->ResponseCode = 200, OnHttpResponse(ss);
 }
 
 }  // namespace Webserver

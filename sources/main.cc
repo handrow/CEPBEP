@@ -13,14 +13,14 @@
 int main(int ac, Cgi::Envs av, Cgi::Envs ev) {
     Webserver::HttpServer   server;
     Config::Category        config;
-    std::string             config_path;
+    std::string             configPath;
     try {
         if (ac != 2)
-            config_path = "webserv.cfg";
+            configPath = "webserv.cfg";
         else
-            config_path = av[1];
+            configPath = av[1];
         Error err;
-        config = Config::Category::ParseFromINI(config_path, &err);
+        config = Config::Category::ParseFromINI(configPath, &err);
         if (err.IsError())
             throw std::runtime_error("Config file parsing failed: " + err.Description);
         server.Config(config, ev);

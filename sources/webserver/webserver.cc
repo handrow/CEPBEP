@@ -36,9 +36,9 @@ void  HttpServer::SetTimeout(UInt64 msec) {
 
 void  HttpServer::ServeForever() {
     signal(SIGPIPE, SIG_IGN);
-    EventLoop_.AddDefaultEvent(__SpawnPollerHook());
-    EventLoop_.AddDefaultEvent(__SpawnTimeoutHook());
-    EventLoop_.AddDefaultEvent(__SpawnCgiHook());
+    EventLoop_.AddDefaultEvent(SpawnPollerHook());
+    EventLoop_.AddDefaultEvent(SpawnTimeoutHook());
+    EventLoop_.AddDefaultEvent(SpawnCgiHook());
     EventLoop_.Run();
 }
 

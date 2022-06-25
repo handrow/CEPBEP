@@ -3,7 +3,7 @@
 #include <sstream>
 
 namespace Http {
-namespace __CommonHelpers {
+namespace CommonHelpers {
 
 USize IsWhiteSpace(const std::string& s, USize i) {
     return (s[i] == ' ') ? 1
@@ -32,9 +32,9 @@ bool IsValidHdrValue(char sym) {
     return IsValidHdrKey(sym);
 }
 
-}  // namespace __CommonHelpers
+}  // namespace CommonHelpers
 
-namespace __CommonParsers {
+namespace CommonParsers {
 
 #define GET_TOKEN(buff, tb, te) ((buff).substr((tb), (te) - (tb)))
 #define NOT_FOUND(idx)          ((idx) == (std::string::npos))
@@ -200,7 +200,7 @@ Error  ParseHeaderPair(const std::string& pairStr, Headers* hdrs) {
 
     /// Key validation
     for (USize i = 0; i < key.size(); ++i) {
-        if (!__CommonHelpers::IsValidHdrKey(key[i]))
+        if (!CommonHelpers::IsValidHdrKey(key[i]))
             return Error(HTTP_READER_BAD_HEADER_KEY, "Bad header key");
     }
 
@@ -212,7 +212,7 @@ Error  ParseHeaderPair(const std::string& pairStr, Headers* hdrs) {
     val = GET_TOKEN(pairStr, delimiter, end);
     /// Value validation
     for (USize i = 0; i < val.size(); ++i) {
-        if (!__CommonHelpers::IsValidHdrValue(val[i]))
+        if (!CommonHelpers::IsValidHdrValue(val[i]))
             return Error(HTTP_READER_BAD_HEADER_VALUE, "Bad header value");
     }
 
@@ -295,6 +295,6 @@ Error  ParseCgiStatus(const Headers& hdrs, ProtocolVersion* ver, int* rcode, std
     return Error(Error::ERR_OK);
 }
 
-}  // namespace __CommonParsers
+}  // namespace CommonParsers
 
 }  // namespace Http

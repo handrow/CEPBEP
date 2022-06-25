@@ -24,7 +24,7 @@ class vector : public ::std::vector<T> {
 
  private:
     inline static
-    void __FastSwapElems(pointer el1, pointer el2) {
+    void FastSwapElems(pointer el1, pointer el2) {
         static const size_t VALUE_SIZE = sizeof(value_type);
         uint8_t tmpBuff[VALUE_SIZE];  // ignore
 
@@ -41,7 +41,7 @@ class vector : public ::std::vector<T> {
         pointer p = position.base();
         pointer last = this->end().base() - 1;
 
-        __FastSwapElems(p, last);
+        FastSwapElems(p, last);
         this->pop_back();
         return position;
     }

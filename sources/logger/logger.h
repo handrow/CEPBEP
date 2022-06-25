@@ -14,7 +14,7 @@
 namespace Log {
 
 # define log(self, log_level, message, ...) \
-        (self)->Send((log_level), message, /* "%s:%d | " message , __FILE__, __LINE__, */ ##__VA_ARGS__)
+        (self)->Send((log_level), message, /* "%s:%d | " message , FILE, LINE, */ ##__VA_ARGS__)
 
 # define debug(self, message, ...) \
         log(self, Log::Logger::DEBUG, message, ##__VA_ARGS__ )

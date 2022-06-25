@@ -1,7 +1,7 @@
 #ifndef COMMON_PLATFORM_H_
 #define COMMON_PLATFORM_H_
 
-#ifdef __linux__
+#ifdef linux
 
 #include <cerrno>
 #include <cstring>
@@ -14,6 +14,6 @@ inline bool ishexnumber(int c) {
     return memchr("0123456789ABCDEFabcdef", c, 22) != NULL;
 }
 
-#endif  // __linux__
+#endif  // linux
 
 #endif  // COMMON_PLATFORM_H_

@@ -3,7 +3,7 @@
 namespace Webserver {
 
 /// Basics
-void  HttpServer::__SendStaticFileResponse(IO::File file, SessionCtx* ss) {
+void  HttpServer::SendStaticFileResponse(IO::File file, SessionCtx* ss) {
     StaticFile stfile = {
         .IsClosed = false,
         .File = file
@@ -15,7 +15,7 @@ void  HttpServer::__SendStaticFileResponse(IO::File file, SessionCtx* ss) {
                                  IO::Poller::POLL_ERROR);
 }
 
-void  HttpServer::__RemoveStaticFileCtx(SessionCtx* ss) {
+void  HttpServer::RemoveStaticFileCtx(SessionCtx* ss) {
     StaticFile* stfile = &ss->StatfilePtr;
     if (!stfile->IsClosed) {
         Poller_.RmFd(stfile->File.GetFd());
@@ -26,7 +26,7 @@ void  HttpServer::__RemoveStaticFileCtx(SessionCtx* ss) {
 }
 
 /// Handlers
-void  HttpServer::__OnStaticFileRead(SessionCtx* ss) {
+void  HttpServer::OnStaticFileRead(SessionCtx* ss) {
     const static USize READ_FILE_BUF_SZ = 10000;
     StaticFile& stfile = ss->StatfilePtr;
 
@@ -40,27 +40,27 @@ void  HttpServer::__OnStaticFileRead(SessionCtx* ss) {
                           ss->ConnectionSock.GetFd(), stfile.File.GetFd(), file_part.c_str());
 
     if (file_part.empty()) {
-        __OnStaticFileReadEnd(ss);
+        OnStaticFileReadEnd(ss);
     } else {
         ss->ResponseWriter.Write(file_part);
     }
 }
 
-void  HttpServer::__OnStaticFileReadError(SessionCtx* ss) {
+void  HttpServer::OnStaticFileReadError(SessionCtx* ss) {
     StaticFile& stfile = ss->StatfilePtr;
     error(SystemLog_, "StaticFile[%d][%d]: file IO error, sending response 500",
                           ss->ConnectionSock.GetFd(), stfile.File.GetFd());
-    __RemoveStaticFileCtx(ss);
+    RemoveStaticFileCtx(ss);
     ss->ResponseCode = 500;
-    __OnHttpError(ss);
+    OnHttpError(ss);
 }
 
-void  HttpServer::__OnStaticFileReadEnd(SessionCtx* ss) {
+void  HttpServer::OnStaticFileReadEnd(SessionCtx* ss) {
     StaticFile& stfile = ss->StatfilePtr;
     info(SystemLog_, "StaticFile[%d][%d]: nothing to read, file closed, preparing HTTP response",
                         ss->ConnectionSock.GetFd(), stfile.File.GetFd());
-    __RemoveStaticFileCtx(ss);
-    __OnHttpResponse(ss);
+    RemoveStaticFileCtx(ss);
+    OnHttpResponse(ss);
 }
 
 
@@ -77,7 +77,7 @@ class HttpServer::EvStaticFileRead : public Event::IEvent {
     }
 
     void  Handle() {
-        Server_->__OnStaticFileRead(SessionCtx_);
+        Server_->OnStaticFileRead(SessionCtx_);
     }
 };
 
@@ -93,11 +93,11 @@ class HttpServer::EvStaticFileReadError : public Event::IEvent {
     }
 
     void  Handle() {
-        Server_->__OnStaticFileReadError(SessionCtx_);
+        Server_->OnStaticFileReadError(SessionCtx_);
     }
 };
 
-Event::IEventPtr  HttpServer::__SpawnStaticFileReadEvent(IO::Poller::PollEvent pev, SessionCtx* ss) {
+Event::IEventPtr  HttpServer::SpawnStaticFileReadEvent(IO::Poller::PollEvent pev, SessionCtx* ss) {
     if (pev == IO::Poller::POLL_READ) {
         return new EvStaticFileRead(this, ss);
     } else if (pev == IO::Poller::POLL_ERROR) {

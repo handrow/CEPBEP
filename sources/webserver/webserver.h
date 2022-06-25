@@ -151,102 +151,102 @@ private:
 
  private:
     /// Event basics logic
-    void                __EvaluateIoEvents();
-    IO::Poller::Result  __PollEvent();
-    Event::IEventPtr    __SwitchEventSpawners(IO::Poller::PollEvent pev, Fd fd);
+    void                EvaluateIoEvents();
+    IO::Poller::Result  PollEvent();
+    Event::IEventPtr    SwitchEventSpawners(IO::Poller::PollEvent pev, Fd fd);
 
-    Event::IEventPtr    __SpawnPollerHook();
+    Event::IEventPtr    SpawnPollerHook();
     class  EvPollerHook;
  
     /// Timeout
-    Event::IEventPtr    __SpawnTimeoutHook();
+    Event::IEventPtr    SpawnTimeoutHook();
     class  EvTimeoutHook;
 
-    void                __EvaluateIoTimeouts();
-    void                __OnSessionTimeout(SessionCtx* ss);
+    void                EvaluateIoTimeouts();
+    void                OnSessionTimeout(SessionCtx* ss);
 
     /// CGI hooks
-    Event::IEventPtr    __SpawnCgiHook();
+    Event::IEventPtr    SpawnCgiHook();
     class  EvCgiHook;
-    void                __EvaluateCgiWorkers();
+    void                EvaluateCgiWorkers();
 
     /// Listener I/O
-    Event::IEventPtr    __SpawnListenerEvent(IO::Poller::PollEvent ev, IO::Socket* sock);
+    Event::IEventPtr    SpawnListenerEvent(IO::Poller::PollEvent ev, IO::Socket* sock);
     class  EvListenerNewConnection;
-    void                __OnListenerAccept(IO::Socket* listener_sock);
+    void                OnListenerAccept(IO::Socket* listener_sock);
 
     /// Http logic
-    void                __OnHttpRequest(SessionCtx* ss);
-    void                __OnHttpResponse(SessionCtx* ss);
-    void                __OnHttpRedirect(SessionCtx* ss, const std::string& location, int code = 302);
-    void                __OnHttpError(SessionCtx* ss, bool reset = true);
+    void                OnHttpRequest(SessionCtx* ss);
+    void                OnHttpResponse(SessionCtx* ss);
+    void                OnHttpRedirect(SessionCtx* ss, const std::string& location, int code = 302);
+    void                OnHttpError(SessionCtx* ss, bool reset = true);
 
-    const WebRoute*     __FindWebRoute(const Http::Request& req, const WebRouteList& routes_list);
+    const WebRoute*     FindWebRoute(const Http::Request& req, const WebRouteList& routes_list);
 
-    void                __HandleStaticFile(SessionCtx* ss, const std::string& file_path);
-    void                __HandleBadMethod(SessionCtx* ss, const WebRoute& route);
-    void                __HandleDirectoryResource(SessionCtx* ss, const WebRoute& route,
+    void                HandleStaticFile(SessionCtx* ss, const std::string& file_path);
+    void                HandleBadMethod(SessionCtx* ss, const WebRoute& route);
+    void                HandleDirectoryResource(SessionCtx* ss, const WebRoute& route,
                                                                   const std::string& fpath);
-    void                __HandleDeleteFile(SessionCtx* ss, const std::string& filepath);
+    void                HandleDeleteFile(SessionCtx* ss, const std::string& filepath);
     
     /// Sessions Logic
-    SessionCtx*         __NewSessionCtx(const IO::Socket& sock, Fd fd);
-    void                __StartSessionCtx(SessionCtx* ss);
-    void                __DeleteSessionCtx(SessionCtx* ss);
+    SessionCtx*         NewSessionCtx(const IO::Socket& sock, Fd fd);
+    void                StartSessionCtx(SessionCtx* ss);
+    void                DeleteSessionCtx(SessionCtx* ss);
 
-    VirtualServer*      __GetVirtualServer(Fd lfd, const std::string& hostname);
+    VirtualServer*      GetVirtualServer(Fd lfd, const std::string& hostname);
 
     /// Sessions I/O handling
-    Event::IEventPtr    __SpawnSessionEvent(IO::Poller::PollEvent ev, SessionCtx* ss);
+    Event::IEventPtr    SpawnSessionEvent(IO::Poller::PollEvent ev, SessionCtx* ss);
     class  EvSessionRead;
     class  EvSessionWrite;
     class  EvSessionError;
     class  EvSessionHup;
-    void                __OnSessionRead(SessionCtx* ss);
-    void                __OnSessionWrite(SessionCtx* ss);
-    void                __OnSessionError(SessionCtx* ss);
-    void                __OnSessionHup(SessionCtx* ss);
+    void                OnSessionRead(SessionCtx* ss);
+    void                OnSessionWrite(SessionCtx* ss);
+    void                OnSessionError(SessionCtx* ss);
+    void                OnSessionHup(SessionCtx* ss);
 
     /// For responsnses with static files
-    void                __SendDirectoryListing(const std::string& resource_path, SessionCtx* ss);
-    void                __SendStaticFileResponse(IO::File file, SessionCtx* ss);
-    void                __RemoveStaticFileCtx(SessionCtx* stfile);
+    void                SendDirectoryListing(const std::string& resource_path, SessionCtx* ss);
+    void                SendStaticFileResponse(IO::File file, SessionCtx* ss);
+    void                RemoveStaticFileCtx(SessionCtx* stfile);
 
-    Event::IEventPtr    __SpawnStaticFileReadEvent(IO::Poller::PollEvent ev, SessionCtx* ss);
+    Event::IEventPtr    SpawnStaticFileReadEvent(IO::Poller::PollEvent ev, SessionCtx* ss);
     class  EvStaticFileRead;
     class  EvStaticFileReadError;
-    void                __OnStaticFileRead(SessionCtx* ss);
-    void                __OnStaticFileReadError(SessionCtx* ss);
-    void                __OnStaticFileReadEnd(SessionCtx* ss);
+    void                OnStaticFileRead(SessionCtx* ss);
+    void                OnStaticFileReadError(SessionCtx* ss);
+    void                OnStaticFileReadEnd(SessionCtx* ss);
 
-    IO::File            __GetErrPage(int errcode, SessionCtx* ss);
-    void                __SendDefaultErrPage(SessionCtx* ss);
+    IO::File            GetErrPage(int errcode, SessionCtx* ss);
+    void                SendDefaultErrPage(SessionCtx* ss);
 
     /// CGI
-    Event::IEventPtr    __SpawnCgiEvent(IO::Poller::PollEvent ev, SessionCtx* ss);
+    Event::IEventPtr    SpawnCgiEvent(IO::Poller::PollEvent ev, SessionCtx* ss);
     class  EvCgiRead;
     class  EvCgiError;
     class  EvCgiWrite;
     class  EvCgiHup;
 
-    Cgi::CStringVec     __FillCgiMetavars(SessionCtx* ss, const std::string& filepath);
-    bool                __AvaibleCgiDriver(const std::string& filepath);
-    std::string         __GetCgiDriver(const std::string& filepath);
-    void                __HandleCgiRequest(SessionCtx* ss, const std::string& filepath);
-    void                __StopCgiWorker(CgiEntry* ce);
-    void                __StopCgiRead(CgiEntry* ce);
-    void                __StopCgiWrite(CgiEntry* ce);
-    void                __OnCgiResponse(SessionCtx* ss);
-    void                __OnCgiOutput(SessionCtx* ss);
-    void                __OnCgiInput(SessionCtx* ss);
-    void                __OnCgiError(SessionCtx* ss);
-    void                __OnCgiHup(SessionCtx* ss);
-    void                __CgiWorker(Fd ipip[2], Fd opip[2],
+    Cgi::CStringVec     FillCgiMetavars(SessionCtx* ss, const std::string& filepath);
+    bool                AvaibleCgiDriver(const std::string& filepath);
+    std::string         GetCgiDriver(const std::string& filepath);
+    void                HandleCgiRequest(SessionCtx* ss, const std::string& filepath);
+    void                StopCgiWorker(CgiEntry* ce);
+    void                StopCgiRead(CgiEntry* ce);
+    void                StopCgiWrite(CgiEntry* ce);
+    void                OnCgiResponse(SessionCtx* ss);
+    void                OnCgiOutput(SessionCtx* ss);
+    void                OnCgiInput(SessionCtx* ss);
+    void                OnCgiError(SessionCtx* ss);
+    void                OnCgiHup(SessionCtx* ss);
+    void                CgiWorker(Fd ipip[2], Fd opip[2],
                                     SessionCtx* ss, const std::string& filepath);
 
-    bool                __IsUpload(SessionCtx* ss, const WebRoute& rt);
-    void                __HandleUploadRequest(SessionCtx* ss, const WebRoute& rt);
-    void                __OnUploadEnd(SessionCtx* ss, const WebRoute& route,
+    bool                IsUpload(SessionCtx* ss, const WebRoute& rt);
+    void                HandleUploadRequest(SessionCtx* ss, const WebRoute& rt);
+    void                OnUploadEnd(SessionCtx* ss, const WebRoute& route,
                                       const std::list<UploadReq>& files);
 
  public:

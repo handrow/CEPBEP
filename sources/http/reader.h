@@ -19,7 +19,7 @@ enum  ReaderErrorCodes {
 };
 
 
-namespace __CommonHelpers {
+namespace CommonHelpers {
 
 USize       IsWhiteSpace(const std::string& s, USize i);
 bool        IsSeparator(char sym);
@@ -28,7 +28,7 @@ bool        IsValidHdrValue(char sym);
 
 }
 
-namespace __CommonParsers {
+namespace CommonParsers {
 
 // VALID: *(WS) (VERSION) *(WS) (CODE) *(WS) (PHRASE) (CRLF)
 Error  ParseResponseLine(const std::string& buff, ProtocolVersion* ver, int* rcode, std::string* phrase);
@@ -44,7 +44,7 @@ Error  ParseHeaders(const std::string& buff, Headers* hdrs);
 Error  ParseChunkSize(const std::string& buff, USize* chunk_size);
 Error  ParseCgiStatus(const Headers& hdrs, ProtocolVersion* ver, int* rcode, std::string* phrase);
 
-}  // namespace __CommonParsers
+}  // namespace CommonParsers
 
 class RequestReader {
  private:
@@ -74,11 +74,11 @@ class RequestReader {
     std::string     Buffer_;
 
  private:
-    static bool     __IsMetaState(State stt);
+    static bool     IsMetaState(State stt);
 
-    void            __ClearRequest();
-    void            __FlushParsedBuffer();
-    std::string     __GetParsedBuffer() const;
+    void            ClearRequest();
+    void            FlushParsedBuffer();
+    std::string     GetParsedBuffer() const;
 
     State   STT_SkipEmptyLines(bool* run);
     State   STT_SkipCrlfEmptyLines(bool* run);
@@ -138,11 +138,11 @@ class ResponseReader {
     std::string     Buffer_;
 
  private:
-    static bool     __IsMetaState(State stt);
+    static bool     IsMetaState(State stt);
 
-    void            __ClearResponse();
-    void            __FlushParsedBuffer();
-    std::string     __GetParsedBuffer() const;
+    void            ClearResponse();
+    void            FlushParsedBuffer();
+    std::string     GetParsedBuffer() const;
 
     State   STT_SkipEmptyLines(bool* run);
     State   STT_SkipCrlfEmptyLines(bool* run);

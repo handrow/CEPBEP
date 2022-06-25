@@ -10,15 +10,15 @@ class HttpServer::EvPollerHook: public Event::IEvent {
 
  public:
     explicit EvPollerHook(HttpServer* serv) : HttpServer_(serv) { }
-    void     Handle() { HttpServer_->__EvaluateIoEvents(); }
+    void     Handle() { HttpServer_->EvaluateIoEvents(); }
 };
 
-Event::IEventPtr  HttpServer::__SpawnPollerHook() {
+Event::IEventPtr  HttpServer::SpawnPollerHook() {
     return new EvPollerHook(this);
 }
 
 namespace {
-IO::Poller::PollEvent  __MostWantedPollEvent(IO::Poller::EventSet eset) {
+IO::Poller::PollEvent  MostWantedPollEvent(IO::Poller::EventSet eset) {
     if (eset & IO::Poller::POLL_ERROR)
         return IO::Poller::POLL_ERROR;
 
@@ -35,7 +35,7 @@ IO::Poller::PollEvent  __MostWantedPollEvent(IO::Poller::EventSet eset) {
 }
 }  // namespace
 
-IO::Poller::Result   HttpServer::__PollEvent() {
+IO::Poller::Result   HttpServer::PollEvent() {
     Error err;
     IO::Poller::Result res = Poller_.Poll(&err);
 
@@ -59,46 +59,46 @@ IO::Poller::Result   HttpServer::__PollEvent() {
         return res.EvSet = 0x0, res.FileDesc = -1, res;
     }
 
-    res.EvSet = __MostWantedPollEvent(res.EvSet);
+    res.EvSet = MostWantedPollEvent(res.EvSet);
 
     return res;
 }
 
-Event::IEventPtr HttpServer::__SwitchEventSpawners(IO::Poller::PollEvent pev, Fd fd) {
+Event::IEventPtr HttpServer::SwitchEventSpawners(IO::Poller::PollEvent pev, Fd fd) {
     SocketFdMap::iterator  lstn_sock_it = Listeners_.find(fd);
     if (lstn_sock_it != Listeners_.end()) {
         debug(SystemLog_, "Poller fd %d is LISTENER_EVENT", fd);
-        return __SpawnListenerEvent(pev, &lstn_sock_it->second);
+        return SpawnListenerEvent(pev, &lstn_sock_it->second);
     }
 
     SessionFdMap::iterator  session_it = WebSessions_.find(fd);
     if (session_it != WebSessions_.end()) {
         debug(SystemLog_, "Poller fd %d is SESSION_EVENT", fd);
-        return __SpawnSessionEvent(pev, session_it->second);
+        return SpawnSessionEvent(pev, session_it->second);
     }
 
     SessionFdMap::iterator  stat_file_rd_it = StatfileSessions_.find(fd);
     if (stat_file_rd_it != StatfileSessions_.end()) {
         debug(SystemLog_, "Poller fd %d is STATIC_FILE_EVENT", fd);
-        return __SpawnStaticFileReadEvent(pev, stat_file_rd_it->second);
+        return SpawnStaticFileReadEvent(pev, stat_file_rd_it->second);
     }
 
     SessionFdMap::iterator  cgi_it = CgiSessions_.find(fd);
     if (cgi_it != CgiSessions_.end()) {
-        return __SpawnCgiEvent(pev, cgi_it->second);
+        return SpawnCgiEvent(pev, cgi_it->second);
     }
     return new DebugEvent(SystemLog_, pev, fd);
 }
 
-void HttpServer::__EvaluateIoEvents() {
+void HttpServer::EvaluateIoEvents() {
     const UInt64 MAX_TIMEOUT_MS = 1500;
     const UInt64 poller_timeout = std::min(EventLoop_.GetTimeToNextEventMS(), MAX_TIMEOUT_MS);
     
     Poller_.SetPollTimeout(poller_timeout);
 
-    IO::Poller::Result res = __PollEvent();
+    IO::Poller::Result res = PollEvent();
 
-    Event::IEventPtr ev = __SwitchEventSpawners(IO::Poller::PollEvent(res.EvSet), res.FileDesc);
+    Event::IEventPtr ev = SwitchEventSpawners(IO::Poller::PollEvent(res.EvSet), res.FileDesc);
 
     EventLoop_.PushEvent(ev);
 }

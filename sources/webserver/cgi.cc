@@ -12,7 +12,7 @@
 
 namespace Webserver {
 
-void HttpServer::__EvaluateCgiWorkers() {
+void HttpServer::EvaluateCgiWorkers() {
     for (CgiPidMap::iterator it = CgiPids_.begin();
                              it != CgiPids_.end();) {
         CgiEntry& ce = it->second;
@@ -26,20 +26,20 @@ void HttpServer::__EvaluateCgiWorkers() {
         
         if (rc < 0) {
             debug(SystemLog_, "Cgi[%d]: waitpid error, killing worker", ce.Pid);
-            __StopCgiWorker(&ce);
+            StopCgiWorker(&ce);
         }
 
         debug(SystemLog_, "Cgi[%d]: worker exited", ce.Pid);
 
-        __StopCgiRead(&ce);
-        __StopCgiWrite(&ce);
+        StopCgiRead(&ce);
+        StopCgiWrite(&ce);
         CgiPidMap::iterator del = it++;
         CgiPids_.erase(del);
     }
 }
 
 Cgi::CStringVec
-HttpServer::__FillCgiMetavars(SessionCtx* ss, const std::string& filepath) {
+HttpServer::FillCgiMetavars(SessionCtx* ss, const std::string& filepath) {
     Cgi::Metavars   metavar;    
     metavar.AddHttpHeaders(ss->Request.Headers);
     metavar.GetMapRef()["REMOTE_ADDR"] = std::string(ss->ConnectionSock.GetSockInfo().Addr_BE);
@@ -59,12 +59,12 @@ HttpServer::__FillCgiMetavars(SessionCtx* ss, const std::string& filepath) {
     return metavar.ToEnvVector();
 }
 
-bool  HttpServer::__AvaibleCgiDriver(const std::string& filepath) {
+bool  HttpServer::AvaibleCgiDriver(const std::string& filepath) {
     std::string fileext = GetFileExt(filepath);
     return CgiDrivers_.count(fileext) > 0;
 }
 
-std::string  HttpServer::__GetCgiDriver(const std::string& filepath) {
+std::string  HttpServer::GetCgiDriver(const std::string& filepath) {
     std::string fileext = GetFileExt(filepath);
 
     if (CgiDrivers_.count(fileext) > 0) {
@@ -74,7 +74,7 @@ std::string  HttpServer::__GetCgiDriver(const std::string& filepath) {
     return "";
 }
 
-void  HttpServer::__CgiWorker(Fd ipip[], Fd opip[], SessionCtx* ss, const std::string& filepath) {
+void  HttpServer::CgiWorker(Fd ipip[], Fd opip[], SessionCtx* ss, const std::string& filepath) {
     if (dup2(ipip[0], STDIN_FILENO) < 0)
         exit(1);
     if (dup2(opip[1], STDOUT_FILENO) < 0)
@@ -88,20 +88,20 @@ void  HttpServer::__CgiWorker(Fd ipip[], Fd opip[], SessionCtx* ss, const std::s
     if (dup2(STDOUT_FILENO, STDERR_FILENO) < 0)
         exit(1);
 
-    std::string cgi_driver = __GetCgiDriver(filepath);
+    std::string cgi_driver = GetCgiDriver(filepath);
 
     Cgi::CStringVec arg_vec;
     arg_vec.push_back(C::string(cgi_driver));
     arg_vec.push_back(C::string(filepath));
     arg_vec.push_back(NULL);
 
-    Cgi::CStringVec env_vec = __FillCgiMetavars(ss, filepath);
+    Cgi::CStringVec env_vec = FillCgiMetavars(ss, filepath);
 
     execve(cgi_driver.c_str(), Cgi::CastToEnvs(arg_vec), Cgi::CastToEnvs(env_vec));
     exit(1);
 }
 
-void  HttpServer::__HandleCgiRequest(SessionCtx* ss, const std::string& filepath) {
+void  HttpServer::HandleCgiRequest(SessionCtx* ss, const std::string& filepath) {
     CgiEntry    cgi;
     cgi.InBuffer = ss->Request.Body;
 
@@ -109,16 +109,16 @@ void  HttpServer::__HandleCgiRequest(SessionCtx* ss, const std::string& filepath
     Fd opip[2] = {-1, -1};
 
     if (pipe(ipip) < 0)
-        return ss->ResponseCode = 500, __OnHttpError(ss);
+        return ss->ResponseCode = 500, OnHttpError(ss);
 
     if (pipe(opip) < 0)
         return close(ipip[0]), close(ipip[1]),
-               ss->ResponseCode = 500, __OnHttpError(ss);
+               ss->ResponseCode = 500, OnHttpError(ss);
 
     cgi.Pid = fork();
     if (cgi.Pid == 0) {
         // cgi worker
-        return __CgiWorker(ipip, opip, ss, filepath);
+        return CgiWorker(ipip, opip, ss, filepath);
     }
     // cgi watcher
 
@@ -127,7 +127,7 @@ void  HttpServer::__HandleCgiRequest(SessionCtx* ss, const std::string& filepath
         close(ipip[1]);
         close(opip[0]);
         close(opip[1]);
-        return ss->ResponseCode = 500, __OnHttpError(ss);
+        return ss->ResponseCode = 500, OnHttpError(ss);
     }
 
     cgi.FileDescIn = IO::File(ipip[1]);
@@ -151,33 +151,33 @@ void  HttpServer::__HandleCgiRequest(SessionCtx* ss, const std::string& filepath
     Poller_.AddFd(cgi.FileDescOut.GetFd(), IO::Poller::POLL_READ);
 }
 
-void  HttpServer::__StopCgiWorker(CgiEntry* ce) {
+void  HttpServer::StopCgiWorker(CgiEntry* ce) {
     kill(ce->Pid, SIGKILL);
 }
 
-void  HttpServer::__StopCgiRead(CgiEntry* ce) {
+void  HttpServer::StopCgiRead(CgiEntry* ce) {
     Poller_.RmFd(ce->FileDescOut.GetFd());
     CgiSessions_.erase(ce->FileDescOut.GetFd());
 }
 
-void  HttpServer::__StopCgiWrite(CgiEntry* ce) {
+void  HttpServer::StopCgiWrite(CgiEntry* ce) {
     Poller_.RmFd(ce->FileDescIn.GetFd());
     CgiSessions_.erase(ce->FileDescIn.GetFd());
 }
 
-void  HttpServer::__OnCgiResponse(SessionCtx* ss) {
+void  HttpServer::OnCgiResponse(SessionCtx* ss) {
     CgiEntry& ce = *ss->CgiPtr;
-    __StopCgiRead(&ce);
+    StopCgiRead(&ce);
     debug(ss->AccessLog, "Cgi[%d]: response ready", ce.Pid);
     ss->ResponseWriter.Write(ce.CgiResponse.Body);
     ss->ResponseWriter.Header().SetMap(ce.CgiResponse.Headers.GetMap());
-    return ss->ResponseCode = ce.CgiResponse.Code, __OnHttpResponse(ss);
+    return ss->ResponseCode = ce.CgiResponse.Code, OnHttpResponse(ss);
 }
 
-void  HttpServer::__OnCgiHup(SessionCtx* ss) {
+void  HttpServer::OnCgiHup(SessionCtx* ss) {
     CgiEntry& ce = *ss->CgiPtr;
 
-    __StopCgiRead(&ce);
+    StopCgiRead(&ce);
 
     ce.CgiReader.EndRead();
     ce.CgiReader.Process();
@@ -185,19 +185,19 @@ void  HttpServer::__OnCgiHup(SessionCtx* ss) {
     if (ce.CgiReader.HasError()) {
         Error err = ce.CgiReader.GetError();
         debug(ss->AccessLog, "Cgi[%d]: parse error: %s", ce.Pid, err.Description.c_str());
-        return __OnCgiError(ss);
+        return OnCgiError(ss);
     }
 
     if (ce.CgiReader.HasMessage()) {
         ce.CgiResponse = ce.CgiReader.GetMessage();
-        return __OnCgiResponse(ss);
+        return OnCgiResponse(ss);
     }
 
     debug(ss->AccessLog, "Cgi[%d]: no parsed output", ce.Pid);
-    return __OnCgiError(ss);
+    return OnCgiError(ss);
 }
 
-void  HttpServer::__OnCgiOutput(SessionCtx* ss) {
+void  HttpServer::OnCgiOutput(SessionCtx* ss) {
     static const USize READ_BUF_SZ = 10000;
     CgiEntry& ce = *ss->CgiPtr;
     std::string portion = ce.FileDescOut.Read(READ_BUF_SZ);
@@ -213,21 +213,21 @@ void  HttpServer::__OnCgiOutput(SessionCtx* ss) {
     if (ce.CgiReader.HasError()) {
         Error err = ce.CgiReader.GetError();
         debug(ss->AccessLog, "Cgi[%d]: parse error: %s", ce.Pid, err.Description.c_str());
-        return __OnCgiError(ss);
+        return OnCgiError(ss);
     }
 
     if (ce.CgiReader.HasMessage()) {
         ce.CgiResponse = ce.CgiReader.GetMessage();
-        return __OnCgiResponse(ss);
+        return OnCgiResponse(ss);
     }
 }
 
-void  HttpServer::__OnCgiInput(SessionCtx* ss) {
+void  HttpServer::OnCgiInput(SessionCtx* ss) {
     CgiEntry& ce = *ss->CgiPtr;
     static const USize  WRITE_BUFF_SZ = 10000;
 
     if (ce.InBuffer.empty()) {
-        __StopCgiWrite(ss->CgiPtr);
+        StopCgiWrite(ss->CgiPtr);
     } else {
         std::string  portion = ce.InBuffer.substr(0, WRITE_BUFF_SZ);
         ISize trasmitted_bytes = ce.FileDescIn.Write(portion);
@@ -236,12 +236,12 @@ void  HttpServer::__OnCgiInput(SessionCtx* ss) {
     }
 }
 
-void  HttpServer::__OnCgiError(SessionCtx* ss) {
-    __StopCgiWrite(ss->CgiPtr);
-    __StopCgiRead(ss->CgiPtr);
-    __StopCgiWorker(ss->CgiPtr);
+void  HttpServer::OnCgiError(SessionCtx* ss) {
+    StopCgiWrite(ss->CgiPtr);
+    StopCgiRead(ss->CgiPtr);
+    StopCgiWorker(ss->CgiPtr);
 
-    return ss->ResponseCode = 500, __OnHttpError(ss);
+    return ss->ResponseCode = 500, OnHttpError(ss);
 }
 
 class HttpServer::EvCgiRead : public Event::IEvent {
@@ -257,7 +257,7 @@ class HttpServer::EvCgiRead : public Event::IEvent {
     }
 
     void  Handle() {
-        Server_->__OnCgiOutput(SessionCtx_);
+        Server_->OnCgiOutput(SessionCtx_);
     }
 };
 
@@ -274,7 +274,7 @@ class HttpServer::EvCgiWrite : public Event::IEvent {
     }
 
     void  Handle() {
-        Server_->__OnCgiInput(SessionCtx_);
+        Server_->OnCgiInput(SessionCtx_);
     }
 };
 
@@ -291,7 +291,7 @@ class HttpServer::EvCgiError : public Event::IEvent {
     }
 
     void  Handle() {
-        Server_->__OnCgiError(SessionCtx_);
+        Server_->OnCgiError(SessionCtx_);
     }
 };
 
@@ -308,7 +308,7 @@ class HttpServer::EvCgiHup : public Event::IEvent {
     }
 
     void  Handle() {
-        Server_->__OnCgiHup(SessionCtx_);
+        Server_->OnCgiHup(SessionCtx_);
     }
 };
 
@@ -321,11 +321,11 @@ class HttpServer::EvCgiHook : public Event::IEvent {
     }
 
     void  Handle() {
-        Server_->__EvaluateCgiWorkers();
+        Server_->EvaluateCgiWorkers();
     }
 };
 
-Event::IEventPtr    HttpServer::__SpawnCgiEvent(IO::Poller::PollEvent ev, SessionCtx* ss) {
+Event::IEventPtr    HttpServer::SpawnCgiEvent(IO::Poller::PollEvent ev, SessionCtx* ss) {
     if (ev == IO::Poller::POLL_READ) {
         return new EvCgiRead(this, ss);
     } else if (ev == IO::Poller::POLL_WRITE) {
@@ -339,7 +339,7 @@ Event::IEventPtr    HttpServer::__SpawnCgiEvent(IO::Poller::PollEvent ev, Sessio
     }
 }
 
-Event::IEventPtr    HttpServer::__SpawnCgiHook() {
+Event::IEventPtr    HttpServer::SpawnCgiHook() {
     return new EvCgiHook(this);
 }
 

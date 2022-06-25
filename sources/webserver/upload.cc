@@ -3,7 +3,7 @@
 
 namespace Webserver {
 
-bool  HttpServer::__IsUpload(SessionCtx* ss, const WebRoute& rt) {
+bool  HttpServer::IsUpload(SessionCtx* ss, const WebRoute& rt) {
     std::string type = ss->Request.Headers.Get("Content-Type");
 
     return rt.UploadEnabled &&
@@ -107,7 +107,7 @@ void  HandleChunk(const std::string& chunk, std::list<HttpServer::UploadReq>* fi
     }
 }
 
-void  HttpServer::__OnUploadEnd(SessionCtx* ss, const WebRoute& route, const std::list<UploadReq>& files) {
+void  HttpServer::OnUploadEnd(SessionCtx* ss, const WebRoute& route, const std::list<UploadReq>& files) {
 
     std::string uploadDir = route.RootDir;
 
@@ -122,7 +122,7 @@ void  HttpServer::__OnUploadEnd(SessionCtx* ss, const WebRoute& route, const std
             debug(ss->ErrorLOg, "Session[%d]: file %s already exists, returning 403 error",
                                    ss->ConnectionSock.GetFd(),
                                    upload_path.c_str());
-            return ss->ResponseCode = 403, __OnHttpError(ss);
+            return ss->ResponseCode = 403, OnHttpError(ss);
         }
     }
 
@@ -158,15 +158,15 @@ void  HttpServer::__OnUploadEnd(SessionCtx* ss, const WebRoute& route, const std
     printf("Ya tvar 3\n");
 
     if (fileFailed) {
-        return ss->ResponseCode = 500, __OnHttpError(ss);
+        return ss->ResponseCode = 500, OnHttpError(ss);
     }
 
     ss->ResponseCode = 201;
     ss->ResponseWriter.Write(fileUrls);
-    return __OnHttpResponse(ss);
+    return OnHttpResponse(ss);
 }
 
-void  HttpServer::__HandleUploadRequest(SessionCtx* ss, const WebRoute& route) {
+void  HttpServer::HandleUploadRequest(SessionCtx* ss, const WebRoute& route) {
     info(ss->AccessLog, "Session[%d]: upload request", ss->ConnectionSock.GetFd());
 
     std::list<UploadReq> files;
@@ -187,10 +187,10 @@ void  HttpServer::__HandleUploadRequest(SessionCtx* ss, const WebRoute& route) {
                 break;
             HandleChunk(chunk_token, &files);
         }
-        return __OnUploadEnd(ss, route, files);
+        return OnUploadEnd(ss, route, files);
     } else {
         debug(ss->ErrorLOg, "Session[%d]: multipart form data boundary isn't exist, returning error", ss->ConnectionSock.GetFd());
-        return ss->ResponseCode = 400, __OnHttpError(ss);
+        return ss->ResponseCode = 400, OnHttpError(ss);
     }
 }
 

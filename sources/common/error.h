@@ -27,7 +27,7 @@ struct SystemError: public Error {
     }
 
     inline Error Base() const {
-        return Error(this->ErrorCode, this->Description);
+        return Error(ErrorCode, Description);
     }
 };
 
